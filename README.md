@@ -6,6 +6,11 @@ O diferencial: **ninguém precisa ficar clicando para ativar armadilha**. Você 
 
 O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub Pages** sem servidor próprio.
 
+| | |
+|---|---|
+| **Repositório** | [github.com/carloseduardosnp01-art/RPG-zoeiro](https://github.com/carloseduardosnp01-art/RPG-zoeiro) |
+| **Site (GitHub Pages)** | [carloseduardosnp01-art.github.io/RPG-zoeiro](https://carloseduardosnp01-art.github.io/RPG-zoeiro/) |
+
 ---
 
 ## Sumário
@@ -53,14 +58,13 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
 
 ## Publicar no GitHub Pages
 
-1. Crie um repositório no GitHub (por exemplo `duelo-da-zoeira`), **público**.
-2. Envie os arquivos desta pasta:
-   ```bash
-   git remote add origin https://github.com/SEU-USUARIO/duelo-da-zoeira.git
-   git push -u origin main
-   ```
-3. No GitHub, abra **Settings → Pages**, em *Build and deployment* escolha **Deploy from a branch**, branch **main**, pasta **/ (root)** e salve.
-4. Em um ou dois minutos o jogo fica em `https://SEU-USUARIO.github.io/duelo-da-zoeira/`.
+O código já está em `github.com/carloseduardosnp01-art/RPG-zoeiro`. Para o site ir ao ar:
+
+1. No plano gratuito do GitHub, o Pages só funciona em repositório **público**: em **Settings → General → Danger Zone → Change visibility**, deixe o repositório público.
+2. Abra **Settings → Pages**, em *Build and deployment* escolha **Deploy from a branch**, branch **main**, pasta **/ (root)** e salve.
+3. Em um ou dois minutos o jogo fica em `https://carloseduardosnp01-art.github.io/RPG-zoeiro/`.
+
+Para mandar atualizações depois: `git add -A`, `git commit -m "mensagem"` e `git push`.
 
 Pronto: é só mandar o link para os amigos, cada um cria a conta e todos se encontram no salão.
 

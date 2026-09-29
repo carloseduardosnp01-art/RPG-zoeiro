@@ -117,8 +117,8 @@
           <div class="col-12 col-md-4">
             <article class="destaque">
               <span class="destaque__icone" aria-hidden="true">📦</span>
-              <h2 class="h5">Um deck, 40 cartas</h2>
-              <p>Todo mundo joga com o <em>Deck Careca Supremo</em>: 22 monstros, 12 magias e 6 armadilhas. Ganha quem jogar melhor (ou quem tirar o Vapo! na hora certa).</p>
+              <h2 class="h5">Monte o seu deck</h2>
+              <p>Comece com o <em>Deck Careca Supremo</em> (40 cartas) ou monte o seu na página <a href="#deck">Deck</a>: de 40 a 60 cartas, até 3 cópias de cada. O deck salvo vai junto para todos os duelos.</p>
             </article>
           </div>
         </div>
@@ -193,14 +193,58 @@
     <!-- ===================== DECK ===================== -->
     <section class="tela" data-tela="deck" aria-labelledby="titulo-deck" hidden>
       <div class="container-xl">
-        <h2 id="titulo-deck" class="titulo-secao">Deck Careca Supremo</h2>
-        <p>O único deck do jogo (por enquanto). Os dois duelistas usam as mesmas 40 cartas, embaralhadas. Cada pilha mostra quantas cópias da carta estão no deck; selecione uma carta para ver os detalhes.</p>
-        <p id="resumo-deck" class="resumo-deck" aria-live="polite"></p>
-        <div id="mesa-deck"></div>
-        <div class="row g-3 mt-2 dicas-deck">
-          <div class="col-12 col-md-4"><div class="dica"><strong>Tributo barato:</strong> Careca Feijão, Miro Animal e Careca Cast Surpresa entram sem tributo e abrem caminho para os carecas grandes.</div></div>
-          <div class="col-12 col-md-4"><div class="dica"><strong>Combo clássico:</strong> Invocador + Grande Mestre = 2500 de ATK sem gastar tributo nem a Invocação-Normal.</div></div>
-          <div class="col-12 col-md-4"><div class="dica"><strong>Campo vazio?</strong> A Carecalla entra de penetra sempre que só o oponente tiver monstros.</div></div>
+        <h2 id="titulo-deck" class="titulo-secao">Deck</h2>
+        <p>Monte o seu próprio deck ou jogue com o <strong>Deck Careca Supremo</strong>, o deck padrão. O deck salvo é o que você usa nos duelos (online e contra o bot).</p>
+
+        <ul class="nav nav-pills mb-3 abas-deck" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="aba-meu-deck" data-bs-toggle="pill" data-bs-target="#painel-meu-deck" type="button" role="tab" aria-controls="painel-meu-deck" aria-selected="true">🛠️ Meu deck</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="aba-deck-padrao" data-bs-toggle="pill" data-bs-target="#painel-deck-padrao" type="button" role="tab" aria-controls="painel-deck-padrao" aria-selected="false">📦 Deck padrão</button>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+          <!-- Editor do deck -->
+          <div class="tab-pane fade show active" id="painel-meu-deck" role="tabpanel" aria-labelledby="aba-meu-deck" tabindex="0">
+            <div class="barra-deck">
+              <div class="barra-deck__contagem" aria-live="polite">
+                <strong id="deck-total">40</strong>
+                <span>/ 60 cartas<small>mínimo 40 · até 3 cópias de cada</small></span>
+              </div>
+              <div class="barra-deck__tipos" id="deck-tipos"></div>
+              <div class="barra-deck__status" id="deck-status" role="status"></div>
+              <div class="barra-deck__botoes">
+                <button type="button" class="btn btn-ouro" id="deck-salvar">💾 Salvar deck</button>
+                <button type="button" class="btn btn-outline-light" id="deck-desfazer">↩️ Desfazer</button>
+                <button type="button" class="btn btn-outline-secondary" id="deck-padrao">📦 Voltar ao padrão</button>
+              </div>
+            </div>
+            <p class="ajuda-deck">Clique numa carta da <strong>coleção</strong> para colocar uma cópia no deck e numa carta do <strong>seu deck</strong> para tirar uma cópia. Com 40 cartas não dá para tirar (coloque outra antes) e com 60 não dá para colocar mais.</p>
+            <div class="row g-4">
+              <section class="col-12 col-lg-7" aria-labelledby="titulo-meu-deck">
+                <h3 class="titulo-editor" id="titulo-meu-deck">Seu deck</h3>
+                <div id="editor-deck" class="grade-editor"></div>
+              </section>
+              <section class="col-12 col-lg-5" aria-labelledby="titulo-colecao">
+                <h3 class="titulo-editor" id="titulo-colecao">Coleção</h3>
+                <div id="editor-colecao" class="grade-editor"></div>
+              </section>
+            </div>
+          </div>
+
+          <!-- Deck padrão -->
+          <div class="tab-pane fade" id="painel-deck-padrao" role="tabpanel" aria-labelledby="aba-deck-padrao" tabindex="0">
+            <p>O <strong>Deck Careca Supremo</strong> é o deck de quem ainda não montou o seu. Cada pilha mostra quantas cópias da carta estão nele; selecione uma carta para ver os detalhes.</p>
+            <p id="resumo-deck" class="resumo-deck" aria-live="polite"></p>
+            <div id="mesa-deck"></div>
+            <div class="row g-3 mt-2 dicas-deck">
+              <div class="col-12 col-md-4"><div class="dica"><strong>Tributo barato:</strong> Careca Feijão, Miro Animal e Careca Cast Surpresa entram sem tributo e abrem caminho para os carecas grandes.</div></div>
+              <div class="col-12 col-md-4"><div class="dica"><strong>Combo clássico:</strong> Invocador + Grande Mestre = 2500 de ATK sem gastar tributo nem a Invocação-Normal.</div></div>
+              <div class="col-12 col-md-4"><div class="dica"><strong>Campo vazio?</strong> A Carecalla entra de penetra sempre que só o oponente tiver monstros.</div></div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -219,6 +263,7 @@
             <div id="regra-objetivo" class="accordion-collapse collapse show" data-bs-parent="#accordion-regras">
               <div class="accordion-body">
                 <p>Cada duelista começa com <strong>8000 PL</strong> (Pontos de Lucidez) e <strong>5 cartas</strong> na mão. Vence quem zerar os PL do oponente, ou quem fizer o oponente precisar comprar com o deck vazio.</p>
+                <p>O deck tem de <strong>40 a 60 cartas</strong>, com no máximo <strong>3 cópias</strong> de cada carta. Monte e salve o seu na página <a href="#deck">Deck</a>; sem deck salvo, você joga com o Deck Careca Supremo.</p>
                 <p class="mb-0">Também dá para vencer por <strong>desistência</strong> ou por <strong>W.O.</strong> (se o oponente sumir no meio do duelo).</p>
               </div>
             </div>
@@ -230,7 +275,7 @@
             <div id="regra-fases" class="accordion-collapse collapse" data-bs-parent="#accordion-regras">
               <div class="accordion-body">
                 <ol>
-                  <li><strong>Compra (DRAW):</strong> compra 1 carta automaticamente. Quem começa o duelo não compra no 1º turno.</li>
+                  <li><strong>Compra (DRAW):</strong> compra 1 carta automaticamente, inclusive quem começa o duelo.</li>
                   <li><strong>Espera (STBY):</strong> passa sozinha.</li>
                   <li><strong>Principal 1 (MP1):</strong> invoque, baixe cartas e ative magias.</li>
                   <li><strong>Batalha (BP):</strong> cada monstro em Posição de Ataque ataca uma vez. Ninguém ataca no 1º turno do duelo.</li>

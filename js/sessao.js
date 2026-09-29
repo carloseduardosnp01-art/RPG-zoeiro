@@ -60,13 +60,15 @@ const FALAS_BOT = {
 
 const sortear = (lista) => lista[Math.floor(Math.random() * lista.length)];
 
-export function criarSessaoBot(perfil) {
+// deck: lista de ids do deck do jogador (o bot sempre usa o deck padrão)
+export function criarSessaoBot(perfil, deck) {
   const eu = {
     chave: perfil?.chave || "voce",
     nick: perfil?.nick || "Você",
     tag: perfil?.tag || "",
     avatar: perfil?.avatar || "careca-feijao",
     nivel: perfil?.nivel || 1,
+    deck,
   };
   const bot = { chave: "bot-careca", nick: "Bot Careca", tag: "BOT", avatar: "careca-cast-surpresa", nivel: 99, bot: true };
   const { estado, eventos } = novoDuelo({

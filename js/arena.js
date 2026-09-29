@@ -100,8 +100,15 @@ export function abrirArena(novaSessao, opcoes = {}) {
   document.dispatchEvent(new CustomEvent("arena-mudou"));
 }
 
+function atualizarBotaoTelaCheia() {
+  const botao = raiz.querySelector("#botao-tela-cheia");
+  if (botao) botao.textContent = document.fullscreenElement ? "🗗 Sair da tela cheia" : "⛶ Tela cheia";
+}
+document.addEventListener("fullscreenchange", atualizarBotaoTelaCheia);
+
 export function fecharArena() {
   if (!sessao) return;
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   sessao.encerrar();
   sessao = null;
   clearInterval(relogio);
@@ -116,12 +123,20 @@ export function fecharArena() {
 
 function montarEsqueleto() {
   raiz.innerHTML = `
-    <div class="placar" id="placar"></div>
     <div class="arena__corpo">
+      <div class="coluna-jogadores">
+        <div class="placar" id="placar"></div>
+        <div class="ferramentas-arena">
+          <button type="button" class="btn btn-sm btn-outline-light" id="botao-tela-cheia">⛶ Tela cheia</button>
+          <a class="btn btn-sm btn-outline-light" href="#inicio" title="O duelo continua: a faixa verde traz você de volta">🏠 Ir ao site</a>
+        </div>
+      </div>
       <div class="tabuleiro">
         <div class="aviso-arena" id="aviso-arena" hidden></div>
-        <div class="campo" id="campo" aria-label="Campo de duelo"></div>
-        <div class="fases" id="fases" role="group" aria-label="Fases do turno"></div>
+        <div class="campo-e-fases">
+          <div class="campo" id="campo" aria-label="Campo de duelo"></div>
+          <div class="fases" id="fases" role="group" aria-label="Fases do turno"></div>
+        </div>
         <div class="mao" id="mao" aria-label="Sua mão"></div>
       </div>
       <aside class="lateral" aria-label="Informações do duelo">
@@ -183,6 +198,14 @@ function montarEsqueleto() {
   });
 
   raiz.querySelector("#botao-sair-arena").addEventListener("click", sairDaArena);
+
+  const telaCheia = raiz.querySelector("#botao-tela-cheia");
+  if (!document.documentElement.requestFullscreen) telaCheia.hidden = true;
+  telaCheia.addEventListener("click", () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => aviso("O navegador não deixou abrir em tela cheia.", "erro"));
+  });
+  atualizarBotaoTelaCheia();
 }
 
 function sairDaArena() {

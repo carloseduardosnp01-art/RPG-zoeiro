@@ -31,7 +31,9 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
 - **Início** com leque de cartas em destaque.
 - **Catálogo**: busca (sem diferenciar acentos), filtros por categoria, atributo e raridade, ordenação, paginação e modal com a carta completa, ficha, "como funciona no jogo" e frase da carta (com navegação Anterior/Próxima).
 - **Template próprio das cartas**, feito em HTML/CSS e usado em todo o site: moldura por tipo (Normal, Efeito, Magia, Armadilha), atributo com kanji, estrelas, selo de raridade (nome prateado, dourado ou arco-íris e brilho holográfico na arte), número de série e selo careca. A mesma carta escala de 50 px (campo no celular) até a carta grande do modal.
-- **Deck Careca Supremo**: mesa com as pilhas de cópias e o resumo (40 cartas: 22 monstros, 12 magias, 6 armadilhas).
+- **Deck**:
+  - **Meu deck**: editor para montar e salvar o seu deck. Clique na coleção para colocar uma cópia e no deck para tirar. Regras: de **40 a 60 cartas** e até **3 cópias** de cada (com 40 não dá para tirar, com 60 não dá para colocar). O deck salvo fica no navegador e na sua conta, e é o que você usa nos duelos online e no treino.
+  - **Deck padrão** (Deck Careca Supremo): mesa com as pilhas de cópias e o resumo (40 cartas: 22 monstros, 12 magias, 6 armadilhas). É o deck de quem ainda não montou o seu e o deck do Bot Careca.
 - **Regras** em acordeão.
 - **Salão online** (igual ao chat do site de referência):
   - criar conta (nick, senha, clã e avatar) e entrar;
@@ -41,6 +43,7 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
   - o desafio aparece numa aba privada com **Aceitar** e **Recusar**; ao aceitar, os dois vão direto para a arena;
   - perfil com nível, XP, vitórias/derrotas e ranking dos carecas.
 - **Arena**:
+  - no PC, a arena ocupa a tela toda: os jogadores e o relógio ficam numa coluna à esquerda, as fases na vertical ao lado do campo, e o menu do site some durante o duelo (botões **⛶ Tela cheia** e **🏠 Ir ao site** na coluna dos jogadores);
   - placar com nível, cartas na mão, barra de LP e relógio da ação (60 s);
   - campo com zonas de monstro, magia/armadilha, deck e cemitério;
   - barra de fases (DRAW, STBY, MP1, BP, MP2, END);
@@ -106,7 +109,7 @@ Tópicos (todos começam com `rpgdazoeira/v1/`):
 | `contas/<nick>` e `perfis/<nick>` | conta (só o hash da senha) e perfil público |
 | `duelo/<id>/estado` e `duelo/<id>/sinal` | o duelo em si e os "estou aqui"/chat do duelo |
 
-**O duelo:** quem desafiou cria a partida (embaralha com uma semente e sorteia quem começa). Só age quem está na vez (as armadilhas são automáticas, então o oponente nunca precisa decidir nada no turno do outro). Quem joga aplica a jogada no próprio navegador e publica o **estado inteiro** no tópico do duelo; o outro só substitui o dele. Como o estado fica retido no broker, quem recarregar a página volta para a partida.
+**O duelo:** quem desafiou cria a partida com o próprio deck e o deck que o oponente mandou junto com o "aceito" (o motor confere se os dois valem; se não, usa o padrão), embaralha com uma semente e sorteia quem começa. Só age quem está na vez (as armadilhas são automáticas, então o oponente nunca precisa decidir nada no turno do outro). Quem joga aplica a jogada no próprio navegador e publica o **estado inteiro** no tópico do duelo; o outro só substitui o dele. Como o estado fica retido no broker, quem recarregar a página volta para a partida.
 
 **Ausência:** cada navegador manda um sinal a cada 5 s. Se o oponente sumir por 20 s aparece um aviso; depois de 60 s dá para **reivindicar vitória por W.O.** Se o tempo da ação (60 s) acabar, o turno passa sozinho.
 
@@ -141,14 +144,17 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT013 | Força Careca | Armadilha | 3 | Oponente atacou → destrói os monstros dele em ataque |
 | ZOE-PT014 | Armadilha do Big | Armadilha | 3 | Oponente invocou monstro com 1000+ ATK → destrói |
 | ZOE-PT015 | Carecalla | Efeito · Nv 6 · 2100/1600 | 3 | Entra de penetra se só o oponente tiver monstro |
+| ZOE-PT016 | Gigante de Pedra Careca | Monstro Normal · Nv 3 · 1300/2000 | – | Muralha de defesa sem tributo |
+| ZOE-PT017 | Carecelta | Monstro Normal · Nv 4 · 1400/1200 | – | Elfo careca espadachim |
 
-Total: **40 cartas** (22 monstros, 12 magias, 6 armadilhas). Com 15 cartas diferentes e no máximo 3 cópias, 10 cartas ficaram com 3 cópias e 5 com 2 (Careca Cast Surpresa, Adm do PT, Bust do Big, Vapo! e Carecas da Luz). A Feiticeira Careca original falava de "Mago Negro"; aqui ela conta o **Grande Mestre**, que é o "Mago Negro" do deck.
+A coluna "Cópias" é do **deck padrão**. O Gigante de Pedra Careca e a Carecelta ficam fora dele e entram nos decks personalizados. Deck padrão: **40 cartas** (22 monstros, 12 magias, 6 armadilhas). Com 15 cartas diferentes e no máximo 3 cópias, 10 cartas ficaram com 3 cópias e 5 com 2 (Careca Cast Surpresa, Adm do PT, Bust do Big, Vapo! e Carecas da Luz). A Feiticeira Careca original falava de "Mago Negro"; aqui ela conta o **Grande Mestre**, que é o "Mago Negro" do deck.
 
 ---
 
 ## Regras e automações
 
-- 8000 LP, 5 cartas na mão, quem começa não compra no 1º turno e ninguém ataca no 1º turno do duelo.
+- 8000 LP e 5 cartas na mão. Todo turno começa comprando 1 carta, **inclusive o primeiro** (quem começa fica com 6). Ninguém ataca no 1º turno do duelo.
+- Deck de 40 a 60 cartas, até 3 cópias de cada.
 - 1 Invocação-Normal (ou baixar 1 monstro) por turno. Nível 5–6 pede 1 tributo; Nível 7+ pede 2.
 - Mão com mais de 6 cartas na Fase Final: descarta o excesso.
 - **Automático:**
@@ -181,11 +187,13 @@ Total: **40 cartas** (22 monstros, 12 magias, 6 armadilhas). Com 15 cartas difer
 │   ├── salao.js          # Salão: presença, chat, desafios, perfil e ranking
 │   ├── conta.js          # Cadastro, login e estatísticas
 │   ├── rede.js           # Conexão MQTT (ou rede local entre abas)
-│   ├── catalogo.js       # Catálogo, modal, leque e mesa do deck
+│   ├── catalogo.js       # Catálogo, modal, leque e mesa do deck padrão
+│   ├── deck.js           # Deck do jogador: guardar, validar, usar nos duelos
+│   ├── editor-deck.js    # Tela "Meu deck"
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
-├── data/cartas.json      # As 15 cartas (texto, stats, cópias, efeito)
+├── data/cartas.json      # As 17 cartas (texto, stats, cópias no deck padrão, efeito)
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```
@@ -203,7 +211,7 @@ O **motor** é independente da tela: dá para rodar partidas inteiras no Node (f
    - armadilhas: `verificarArmadilhas()` (o gatilho e o que acontece);
    - efeitos ao invocar: `aposInvocar()`.
    Depois dê uma frase de zoeira para ela em `FRASES` (`js/arena.js`) e ensine o bot em `js/bot.js`, se quiser.
-4. Com mais cartas dá para ter mais decks: `montarDeck()` em `js/motor.js` é o ponto de partida.
+4. Em `"copias"`, coloque quantas cópias entram no deck padrão (0 = só nos decks personalizados).
 
 ---
 

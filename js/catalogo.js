@@ -129,7 +129,7 @@ function criarItemCatalogo(c) {
   botao.addEventListener("click", () => abrirDetalhes(c.id, estado.resultado));
 
   const info = el("div", "item-catalogo__info");
-  info.append(el("span", "", `${c.codigo} · ${c.copias}x no deck`));
+  info.append(el("span", "", c.copias ? `${c.codigo} · ${c.copias}x no deck padrão` : `${c.codigo} · carta extra`));
   const selo = el("span", "selo-raridade", c.raridade);
   selo.dataset.raridade = chaveRaridade(c);
   info.append(selo);
@@ -206,7 +206,7 @@ function preencherDetalhes() {
     linha("Tributos", t ? `${t} monstro${t > 1 ? "s" : ""}` : "Nenhum");
   }
   linha("Raridade", c.raridade);
-  linha("No deck", `${c.copias} cópia${c.copias > 1 ? "s" : ""}`);
+  linha("Deck padrão", c.copias ? `${c.copias} cópia${c.copias > 1 ? "s" : ""}` : "Não está (use no seu deck)");
 
   document.querySelector("#detalhe-texto").textContent = c.texto;
   document.querySelector("#detalhe-como").textContent = c.comoFunciona;
@@ -253,7 +253,7 @@ function montarDeck() {
     `${total} cartas: ` + porGrupo.map(([nome, n]) => `${n} ${nome.toLowerCase()}`).join(", ") + ".";
 
   for (const [nome, filtro] of grupos) {
-    const cartas = estado.cartas.filter(filtro);
+    const cartas = estado.cartas.filter((c) => c.copias > 0 && filtro(c));
     const qtd = cartas.reduce((t, c) => t + c.copias, 0);
     const grupo = el("section", "grupo-deck");
     grupo.append(el("h3", "", `${nome} (${qtd})`));

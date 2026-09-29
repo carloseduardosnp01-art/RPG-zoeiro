@@ -25,6 +25,9 @@
 
 export const PL_INICIAL = 8000;
 export const MAO_INICIAL = 5;
+export const DECK_MIN = 40;
+export const DECK_MAX = 60;
+export const MAX_COPIAS = 3;
 export const LIMITE_MAO = 6;
 export const ZONAS = 5;
 export const TEMPO_ACAO = 60; // segundos para cada ação
@@ -41,13 +44,27 @@ export function cartaPorId(id) {
   return CARTAS[id];
 }
 
-// Lista de ids do deck (cada carta repetida pelo número de cópias)
+// Deck padrão (Deck Careca Supremo): cada carta repetida pelo número de cópias
 export function montarDeck() {
   const deck = [];
   for (const c of Object.values(CARTAS)) {
     for (let i = 0; i < c.copias; i++) deck.push(c.id);
   }
   return deck;
+}
+
+// Explica por que um deck (lista de ids) não vale, ou devolve null se estiver ok
+export function problemaDoDeck(lista) {
+  if (!Array.isArray(lista)) return "Deck inválido.";
+  if (lista.length < DECK_MIN) return `O deck precisa ter pelo menos ${DECK_MIN} cartas.`;
+  if (lista.length > DECK_MAX) return `O deck pode ter no máximo ${DECK_MAX} cartas.`;
+  const contagem = {};
+  for (const id of lista) {
+    if (!CARTAS[id]) return "O deck tem uma carta que não existe.";
+    contagem[id] = (contagem[id] || 0) + 1;
+    if (contagem[id] > MAX_COPIAS) return `No máximo ${MAX_COPIAS} cópias de "${CARTAS[id].nome}".`;
+  }
+  return null;
 }
 
 export class ErroJogada extends Error {}
@@ -74,7 +91,8 @@ function embaralhar(lista, sorteio) {
   return lista;
 }
 
-// jogadores: [{ chave, nick, tag, avatar, nivel }, {...}]
+// jogadores: [{ chave, nick, tag, avatar, nivel, deck? }, {...}]
+// deck: lista de ids das cartas; se faltar ou não valer, usa o deck padrão
 export function novoDuelo({ id, jogadores, semente = Date.now() }) {
   const sorteio = criarSorteio(semente);
   const estado = {
@@ -93,9 +111,9 @@ export function novoDuelo({ id, jogadores, semente = Date.now() }) {
     historico: [],    // últimos eventos, para o log
   };
 
-  const deckBase = montarDeck();
   jogadores.forEach((info, j) => {
     const prefixo = j === 0 ? "a" : "b";
+    const deckBase = info.deck && !problemaDoDeck(info.deck) ? info.deck : montarDeck();
     const deck = deckBase.map((idCarta, k) => {
       const iid = prefixo + k;
       estado.cartas[iid] = idCarta;
@@ -726,8 +744,8 @@ function iniciarTurno(estado, ev) {
   const j = estado.vez;
   ev.push({ t: "turno", j, turno: estado.turno });
   estado.fase = "compra";
-  // Quem começa o duelo não compra no primeiro turno
-  if (estado.turno > 1 && !comprar(estado, j, 1, ev)) return;
+  // Todo turno começa com uma compra, inclusive o primeiro do duelo
+  if (!comprar(estado, j, 1, ev)) return;
   estado.fase = "principal1";
   ev.push({ t: "fase", j, fase: "principal1" });
 }

@@ -7,6 +7,8 @@
 import { registrarCartas } from "./motor.js";
 import { SVG_CARECA } from "./cartas-ui.js";
 import { iniciarCatalogo } from "./catalogo.js";
+import { iniciarEditorDeck } from "./editor-deck.js";
+import { deckAtual } from "./deck.js";
 import { iniciarSalao, ativarSalao } from "./salao.js";
 import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js";
 import { criarSessaoBot } from "./sessao.js";
@@ -34,6 +36,7 @@ async function iniciar() {
   registrarCartas(cartas);
   iniciarCatalogo(cartas);
   iniciarSalao({ cartas });
+  iniciarEditorDeck(cartas);
   ligarBotoes();
   addEventListener("hashchange", mostrarTela);
   document.addEventListener("arena-mudou", atualizarFaixa);
@@ -65,6 +68,8 @@ function atualizarFaixa() {
   const sessao = sessaoAtual();
   const emAndamento = arenaAtiva() && sessao && sessao.estado.vencedor === null;
   document.querySelector("#faixa-duelo").hidden = !(emAndamento && !naArena);
+  // Durante o duelo o menu do site some no PC, para a arena ocupar a tela toda
+  document.body.classList.toggle("em-duelo", naArena && arenaAtiva());
 }
 
 function iniciarTreino() {
@@ -77,7 +82,7 @@ function iniciarTreino() {
   const u = conta.usuarioAtual();
   const perfil = u ? conta.cartaoPublico(u) : null;
   const treino = () => {
-    abrirArena(criarSessaoBot(perfil), {
+    abrirArena(criarSessaoBot(perfil, deckAtual()), {
       aoSair: () => (location.hash = "#inicio"),
       revanche: treino,
     });

@@ -15,6 +15,7 @@
 import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js";
 import * as conta from "./conta.js";
 import { novoDuelo } from "./motor.js";
+import { deckAtual, ehDeckPadrao } from "./deck.js";
 import { criarSessaoOnline, topicosDuelo } from "./sessao.js";
 import { abrirArena, arenaAtiva, fecharArena } from "./arena.js";
 import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js";
@@ -68,6 +69,7 @@ export function iniciarSalao({ cartas }) {
   });
 
   conta.aoMudarUsuario(atualizarUsuario);
+  document.addEventListener("deck-mudou", desenharPerfil);
   setInterval(() => desenharOnline(), 10000);
 
   const usuario = conta.restaurarSessao();
@@ -106,6 +108,14 @@ async function atualizarUsuario(usuario) {
   desenharBotaoConta(usuario);
   $("#painel-login").hidden = Boolean(usuario);
   $("#painel-salao").hidden = !usuario;
+
+  // Mesmo usuário (perfil atualizado: XP, deck...): só redesenha e avisa a presença
+  if (usuario && s.chaveAtual === usuario.chave && s.cancelarUsuario.length) {
+    desenharPerfil();
+    publicarPresenca();
+    return;
+  }
+  s.chaveAtual = usuario ? usuario.chave : null;
   s.cancelarUsuario.forEach((c) => c());
   s.cancelarUsuario = [];
   clearInterval(s.batimento);
@@ -308,7 +318,14 @@ function desenharPerfil() {
     conta.sair();
   });
   botoes.append(treino, sair);
-  area.append(topo, barra, stats, botoes);
+
+  const lista = deckAtual();
+  const deck = el("p", "perfil__deck", `🃏 Seu deck: ${lista.length} cartas (${ehDeckPadrao(lista) ? "padrão" : "personalizado"}) · `);
+  const editar = el("a", "", "editar");
+  editar.href = "#deck";
+  deck.append(editar);
+
+  area.append(topo, barra, stats, deck, botoes);
 }
 
 function receberPerfil(perfil, topico) {
@@ -603,7 +620,7 @@ function receberDM(dados) {
       const d = s.desafios.get(dados.duelo);
       if (!d || !d.meu || d.estado !== "pendente") return;
       mudarDesafio(d, "aceito");
-      comecarComoAnfitriao(d, dados.de);
+      comecarComoAnfitriao(d, dados.de, dados.deck);
       break;
     }
     case "recusa":
@@ -712,7 +729,7 @@ function aceitarDesafio(d) {
   }
   mudarDesafio(d, "aceito");
   mudarStatusDuelo("aguardando");
-  enviarDM(d.com.chave, { tipo: "aceite", duelo: d.id });
+  enviarDM(d.com.chave, { tipo: "aceite", duelo: d.id, deck: deckAtual() });
 
   // O desafiante cria o duelo e publica o estado inicial
   let cancelar = () => {};
@@ -729,10 +746,11 @@ function aceitarDesafio(d) {
   });
 }
 
-function comecarComoAnfitriao(d, oponente) {
+// Quem desafiou cria o duelo: cada um joga com o próprio deck (o motor confere se vale)
+function comecarComoAnfitriao(d, oponente, deckOponente) {
   const { estado, eventos } = novoDuelo({
     id: d.id,
-    jogadores: [conta.cartaoPublico(), oponente],
+    jogadores: [{ ...conta.cartaoPublico(), deck: deckAtual() }, { ...oponente, deck: Array.isArray(deckOponente) ? deckOponente : undefined }],
     semente: crypto.getRandomValues(new Uint32Array(1))[0],
   });
   publicar(topicosDuelo(d.id).estado, { seq: estado.seq, estado, eventos, autor: SID }, { reter: true });

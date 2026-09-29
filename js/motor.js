@@ -400,13 +400,7 @@ function aposInvocar(estado, j, iid, modo, ev) {
   const c = carta(estado, iid);
 
   if (modo === "tributo" && c.efeito === "tributo-destruir-monstro") {
-    const candidatos = monstrosEmCampo(estado);
-    if (candidatos.length) {
-      estado.pendente = {
-        tipo: "alvo", efeito: c.efeito, jogador: j, origem: iid, candidatos, min: 1, max: 1,
-        titulo: `${c.nome}: escolha 1 monstro para destruir`,
-      };
-    }
+    pedirAlvoMonstro(estado, j, iid, `${c.nome}: escolha 1 monstro para destruir`);
   } else if (modo === "tributo" && c.efeito === "tributo-destruir-magias") {
     const candidatos = magiasEmCampo(estado);
     if (candidatos.length) {
@@ -415,15 +409,74 @@ function aposInvocar(estado, j, iid, modo, ev) {
         titulo: `${c.nome}: escolha até 2 Magias/Armadilhas para destruir`,
       };
     }
-  } else if (modo === "flip" && c.efeito === "flip-destruir") {
-    const candidatos = monstrosEmCampo(estado);
-    if (candidatos.length) {
-      estado.pendente = {
-        tipo: "alvo", efeito: c.efeito, jogador: j, origem: iid, candidatos, min: 1, max: 1,
-        titulo: `${c.nome} (VIRE): escolha 1 monstro para destruir`,
-      };
+  } else if (modo === "flip") {
+    efeitoVire(estado, j, iid, true, ev);
+  }
+}
+
+// "Destrua 1 monstro" (Careca do PT, Careca Cast Surpresa): só pergunta se o oponente tiver
+// monstro, e nunca obriga a destruir um monstro seu (dá para não escolher nada).
+function pedirAlvoMonstro(estado, j, origem, titulo) {
+  if (!monstrosEmCampo(estado, oponente(j)).length) return;
+  estado.pendente = {
+    tipo: "alvo", efeito: carta(estado, origem).efeito, jogador: j, origem,
+    candidatos: monstrosEmCampo(estado), min: 0, max: 1, titulo,
+  };
+}
+
+// Efeitos VIRE. manual = o dono virou (Invocação-Flip) e escolhe;
+// senão a carta foi virada por um ataque no turno do oponente e tudo é automático.
+function efeitoVire(estado, dono, iid, manual, ev) {
+  const c = carta(estado, iid);
+  const o = oponente(dono);
+  switch (c.efeito) {
+    case "flip-destruir": {
+      if (manual) {
+        pedirAlvoMonstro(estado, dono, iid, `${c.nome} (VIRE): escolha 1 monstro para destruir`);
+        break;
+      }
+      const alvo = maisForte(estado, monstrosEmCampo(estado, o));
+      if (alvo) {
+        ev.push({ t: "efeito", j: dono, iid });
+        destruir(estado, alvo, ev, "efeito");
+      }
+      break;
+    }
+    case "flip-comprar":
+      ev.push({ t: "efeito", j: dono, iid });
+      if (estado.jogadores[dono].deck.length) comprar(estado, dono, 1, ev);
+      break;
+    case "flip-descartar": {
+      const mao = estado.jogadores[o].mao;
+      if (!mao.length) break;
+      if (manual) {
+        estado.pendente = {
+          tipo: "alvo", efeito: c.efeito, jogador: dono, origem: iid, candidatos: [...mao], min: 1, max: 1,
+          titulo: `${c.nome} (VIRE): escolha 1 carta da mão do oponente para descartar`,
+        };
+        break;
+      }
+      ev.push({ t: "efeito", j: dono, iid });
+      descartar(estado, o, mao[Math.floor(sorteioDoEstado(estado)() * mao.length)], ev);
+      break;
     }
   }
+}
+
+// Sorteio que dá o mesmo resultado nos dois navegadores (depende só do estado)
+function sorteioDoEstado(estado) {
+  let h = 2166136261;
+  for (const ch of `${estado.id}:${estado.seq}:${estado.turno}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return criarSorteio(h);
+}
+
+function descartar(estado, j, iid, ev) {
+  const p = estado.jogadores[j];
+  const i = p.mao.indexOf(iid);
+  if (i < 0) return;
+  p.mao.splice(i, 1);
+  p.cemiterio.push(iid);
+  ev.push({ t: "descarte", j, iid });
 }
 
 
@@ -627,7 +680,7 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
 
   const atk = atkAtual(estado, atacante);
   if (!defensor) {
-    dano(estado, oponente(j), atk, ev);
+    danoBatalha(estado, oponente(j), atk, ev);
     return null;
   }
 
@@ -643,10 +696,10 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
     const atkD = atkAtual(estado, defensor);
     if (atk > atkD) {
       destruir(estado, defensor, ev, "batalha");
-      dano(estado, oponente(j), atk - atkD, ev);
+      danoBatalha(estado, oponente(j), atk - atkD, ev);
     } else if (atk < atkD) {
       destruir(estado, atacante, ev, "batalha");
-      dano(estado, j, atkD - atk, ev);
+      danoBatalha(estado, j, atkD - atk, ev);
     } else if (atk > 0) {
       destruir(estado, atacante, ev, "batalha");
       destruir(estado, defensor, ev, "batalha");
@@ -654,7 +707,7 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
   } else {
     const defD = defAtual(estado, defensor);
     if (atk > defD) destruir(estado, defensor, ev, "batalha");
-    else if (atk < defD) dano(estado, j, defD - atk, ev);
+    else if (atk < defD) danoBatalha(estado, j, defD - atk, ev);
   }
 
   // Miro Animal (saideira): destruiu um monstro do oponente em batalha e continua em campo
@@ -663,12 +716,8 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
     dano(estado, oponente(j), 500, ev);
   }
 
-  // Monstro FLIP virado pelo ataque: o efeito ativa sozinho (alvo automático)
-  if (virou && estado.vencedor === null && carta(estado, defensor).efeito === "flip-destruir") {
-    ev.push({ t: "efeito", j: oponente(j), iid: defensor });
-    const alvoFlip = maisForte(estado, monstrosEmCampo(estado, j));
-    if (alvoFlip) destruir(estado, alvoFlip, ev, "efeito");
-  }
+  // Monstro FLIP virado pelo ataque: o efeito ativa sozinho (escolhas automáticas)
+  if (virou && estado.vencedor === null) efeitoVire(estado, oponente(j), defensor, false, ev);
   return null;
 }
 
@@ -678,6 +727,15 @@ function maisForte(estado, iids) {
     if (!melhor || atkAtual(estado, x) > atkAtual(estado, melhor)) melhor = x;
   }
   return melhor;
+}
+
+// Dano de batalha: o Karecoh Alado destruído neste turno protege o dono
+function danoBatalha(estado, j, valor, ev) {
+  if (valor > 0 && estado.jogadores[j].semDanoBatalha === estado.turno) {
+    ev.push({ t: "protegido", j, valor });
+    return;
+  }
+  dano(estado, j, valor, ev);
 }
 
 function dano(estado, j, valor, ev) {
@@ -692,9 +750,15 @@ function dano(estado, j, valor, ev) {
 /* ---------- Destruição e cemitério ---------- */
 
 function destruir(estado, iid, ev, causa) {
-  if (!noCampo(estado, iid)) return;
-  ev.push({ t: "destruida", iid, j: localizar(estado, iid).j, causa });
+  const loc = localizar(estado, iid);
+  if (!loc || (loc.zona !== "monstros" && loc.zona !== "magias")) return;
+  ev.push({ t: "destruida", iid, j: loc.j, causa });
   removerDoCampo(estado, iid, ev, causa);
+  // Karecoh Alado: destruído no campo -> o dono não sofre dano de batalha pelo resto do turno
+  if (loc.zona === "monstros" && carta(estado, iid).efeito === "karecoh") {
+    estado.jogadores[loc.j].semDanoBatalha = estado.turno;
+    ev.push({ t: "efeito", j: loc.j, iid });
+  }
 }
 
 // Tira a carta do campo e manda para o Cemitério do dono (equipamentos presos a ela vão junto)
@@ -849,7 +913,12 @@ function resolverEscolha(estado, j, alvos, ev) {
     return null;
   }
 
+  if (!alvos.length) return null; // escolheu não fazer nada
   ev.push({ t: "efeito", j, iid: pend.origem, alvos });
+  if (pend.efeito === "flip-descartar") {
+    for (const alvo of alvos) descartar(estado, oponente(j), alvo, ev);
+    return null;
+  }
   for (const alvo of alvos) destruir(estado, alvo, ev, "efeito");
   return null;
 }
@@ -858,6 +927,7 @@ function resolverEscolha(estado, j, alvos, ev) {
 export function escolhaAutomatica(estado, pend) {
   const j = pend.jogador;
   if (pend.tipo === "descarte") return pend.candidatos.slice(0, pend.min);
+  if (pend.efeito === "flip-descartar") return pend.candidatos.slice(0, 1);
   const doOponente = pend.candidatos.filter((x) => localizar(estado, x).j !== j);
   if (pend.efeito === "tributo-destruir-magias") return doOponente.slice(0, pend.max);
   const alvo = maisForte(estado, doOponente) || pend.candidatos[0];

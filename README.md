@@ -131,9 +131,9 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 |---|---|---|---|---|
 | ZOE-PT001 | Careca Feijão | Monstro Normal · Nv 3 · 1750/0 | 3 | Bate forte e é o tributo perfeito |
 | ZOE-PT002 | Grande Mestre | Monstro Normal · Nv 7 · 2500/2100 | 3 | O chefão (2 tributos, ou via Invocador) |
-| ZOE-PT003 | Careca Cast Surpresa | Efeito/Flip · Nv 2 · 450/600 | 2 | VIRE: destrói 1 monstro |
+| ZOE-PT003 | Careca Cast Surpresa | Efeito/Virar · Nv 2 · 450/600 | 2 | VIRE: pode destruir 1 monstro |
 | ZOE-PT004 | Miro Animal | Efeito · Nv 4 · 2000/1500 | 3 | Saideira: destruiu monstro em batalha → +500 de dano **(efeito inventado: a carta original está sem texto)** |
-| ZOE-PT005 | Careca do PT | Efeito · Nv 5 · 2400/1000 | 3 | Tributo: destrói 1 monstro |
+| ZOE-PT005 | Careca do PT | Efeito · Nv 5 · 2400/1000 | 3 | Tributo: pode destruir 1 monstro |
 | ZOE-PT006 | Adm do PT | Efeito · Nv 6 · 2400/1000 | 2 | Tributo: destrói até 2 Magias/Armadilhas |
 | ZOE-PT007 | Feiticeira Careca | Efeito · Nv 6 · 2000/1700 | 3 | +300 ATK por Grande Mestre nos cemitérios |
 | ZOE-PT008 | Carecas da Luz Reveladora | Magia | 2 | Oponente não ataca por 3 turnos dele |
@@ -146,8 +146,11 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT015 | Carecalla | Efeito · Nv 6 · 2100/1600 | 3 | Entra de penetra se só o oponente tiver monstro |
 | ZOE-PT016 | Gigante de Pedra Careca | Monstro Normal · Nv 3 · 1300/2000 | – | Muralha de defesa sem tributo |
 | ZOE-PT017 | Carecelta | Monstro Normal · Nv 4 · 1400/1200 | – | Elfo careca espadachim |
+| ZOE-PT018 | Midasgel | Efeito/Virar · Nv 2 · 1000/400 | – | VIRE: compra 1 carta |
+| ZOE-PT019 | Midasmon | Efeito/Virar · Nv 2 · 1000/400 | – | VIRE: o oponente descarta 1 carta (você escolhe no seu turno; sorteada no turno dele) |
+| ZOE-PT020 | Karecoh Alado | Efeito · Nv 4 · 300/200 | – | Destruído no campo → sem dano de batalha pelo resto do turno |
 
-A coluna "Cópias" é do **deck padrão**. O Gigante de Pedra Careca e a Carecelta ficam fora dele e entram nos decks personalizados. Deck padrão: **40 cartas** (22 monstros, 12 magias, 6 armadilhas). Com 15 cartas diferentes e no máximo 3 cópias, 10 cartas ficaram com 3 cópias e 5 com 2 (Careca Cast Surpresa, Adm do PT, Bust do Big, Vapo! e Carecas da Luz). A Feiticeira Careca original falava de "Mago Negro"; aqui ela conta o **Grande Mestre**, que é o "Mago Negro" do deck.
+A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra Careca, Carecelta, Midasgel, Midasmon e Karecoh Alado) ficam fora dele e entram nos decks personalizados. Deck padrão: **40 cartas** (22 monstros, 12 magias, 6 armadilhas). Com 15 cartas diferentes e no máximo 3 cópias, 10 cartas ficaram com 3 cópias e 5 com 2 (Careca Cast Surpresa, Adm do PT, Bust do Big, Vapo! e Carecas da Luz). A Feiticeira Careca original falava de "Mago Negro"; aqui ela conta o **Grande Mestre**, que é o "Mago Negro" do deck.
 
 ---
 
@@ -163,9 +166,12 @@ A coluna "Cópias" é do **deck padrão**. O Gigante de Pedra Careca e a Carecel
   - **Careca Cast Surpresa** virado por um ataque ativa sozinho e destrói o monstro mais forte do oponente.
   - **Carecas da Luz** conta os turnos sozinha (o número aparece na carta).
   - **Miro Animal** cobra a saideira (+500 de dano) sozinho quando destrói um monstro em batalha.
+  - **Midasgel** compra 1 carta sozinho quando é virado. **Midasmon** virado por um ataque faz o oponente descartar 1 carta sorteada.
+  - **Karecoh Alado** destruído no campo deixa o dono sem dano de batalha até o fim do turno (aparece uma 🪽 ao lado do nome).
+  - **Careca do PT** e **Careca Cast Surpresa** só perguntam o alvo se o oponente tiver monstro, e dá para não escolher nada: você nunca é obrigado a destruir um monstro seu.
   - **Bust do Big** vai para o cemitério junto com o monstro equipado.
   - Tempo da ação esgotado: o jogo resolve a escolha pendente e passa o turno.
-- **Você escolhe:** tributos, alvos das magias, alvo do Careca do PT/Adm do PT/Cast Surpresa (quando você mesmo vira), alvo dos ataques e descarte.
+- **Você escolhe:** tributos, alvos das magias, alvo do Careca do PT/Adm do PT/Cast Surpresa (quando você mesmo vira), a carta que o Midasmon descarta (quando você mesmo vira), alvo dos ataques e descarte.
 
 ---
 
@@ -193,7 +199,7 @@ A coluna "Cópias" é do **deck padrão**. O Gigante de Pedra Careca e a Carecel
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
-├── data/cartas.json      # As 17 cartas (texto, stats, cópias no deck padrão, efeito)
+├── data/cartas.json      # As 20 cartas (texto, stats, cópias no deck padrão, efeito)
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```

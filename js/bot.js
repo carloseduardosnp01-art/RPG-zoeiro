@@ -44,7 +44,7 @@ function forca(estado, j, iid) {
   if (!loc || loc.zona !== "monstros") return 0;
   if (!loc.obj.face && loc.j !== j) return VALOR_VIRADO;
   const c = carta(estado, iid);
-  if (c.efeito === "flip-destruir" && !loc.obj.face) return 900;
+  if (c.efeito && c.efeito.startsWith("flip-") && !loc.obj.face) return 900;
   return loc.obj.pos === "atk" || loc.obj.face ? atkAtual(estado, iid) : c.def;
 }
 
@@ -118,10 +118,15 @@ function* jogadasPrincipais(estado, j) {
     if (melhor) yield melhor;
   }
 
-  // 7. Virar o Careca Cast Surpresa se houver alvo do oponente
-  if (primeira && deles.length) {
+  // 7. Virar os monstros VIRE quando o efeito vale a pena
+  if (primeira) {
+    const maoDeles = estado.jogadores[o].mao.length;
     for (const [slot, m] of p.monstros.entries()) {
-      if (m && !m.face && carta(estado, m.iid).efeito === "flip-destruir") yield { tipo: "virar", slot };
+      if (!m || m.face) continue;
+      const ef = carta(estado, m.iid).efeito;
+      if ((ef === "flip-destruir" && deles.length) || (ef === "flip-descartar" && maoDeles) || ef === "flip-comprar") {
+        yield { tipo: "virar", slot };
+      }
     }
   }
 
@@ -180,9 +185,9 @@ function melhorInvocacao(estado, j, mao) {
     if (c.efeito === "tributo-destruir-magias") {
       valor += 700 * Math.min(2, estado.jogadores[o].magias.filter(Boolean).length);
     }
-    if (c.efeito === "flip-destruir") {
+    if (c.efeito && c.efeito.startsWith("flip-")) {
       modo = "baixar";
-      valor = deles.length ? 1100 : 700;
+      valor = c.efeito === "flip-destruir" && deles.length ? 1100 : 800;
     } else if (n === 0 && c.atk < maiorDeles) {
       // não vale expor um monstro mais fraco: baixa em defesa
       modo = "baixar";
@@ -261,6 +266,7 @@ function escolherAtaque(estado, j) {
 const VALOR_NA_MAO = {
   vapo: 9, "forca-careca": 8, "tributo-destruir-monstro": 7, soco: 6, "tributo-destruir-magias": 6,
   "armadilha-big": 6, luz: 6, penetra: 5, saideira: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
+  "flip-descartar": 5, "flip-comprar": 4, karecoh: 4,
 };
 
 function escolherAlvos(estado, j, pend) {
@@ -275,6 +281,11 @@ function escolherAlvos(estado, j, pend) {
   }
 
   const doOponente = pend.candidatos.filter((x) => localizar(estado, x).j !== j);
+  // Midasmon: descarta a melhor carta da mão do oponente
+  if (pend.efeito === "flip-descartar") {
+    const valor = (iid) => VALOR_NA_MAO[carta(estado, iid).efeito] ?? (carta(estado, iid).atk || 0) / 500;
+    return [[...pend.candidatos].sort((a, b) => valor(b) - valor(a))[0]];
+  }
   if (pend.efeito === "tributo-destruir-magias") {
     const ordenadas = [...doOponente].sort((a, b) => Number(localizar(estado, a).obj.face) - Number(localizar(estado, b).obj.face));
     return ordenadas.slice(0, pend.max);

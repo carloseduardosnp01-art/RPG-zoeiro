@@ -43,6 +43,9 @@ const SUBTIPOS_MAGIA = {
   continua: { nome: "Contínua", icone: "∞" },
 };
 
+// Monstros com efeito VIRE (flip)
+const ehVire = (c) => Boolean(c.efeito && c.efeito.startsWith("flip-"));
+
 export function moldura(c) {
   if (c.categoria === "monstro") return c.subtipo === "normal" ? "normal" : "efeito";
   return c.categoria;
@@ -55,14 +58,14 @@ export function nomeCategoria(c) {
 }
 
 export function nomeSubtipo(c) {
-  if (c.categoria === "monstro") return c.efeito === "flip-destruir" ? "Flip / Efeito" : c.subtipo === "normal" ? "Normal" : "Efeito";
+  if (c.categoria === "monstro") return ehVire(c) ? "Virar / Efeito" : c.subtipo === "normal" ? "Normal" : "Efeito";
   return SUBTIPOS_MAGIA[c.subtipo]?.nome || "Normal";
 }
 
 export function linhaTipo(c) {
   if (c.categoria !== "monstro") return "";
   if (c.subtipo === "normal") return `[${c.tipo}]`;
-  if (c.efeito === "flip-destruir") return `[${c.tipo} / Flip / Efeito]`;
+  if (ehVire(c)) return `[${c.tipo} / Virar / Efeito]`;
   return `[${c.tipo} / Efeito]`;
 }
 

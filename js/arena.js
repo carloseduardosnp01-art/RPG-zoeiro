@@ -48,6 +48,9 @@ const FRASES = {
   "flip-destruir": "SURPRESAAA!",
   penetra: "CHEGOU DE PENETRA!",
   saideira: "MAIS UMA, GARÇOM!",
+  "flip-comprar": "COMPRA UMA!",
+  "flip-descartar": "DESCARTA ESSA!",
+  karecoh: "NEM ENCOSTA!",
 };
 
 const PROVOCACOES = ["😂 Chora não!", "🧑‍🦲 Careca demais!", "💨 Vapo!", "🤡 Tá com medo?", "🔥 Joga logo!", "👋 GG"];
@@ -316,6 +319,11 @@ function infoJogador(estado, j, lado) {
   const nome = el("div", "jogador-info__nome");
   if (p.tag) nome.append(el("span", "tag-cla", `[${p.tag}] `));
   nome.append(p.nick);
+  if (p.semDanoBatalha === estado.turno) {
+    const asa = el("span", "protecao", " 🪽");
+    asa.title = "Karecoh Alado: não sofre dano de batalha neste turno";
+    nome.append(asa);
+  }
   const barra = el("div", "barra-pl");
   barra.style.setProperty("--pct", `${Math.max(0, (p.pl / PL_INICIAL) * 100)}%`);
   barra.dataset.perigo = String(p.pl <= 2000);
@@ -573,6 +581,7 @@ function descreverEvento(estado, ev) {
     case "virada": return { texto: `${nome(ev.iid)} foi virado para cima.` };
     case "destruida": return { texto: `💥 ${nome(ev.iid)} foi destruído${ev.causa === "batalha" ? " em batalha" : ""}.`, classe: "log--destruida" };
     case "dano": return { texto: `${quem(ev.j)} perdeu ${ev.valor} LP (${ev.pl}).`, classe: "log--dano" };
+    case "protegido": return { texto: `🪽 ${ev.j === eu ? "Você não sofreu" : `${quem(ev.j)} não sofreu`} ${ev.valor} de dano de batalha (Karecoh Alado).`, classe: "log--armadilha" };
     case "posicao": return { texto: `${nome(ev.iid)} mudou para ${ev.pos === "atk" ? "Ataque" : "Defesa"}.`, classe: minha };
     case "descarte": return { texto: `${quem(ev.j)} descartou ${nome(ev.iid)}.`, classe: minha };
     case "expirou": return { texto: `${nome(ev.iid)} apagou a luz: acabaram os turnos.` };
@@ -739,7 +748,7 @@ function escolherCartas({ titulo, sub = "", candidatos, min, max, podeCancelar =
       b.setAttribute("aria-pressed", "false");
       b.setAttribute("aria-label", visivel ? c.nome : "Carta virada do oponente");
       b.append(visivel ? criarCarta(c, { atk: loc.zona === "monstros" ? atkAtual(estado, iid) : undefined }) : criarVerso());
-      const lado = loc.zona === "mao" ? "Na sua mão" : loc.j === eu ? "Seu campo" : "Campo do oponente";
+      const lado = loc.zona === "mao" ? (loc.j === eu ? "Na sua mão" : "Mão do oponente") : loc.j === eu ? "Seu campo" : "Campo do oponente";
       b.append(el("span", "escolha__lado", lado));
       b.addEventListener("click", () => {
         if (escolhidos.has(iid)) escolhidos.delete(iid);
@@ -888,6 +897,11 @@ async function tocarEventos(eventos, estadoNovo) {
         }
         break;
       }
+      case "protegido":
+        tocar("magia");
+        mostrarDano(ev.j, 0, null, "🪽 0");
+        await esperar(500);
+        break;
       case "dano":
         tocar("dano");
         mostrarDano(ev.j, ev.valor, ev.pl);
@@ -964,14 +978,17 @@ async function animarAtaque(ev) {
   atacante.classList.remove("atacando");
 }
 
-function mostrarDano(j, valor, pl) {
+// pl = null: não mexe na barra (ex.: dano evitado pelo Karecoh Alado)
+function mostrarDano(j, valor, pl, texto = `-${valor}`) {
   const info = refs.placar.querySelector(`.jogador-info[data-j="${j}"]`);
   if (!info) return;
   const barra = info.querySelector(".barra-pl");
-  barra.style.setProperty("--pct", `${Math.max(0, (pl / PL_INICIAL) * 100)}%`);
-  barra.dataset.perigo = String(pl <= 2000);
-  barra.querySelector(".barra-pl__valor").textContent = `${pl} LP`;
-  const numero = el("div", "numero-dano", `-${valor}`);
+  if (pl !== null) {
+    barra.style.setProperty("--pct", `${Math.max(0, (pl / PL_INICIAL) * 100)}%`);
+    barra.dataset.perigo = String(pl <= 2000);
+    barra.querySelector(".barra-pl__valor").textContent = `${pl} LP`;
+  }
+  const numero = el("div", "numero-dano" + (pl === null ? " numero-dano--protegido" : ""), texto);
   const r = barra.getBoundingClientRect();
   const base = raiz.getBoundingClientRect();
   numero.style.left = `${r.left - base.left + r.width / 2 - 30}px`;

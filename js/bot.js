@@ -74,7 +74,7 @@ function* jogadasPrincipais(estado, j) {
   const deles = monstrosEmCampo(estado, o);
   const primeira = estado.fase === "principal1";
 
-  // 1. Miro entra de penetra
+  // 1. Carecalla entra de penetra
   for (const { iid } of mao) {
     if (opcoes(iid).some((x) => x.id === "especial")) yield { tipo: "invocarEspecial", iid };
   }
@@ -260,7 +260,7 @@ function escolherAtaque(estado, j) {
 
 const VALOR_NA_MAO = {
   vapo: 9, "forca-careca": 8, "tributo-destruir-monstro": 7, soco: 6, "tributo-destruir-magias": 6,
-  "armadilha-big": 6, luz: 6, miro: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
+  "armadilha-big": 6, luz: 6, penetra: 5, saideira: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
 };
 
 function escolherAlvos(estado, j, pend) {

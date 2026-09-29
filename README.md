@@ -26,7 +26,7 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
 - **Início** com leque de cartas em destaque.
 - **Catálogo**: busca (sem diferenciar acentos), filtros por categoria, atributo e raridade, ordenação, paginação e modal com a carta completa, ficha, "como funciona no jogo" e frase da carta (com navegação Anterior/Próxima).
 - **Template próprio das cartas**, feito em HTML/CSS e usado em todo o site: moldura por tipo (Normal, Efeito, Magia, Armadilha), atributo com kanji, estrelas, selo de raridade (nome prateado, dourado ou arco-íris e brilho holográfico na arte), número de série e selo careca. A mesma carta escala de 50 px (campo no celular) até a carta grande do modal.
-- **Deck Careca Supremo**: mesa com as pilhas de cópias e o resumo (40 cartas: 21 monstros, 13 magias, 6 armadilhas).
+- **Deck Careca Supremo**: mesa com as pilhas de cópias e o resumo (40 cartas: 22 monstros, 12 magias, 6 armadilhas).
 - **Regras** em acordeão.
 - **Salão online** (igual ao chat do site de referência):
   - criar conta (nick, senha, clã e avatar) e entrar;
@@ -124,20 +124,21 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 |---|---|---|---|---|
 | ZOE-PT001 | Careca Feijão | Monstro Normal · Nv 3 · 1750/0 | 3 | Bate forte e é o tributo perfeito |
 | ZOE-PT002 | Grande Mestre | Monstro Normal · Nv 7 · 2500/2100 | 3 | O chefão (2 tributos, ou via Invocador) |
-| ZOE-PT003 | Careca Cast Surpresa | Efeito/Flip · Nv 2 · 450/600 | 3 | VIRE: destrói 1 monstro |
-| ZOE-PT004 | Miro Animal | Efeito · Nv 6 · 2000/1500 | 3 | Entra de penetra se só o oponente tiver monstro **(efeito inventado: a carta original estava sem texto)** |
+| ZOE-PT003 | Careca Cast Surpresa | Efeito/Flip · Nv 2 · 450/600 | 2 | VIRE: destrói 1 monstro |
+| ZOE-PT004 | Miro Animal | Efeito · Nv 4 · 2000/1500 | 3 | Saideira: destruiu monstro em batalha → +500 de dano **(efeito inventado: a carta original está sem texto)** |
 | ZOE-PT005 | Careca do PT | Efeito · Nv 5 · 2400/1000 | 3 | Tributo: destrói 1 monstro |
-| ZOE-PT006 | Adm do PT | Efeito · Nv 6 · 2400/1000 | 3 | Tributo: destrói até 2 Magias/Armadilhas |
+| ZOE-PT006 | Adm do PT | Efeito · Nv 6 · 2400/1000 | 2 | Tributo: destrói até 2 Magias/Armadilhas |
 | ZOE-PT007 | Feiticeira Careca | Efeito · Nv 6 · 2000/1700 | 3 | +300 ATK por Grande Mestre nos cemitérios |
 | ZOE-PT008 | Carecas da Luz Reveladora | Magia | 2 | Oponente não ataca por 3 turnos dele |
 | ZOE-PT009 | Vapo! | Magia | 2 | Destrói todos os monstros |
 | ZOE-PT010 | Soco do Big | Magia Rápida | 3 | Destrói 1 Magia/Armadilha |
-| ZOE-PT011 | Bust do Big | Magia de Equipamento | 3 | +700 ATK |
+| ZOE-PT011 | Bust do Big | Magia de Equipamento | 2 | +700 ATK |
 | ZOE-PT012 | Invocador | Magia | 3 | Invoca um Monstro Normal Nv 5+ da mão |
 | ZOE-PT013 | Força Careca | Armadilha | 3 | Oponente atacou → destrói os monstros dele em ataque |
 | ZOE-PT014 | Armadilha do Big | Armadilha | 3 | Oponente invocou monstro com 1000+ ATK → destrói |
+| ZOE-PT015 | Carecalla | Efeito · Nv 6 · 2100/1600 | 3 | Entra de penetra se só o oponente tiver monstro |
 
-Total: **40 cartas**. Com 14 cartas diferentes e no máximo 3 cópias, ficaram 12 cartas com 3 cópias e as duas mais fortes (Vapo! e Carecas da Luz) com 2. A Feiticeira Careca original falava de "Mago Negro"; aqui ela conta o **Grande Mestre**, que é o "Mago Negro" do deck.
+Total: **40 cartas** (22 monstros, 12 magias, 6 armadilhas). Com 15 cartas diferentes e no máximo 3 cópias, 10 cartas ficaram com 3 cópias e 5 com 2 (Careca Cast Surpresa, Adm do PT, Bust do Big, Vapo! e Carecas da Luz). A Feiticeira Careca original falava de "Mago Negro"; aqui ela conta o **Grande Mestre**, que é o "Mago Negro" do deck.
 
 ---
 
@@ -151,6 +152,7 @@ Total: **40 cartas**. Com 14 cartas diferentes e no máximo 3 cópias, ficaram 1
   - **Armadilhas** só podem ser baixadas; a partir do turno seguinte ativam sozinhas no primeiro momento em que a condição acontece (uma por gatilho, da esquerda para a direita).
   - **Careca Cast Surpresa** virado por um ataque ativa sozinho e destrói o monstro mais forte do oponente.
   - **Carecas da Luz** conta os turnos sozinha (o número aparece na carta).
+  - **Miro Animal** cobra a saideira (+500 de dano) sozinho quando destrói um monstro em batalha.
   - **Bust do Big** vai para o cemitério junto com o monstro equipado.
   - Tempo da ação esgotado: o jogo resolve a escolha pendente e passa o turno.
 - **Você escolhe:** tributos, alvos das magias, alvo do Careca do PT/Adm do PT/Cast Surpresa (quando você mesmo vira), alvo dos ataques e descarte.
@@ -179,7 +181,7 @@ Total: **40 cartas**. Com 14 cartas diferentes e no máximo 3 cópias, ficaram 1
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
-├── data/cartas.json      # As 14 cartas (texto, stats, cópias, efeito)
+├── data/cartas.json      # As 15 cartas (texto, stats, cópias, efeito)
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```

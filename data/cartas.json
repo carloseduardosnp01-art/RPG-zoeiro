@@ -53,7 +53,7 @@
     "comoFunciona": "Baixe ele virado para baixo. Se o oponente atacar e ele for virado, o efeito ativa sozinho e destrói o monstro mais forte do oponente. Se você mesmo virar (Invocação-Flip), você escolhe o alvo.",
     "frase": "Abriu a live do nada e ninguém saiu vivo.",
     "raridade": "Comum",
-    "copias": 3,
+    "copias": 2,
     "imagem": "img/cartas/careca-cast-surpresa.webp"
   },
   {
@@ -63,17 +63,36 @@
     "categoria": "monstro",
     "subtipo": "efeito",
     "atributo": "TERRA",
-    "nivel": 6,
+    "nivel": 4,
     "tipo": "Besta",
     "atk": 2000,
     "def": 1500,
-    "efeito": "miro",
-    "texto": "Se apenas o seu oponente controlar um monstro, você pode Invocar esta carta por Invocação-Especial (da sua mão). Ele chega no rolê sem ser convidado.",
-    "comoFunciona": "Quando o seu lado do campo está vazio e o oponente tem monstro, o Miro entra de graça, sem gastar a Invocação-Normal do turno. Ótimo para virar tributo logo em seguida.",
+    "efeito": "saideira",
+    "texto": "Se esta carta destruir um monstro do oponente em batalha: cause 500 de dano ao oponente.",
+    "comoFunciona": "Nível 4: entra sem tributo e já chega batendo com 2000 de ATK. Toda vez que vence uma batalha e destrói um monstro do oponente, ele pede a saideira e tira mais 500 LP do oponente, sozinho.",
     "frase": "Chegou sem ser chamado, sentou na mesa e pediu mais uma.",
     "raridade": "Super Rara",
     "copias": 3,
     "imagem": "img/cartas/miro-animal.webp"
+  },
+  {
+    "id": "carecalla",
+    "codigo": "ZOE-PT015",
+    "nome": "Carecalla",
+    "categoria": "monstro",
+    "subtipo": "efeito",
+    "atributo": "LUZ",
+    "nivel": 6,
+    "tipo": "Máquina",
+    "atk": 2100,
+    "def": 1600,
+    "efeito": "penetra",
+    "texto": "Se seu oponente controlar um monstro e você não controlar nenhum monstro, você pode Invocar esta carta por Invocação-Especial (da sua mão).",
+    "comoFunciona": "Quando o seu lado do campo está vazio e o oponente tem monstro, a Carecalla entra de graça, sem tributo e sem gastar a Invocação-Normal do turno. Ótima para virar tributo logo em seguida.",
+    "frase": "Careca por fora, juba de metal por dentro.",
+    "raridade": "Super Rara",
+    "copias": 3,
+    "imagem": "img/cartas/carecalla.webp"
   },
   {
     "id": "careca-do-pt",
@@ -110,7 +129,7 @@
     "comoFunciona": "Precisa de 1 tributo. Ao entrar, remove do grupo até 2 Magias/Armadilhas do campo. Perfeito para limpar as armadilhas viradas do oponente antes de atacar.",
     "frase": "Removeu 2 cartas suas do grupo. Motivo: fugiu da pauta.",
     "raridade": "Super Rara",
-    "copias": 3,
+    "copias": 2,
     "imagem": "img/cartas/adm-do-pt.webp"
   },
   {
@@ -186,7 +205,7 @@
     "comoFunciona": "Escolha um monstro com a face para cima para equipar. Se o monstro sair do campo, o Bust vai junto para o Cemitério.",
     "frase": "Tirou a selfie, postou, e o monstro ganhou 700 de ATK de autoestima.",
     "raridade": "Rara",
-    "copias": 3,
+    "copias": 2,
     "imagem": "img/cartas/bust-do-big.webp"
   },
   {

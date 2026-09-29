@@ -46,7 +46,8 @@ const FRASES = {
   "tributo-destruir-monstro": "RAIO DO PT!",
   "tributo-destruir-magias": "REMOVIDO DO GRUPO!",
   "flip-destruir": "SURPRESAAA!",
-  miro: "CHEGOU DE PENETRA!",
+  penetra: "CHEGOU DE PENETRA!",
+  saideira: "MAIS UMA, GARÇOM!",
 };
 
 const PROVOCACOES = ["😂 Chora não!", "🧑‍🦲 Careca demais!", "💨 Vapo!", "🤡 Tá com medo?", "🔥 Joga logo!", "👋 GG"];

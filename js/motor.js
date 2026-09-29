@@ -260,7 +260,7 @@ function executar(estado, j, acao, ev) {
 
   switch (acao.tipo) {
     case "invocar": return invocar(estado, j, acao, ev);
-    case "invocarEspecial": return invocarMiro(estado, j, acao, ev);
+    case "invocarEspecial": return invocarPenetra(estado, j, acao, ev);
     case "virar": return invocarFlip(estado, j, acao, ev);
     case "mudarPosicao": return mudarPosicao(estado, j, acao, ev);
     case "ativar": return ativarMagia(estado, j, acao, ev);
@@ -321,21 +321,21 @@ function invocar(estado, j, { iid, modo = "atk", tributos = [] }, ev) {
   return null;
 }
 
-// Miro Animal: Invocação-Especial da mão se só o oponente tiver monstros
-export function podeInvocarMiro(estado, j, iid) {
+// Carecalla: Invocação-Especial da mão se só o oponente tiver monstros
+export function podeInvocarPenetra(estado, j, iid) {
   const p = estado.jogadores[j];
   return (
     ehFasePrincipal(estado) &&
     p.mao.includes(iid) &&
-    carta(estado, iid).efeito === "miro" &&
+    carta(estado, iid).efeito === "penetra" &&
     monstrosEmCampo(estado, j).length === 0 &&
     monstrosEmCampo(estado, oponente(j)).length > 0
   );
 }
 
-function invocarMiro(estado, j, { iid, pos = "atk" }, ev) {
-  if (!podeInvocarMiro(estado, j, iid)) {
-    return "O Miro só entra de penetra se o seu campo estiver vazio e o oponente tiver monstro.";
+function invocarPenetra(estado, j, { iid, pos = "atk" }, ev) {
+  if (!podeInvocarPenetra(estado, j, iid)) {
+    return "Só dá para entrar de penetra se o seu campo estiver vazio e o oponente tiver monstro.";
   }
   const p = estado.jogadores[j];
   p.mao.splice(p.mao.indexOf(iid), 1);
@@ -639,6 +639,12 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
     else if (atk < defD) dano(estado, j, defD - atk, ev);
   }
 
+  // Miro Animal (saideira): destruiu um monstro do oponente em batalha e continua em campo
+  if (estado.vencedor === null && !noCampo(estado, defensor) && noCampo(estado, atacante) && carta(estado, atacante).efeito === "saideira") {
+    ev.push({ t: "efeito", j, iid: atacante });
+    dano(estado, oponente(j), 500, ev);
+  }
+
   // Monstro FLIP virado pelo ataque: o efeito ativa sozinho (alvo automático)
   if (virou && estado.vencedor === null && carta(estado, defensor).efeito === "flip-destruir") {
     ev.push({ t: "efeito", j: oponente(j), iid: defensor });
@@ -865,7 +871,7 @@ export function opcoesDaCarta(estado, j, iid) {
           opcoes.push({ id: "baixar", rotulo: "Baixar em defesa" + sufixo, acao: { tipo: "invocar", iid, modo: "baixar" }, tributos: n });
         }
       }
-      if (podeInvocarMiro(estado, j, iid)) {
+      if (podeInvocarPenetra(estado, j, iid)) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial (penetra)", acao: { tipo: "invocarEspecial", iid } });
       }
     } else {

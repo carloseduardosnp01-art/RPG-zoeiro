@@ -1,0 +1,9 @@
+# Configurações locais de editor/ferramentas
+.claude/
+.vscode/
+*.code-workspace
+
+# Sistema operacional
+Thumbs.db
+Desktop.ini
+.DS_Store

@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Duelo da Zoeira: o card game mais careca do Brasil. Catálogo de cartas, deck de 40 cartas e duelos online com armadilhas automáticas.">
+  <meta name="theme-color" content="#0b1110">
+  <title>Duelo da Zoeira · O card game mais careca do Brasil</title>
+
+  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" as="font" type="font/woff2" href="fontes/cinzel.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="fontes/crimson-pro.woff2" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+  <!-- Bootstrap 5.3.3 (CSS) -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous">
+
+  <link rel="stylesheet" href="css/estilo.css">
+  <link rel="stylesheet" href="css/carta.css">
+  <link rel="stylesheet" href="css/arena.css">
+
+  <!-- Bootstrap (JS) e MQTT.js (conexão em tempo real para o modo online) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+          crossorigin="anonymous" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js" defer></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="visually-hidden-focusable pular-link" href="#conteudo">Pular para o conteúdo</a>
+
+  <!-- Aviso de duelo em andamento (aparece fora da arena) -->
+  <div id="faixa-duelo" class="faixa-duelo" hidden>
+    <strong>Duelo pronto!</strong> Você tem um duelo em andamento.
+    <a href="#arena">Clique aqui para entrar na Arena!</a>
+  </div>
+
+  <!-- ===================== CABEÇALHO ===================== -->
+  <header class="sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-zoeira" aria-label="Navegação principal">
+      <div class="container-xl">
+        <a class="navbar-brand marca" href="#inicio">
+          <span class="marca__emblema" data-emblema></span>
+          <span class="marca__texto">Duelo <small>da</small> Zoeira</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu-principal"
+                aria-controls="menu-principal" aria-expanded="false" aria-label="Abrir menu de navegação">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="menu-principal">
+          <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+            <li class="nav-item"><a class="nav-link" href="#inicio" data-link="inicio">🏠 Início</a></li>
+            <li class="nav-item"><a class="nav-link" href="#catalogo" data-link="catalogo">🃏 Catálogo</a></li>
+            <li class="nav-item"><a class="nav-link" href="#deck" data-link="deck">📦 Deck</a></li>
+            <li class="nav-item"><a class="nav-link" href="#regras" data-link="regras">📜 Regras</a></li>
+            <li class="nav-item"><a class="nav-link" href="#salao" data-link="salao">💬 Salão Online</a></li>
+            <li class="nav-item"><a class="nav-link" href="#arena" data-link="arena">⚔️ Arena</a></li>
+            <li class="nav-item ms-lg-2">
+              <button type="button" class="btn btn-sm btn-icone" id="botao-som" aria-pressed="true" title="Som ligado">🔊</button>
+            </li>
+            <li class="nav-item">
+              <a class="btn btn-sm btn-ouro" id="botao-conta" href="#salao">Entrar</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main id="conteudo">
+
+    <!-- ===================== INÍCIO ===================== -->
+    <section class="tela tela-inicio" data-tela="inicio" aria-labelledby="titulo-inicio">
+      <div class="container-xl">
+        <div class="row align-items-center g-5 hero">
+          <div class="col-12 col-lg-6">
+            <p class="sobretitulo">O card game mais careca do Brasil</p>
+            <h1 id="titulo-inicio" class="titulo-hero">
+              <span class="titulo-hero__linha">Duelo</span>
+              <span class="titulo-hero__da">da</span>
+              <span class="titulo-hero__linha titulo-hero__linha--brilho">Zoeira</span>
+            </h1>
+            <p class="lead">
+              Monte a mão, invoque o <strong>Careca do PT</strong>, baixe a <strong>Força Careca</strong> e deixe o
+              resto com o jogo: as <strong>armadilhas ativam sozinhas</strong> quando a hora chega.
+              Desafie os amigos no salão online e descubra quem é o careca supremo.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+              <a class="btn btn-ouro btn-lg" href="#salao">⚔️ Jogar online</a>
+              <button type="button" class="btn btn-outline-light btn-lg" data-treino>🤖 Treinar contra o Bot</button>
+              <a class="btn btn-link btn-lg link-suave" href="#catalogo">Ver as cartas →</a>
+            </div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <div class="leque" id="leque" role="group" aria-label="Cartas em destaque"></div>
+          </div>
+        </div>
+
+        <div class="row g-3 destaques">
+          <div class="col-12 col-md-4">
+            <article class="destaque">
+              <span class="destaque__icone" aria-hidden="true">🪤</span>
+              <h2 class="h5">Armadilhas automáticas</h2>
+              <p>Baixou, esqueceu. A partir do turno seguinte, a armadilha ativa sozinha quando a condição dela for cumprida. O oponente atacou e você tem a Força Careca virada? Já era.</p>
+            </article>
+          </div>
+          <div class="col-12 col-md-4">
+            <article class="destaque">
+              <span class="destaque__icone" aria-hidden="true">🌐</span>
+              <h2 class="h5">Duelos online</h2>
+              <p>Crie sua conta, entre no salão, converse no chat global e clique com o botão direito em um duelista para desafiar. A partida é sincronizada em tempo real.</p>
+            </article>
+          </div>
+          <div class="col-12 col-md-4">
+            <article class="destaque">
+              <span class="destaque__icone" aria-hidden="true">📦</span>
+              <h2 class="h5">Um deck, 40 cartas</h2>
+              <p>Todo mundo joga com o <em>Deck Careca Supremo</em>: 21 monstros, 13 magias e 6 armadilhas. Ganha quem jogar melhor (ou quem tirar o Vapo! na hora certa).</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CATÁLOGO ===================== -->
+    <section class="tela" data-tela="catalogo" aria-labelledby="titulo-catalogo" hidden>
+      <div class="container-xl">
+        <h2 id="titulo-catalogo" class="titulo-secao">Catálogo de cartas</h2>
+        <p>Pesquise pelo nome ou pelo texto, filtre por categoria, atributo ou raridade e abra uma carta para ver todos os detalhes.</p>
+
+        <form id="form-filtros" class="row g-3 align-items-end painel" role="search" aria-label="Buscar e filtrar cartas" novalidate>
+          <div class="col-12 col-lg-6">
+            <label for="filtro-busca" class="form-label">Buscar carta</label>
+            <input type="search" id="filtro-busca" class="form-control" placeholder="Ex.: careca, big, destrua, ZOE-PT005" autocomplete="off">
+          </div>
+          <div class="col-12 col-sm-6 col-lg-3">
+            <label for="filtro-ordem" class="form-label">Ordenar por</label>
+            <select id="filtro-ordem" class="form-select">
+              <option value="codigo">Código</option>
+              <option value="nome">Nome (A–Z)</option>
+              <option value="atk">Maior ATK</option>
+              <option value="nivel">Maior Nível</option>
+              <option value="raridade">Mais rara</option>
+            </select>
+          </div>
+          <div class="col-12 col-sm-6 col-lg-3">
+            <button type="button" id="botao-limpar" class="btn btn-outline-secondary w-100">Limpar filtros</button>
+          </div>
+          <div class="col-12 col-sm-4">
+            <label for="filtro-categoria" class="form-label">Categoria</label>
+            <select id="filtro-categoria" class="form-select">
+              <option value="">Todas</option>
+              <option value="Monstro Normal">Monstro Normal</option>
+              <option value="Monstro de Efeito">Monstro de Efeito</option>
+              <option value="Magia">Magia</option>
+              <option value="Armadilha">Armadilha</option>
+            </select>
+          </div>
+          <div class="col-12 col-sm-4">
+            <label for="filtro-atributo" class="form-label">Atributo</label>
+            <select id="filtro-atributo" class="form-select">
+              <option value="">Todos</option>
+              <option value="TERRA">Terra</option>
+              <option value="TREVAS">Trevas</option>
+              <option value="LUZ">Luz</option>
+              <option value="MAGIA">Magia</option>
+              <option value="ARMADILHA">Armadilha</option>
+            </select>
+          </div>
+          <div class="col-12 col-sm-4">
+            <label for="filtro-raridade" class="form-label">Raridade</label>
+            <select id="filtro-raridade" class="form-select">
+              <option value="">Todas</option>
+              <option>Comum</option>
+              <option>Rara</option>
+              <option>Super Rara</option>
+              <option>Ultra Rara</option>
+              <option>Lendária da Zoeira</option>
+            </select>
+          </div>
+        </form>
+
+        <p id="contagem-resultados" class="contagem" aria-live="polite"></p>
+        <div id="status-catalogo" class="status-area"></div>
+        <div id="lista-cartas" class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-3 g-md-4"></div>
+        <nav id="paginacao" class="paginacao" aria-label="Páginas do catálogo" hidden></nav>
+      </div>
+    </section>
+
+    <!-- ===================== DECK ===================== -->
+    <section class="tela" data-tela="deck" aria-labelledby="titulo-deck" hidden>
+      <div class="container-xl">
+        <h2 id="titulo-deck" class="titulo-secao">Deck Careca Supremo</h2>
+        <p>O único deck do jogo (por enquanto). Os dois duelistas usam as mesmas 40 cartas, embaralhadas. Cada pilha mostra quantas cópias da carta estão no deck; selecione uma carta para ver os detalhes.</p>
+        <p id="resumo-deck" class="resumo-deck" aria-live="polite"></p>
+        <div id="mesa-deck"></div>
+        <div class="row g-3 mt-2 dicas-deck">
+          <div class="col-12 col-md-4"><div class="dica"><strong>Tributo barato:</strong> Careca Feijão e Careca Cast Surpresa entram sem tributo e abrem caminho para os carecas grandes.</div></div>
+          <div class="col-12 col-md-4"><div class="dica"><strong>Combo clássico:</strong> Invocador + Grande Mestre = 2500 de ATK sem gastar tributo nem a Invocação-Normal.</div></div>
+          <div class="col-12 col-md-4"><div class="dica"><strong>Campo vazio?</strong> O Miro Animal entra de penetra sempre que só o oponente tiver monstros.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== REGRAS ===================== -->
+    <section class="tela" data-tela="regras" aria-labelledby="titulo-regras" hidden>
+      <div class="container-xl">
+        <h2 id="titulo-regras" class="titulo-secao">Regras do duelo</h2>
+        <p>As regras seguem o Yu-Gi-Oh! clássico, com uma diferença importante: <strong>ninguém precisa ficar clicando para ativar armadilha</strong>. O jogo cuida disso.</p>
+
+        <div class="accordion" id="accordion-regras">
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#regra-objetivo" aria-expanded="true" aria-controls="regra-objetivo">Objetivo</button>
+            </h3>
+            <div id="regra-objetivo" class="accordion-collapse collapse show" data-bs-parent="#accordion-regras">
+              <div class="accordion-body">
+                <p>Cada duelista começa com <strong>8000 PL</strong> (Pontos de Lucidez) e <strong>5 cartas</strong> na mão. Vence quem zerar os PL do oponente, ou quem fizer o oponente precisar comprar com o deck vazio.</p>
+                <p class="mb-0">Também dá para vencer por <strong>desistência</strong> ou por <strong>W.O.</strong> (se o oponente sumir no meio do duelo).</p>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#regra-fases" aria-expanded="false" aria-controls="regra-fases">Turno e fases</button>
+            </h3>
+            <div id="regra-fases" class="accordion-collapse collapse" data-bs-parent="#accordion-regras">
+              <div class="accordion-body">
+                <ol>
+                  <li><strong>Compra (DRAW):</strong> compra 1 carta automaticamente. Quem começa o duelo não compra no 1º turno.</li>
+                  <li><strong>Espera (STBY):</strong> passa sozinha.</li>
+                  <li><strong>Principal 1 (MP1):</strong> invoque, baixe cartas e ative magias.</li>
+                  <li><strong>Batalha (BP):</strong> cada monstro em Posição de Ataque ataca uma vez. Ninguém ataca no 1º turno do duelo.</li>
+                  <li><strong>Principal 2 (MP2):</strong> as mesmas ações da Principal 1.</li>
+                  <li><strong>Final (END):</strong> com mais de 6 cartas na mão, descarte o excesso.</li>
+                </ol>
+                <p class="mb-0">Cada ação tem <strong>60 segundos</strong>. Se o tempo acabar, o turno passa sozinho.</p>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#regra-invocacao" aria-expanded="false" aria-controls="regra-invocacao">Invocação e tributos</button>
+            </h3>
+            <div id="regra-invocacao" class="accordion-collapse collapse" data-bs-parent="#accordion-regras">
+              <div class="accordion-body">
+                <p>Você pode fazer <strong>1 Invocação-Normal ou baixar 1 monstro</strong> por turno. O Nível (estrelas) define o custo:</p>
+                <div class="table-responsive">
+                  <table class="table table-sm tabela-tributos">
+                    <caption>Tributos por Nível</caption>
+                    <thead><tr><th scope="col">Nível</th><th scope="col">Tributos</th><th scope="col">Exemplos</th></tr></thead>
+                    <tbody>
+                      <tr><td>1 a 4 ★</td><td>Nenhum</td><td>Careca Feijão, Careca Cast Surpresa</td></tr>
+                      <tr><td>5 ou 6 ★</td><td>1 monstro seu</td><td>Careca do PT, Adm do PT, Feiticeira Careca, Miro Animal</td></tr>
+                      <tr><td>7 ou mais ★</td><td>2 monstros seus</td><td>Grande Mestre</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p><strong>Baixar</strong> é colocar o monstro virado para baixo em Posição de Defesa. No turno seguinte você pode <strong>virá-lo</strong> (Invocação-Flip), o que ativa efeitos <em>VIRE</em>.</p>
+                <p class="mb-0"><strong>Invocações-Especiais</strong> (Miro Animal, Invocador) não gastam a Invocação-Normal do turno.</p>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#regra-batalha" aria-expanded="false" aria-controls="regra-batalha">Batalha</button>
+            </h3>
+            <div id="regra-batalha" class="accordion-collapse collapse" data-bs-parent="#accordion-regras">
+              <div class="accordion-body">
+                <ul class="mb-0">
+                  <li><strong>ATK contra ATK:</strong> o de menor ATK é destruído e o dono dele perde a diferença. Empate: os dois são destruídos.</li>
+                  <li><strong>ATK contra DEF:</strong> se o ATK for maior, o defensor é destruído sem dano. Se for menor, o atacante sobrevive e o dono dele perde a diferença.</li>
+                  <li><strong>Monstro virado para baixo</strong> que for atacado é virado para cima (e o efeito VIRE dele ativa sozinho).</li>
+                  <li><strong>Ataque direto:</strong> se o oponente não tiver monstros, ele perde PL igual ao ATK do atacante.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#regra-magias" aria-expanded="false" aria-controls="regra-magias">Magias</button>
+            </h3>
+            <div id="regra-magias" class="accordion-collapse collapse" data-bs-parent="#accordion-regras">
+              <div class="accordion-body">
+                <p>Magias são ativadas nas suas Fases Principais, da mão ou depois de baixadas.</p>
+                <ul class="mb-0">
+                  <li><strong>Normal:</strong> resolve e vai para o Cemitério (a Carecas da Luz Reveladora é a exceção: fica 3 turnos do oponente).</li>
+                  <li><strong>Rápida ⚡:</strong> se for baixada, só pode ser ativada a partir do seu próximo turno.</li>
+                  <li><strong>Equipamento ✚:</strong> fica presa a um monstro e vai junto com ele para o Cemitério.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#regra-armadilhas" aria-expanded="false" aria-controls="regra-armadilhas">Armadilhas automáticas 🪤</button>
+            </h3>
+            <div id="regra-armadilhas" class="accordion-collapse collapse" data-bs-parent="#accordion-regras">
+              <div class="accordion-body">
+                <p>Armadilhas <strong>não têm botão de ativar</strong>. Você só baixa a carta no campo. A partir do <strong>turno seguinte</strong>, ela fica armada e ativa sozinha na primeira vez que a condição dela acontecer:</p>
+                <ul>
+                  <li><strong>Força Careca:</strong> um monstro do oponente declarou ataque → destrói todos os monstros dele em Posição de Ataque.</li>
+                  <li><strong>Armadilha do Big:</strong> o oponente Invocou por Invocação-Normal, Tributo ou Flip um monstro com 1000+ de ATK → destrói esse monstro.</li>
+                </ul>
+                <p class="mb-0">Se você tiver duas armadilhas que respondem ao mesmo momento, só a primeira (da esquerda para a direita) ativa. A outra continua armada esperando a próxima chance.</p>
+              </div>
+            </div>
+          </div>
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#regra-online" aria-expanded="false" aria-controls="regra-online">Como jogar online</button>
+            </h3>
+            <div id="regra-online" class="accordion-collapse collapse" data-bs-parent="#accordion-regras">
+              <div class="accordion-body">
+                <ol class="mb-0">
+                  <li>Entre no <a href="#salao">Salão Online</a> e crie sua conta (nick, senha, clã e avatar).</li>
+                  <li>Na lista de duelistas online, clique com o <strong>botão direito</strong> (ou toque) no nome de alguém e escolha <strong>Desafiar para duelo</strong>.</li>
+                  <li>O desafio aparece numa aba privada do chat com os botões <strong>Aceitar</strong> e <strong>Recusar</strong>.</li>
+                  <li>Aceitou? Os dois vão direto para a Arena. Boa sorte, careca.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SALÃO ONLINE ===================== -->
+    <section class="tela" data-tela="salao" aria-labelledby="titulo-salao" hidden>
+      <div class="container-xl">
+        <h2 id="titulo-salao" class="visually-hidden">Salão Online</h2>
+
+        <!-- Login / cadastro (sem conta) -->
+        <div id="painel-login" class="painel-login" hidden>
+          <div class="row g-4 align-items-stretch">
+            <div class="col-12 col-lg-5">
+              <div class="boas-vindas">
+                <span class="boas-vindas__emblema" data-emblema></span>
+                <h3>Entre no salão</h3>
+                <p>Para desafiar os amigos você precisa de uma conta. É rapidinho: nick, senha, clã e um careca para chamar de avatar.</p>
+                <p class="aviso-senha">⚠️ <strong>Use uma senha só para este jogo.</strong> É um projeto de zoeira que roda sem servidor próprio, então não repita a senha do e-mail, do banco etc.</p>
+                <button type="button" class="btn btn-outline-light w-100" data-treino>🤖 Só quero treinar contra o Bot</button>
+              </div>
+            </div>
+            <div class="col-12 col-lg-7">
+              <div class="painel">
+                <ul class="nav nav-tabs" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="aba-entrar" data-bs-toggle="tab" data-bs-target="#form-entrar-painel" type="button" role="tab" aria-controls="form-entrar-painel" aria-selected="true">Entrar</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="aba-criar" data-bs-toggle="tab" data-bs-target="#form-criar-painel" type="button" role="tab" aria-controls="form-criar-painel" aria-selected="false">Criar conta</button>
+                  </li>
+                </ul>
+                <div class="tab-content pt-3">
+                  <div class="tab-pane fade show active" id="form-entrar-painel" role="tabpanel" aria-labelledby="aba-entrar" tabindex="0">
+                    <form id="form-entrar" novalidate>
+                      <div class="mb-3">
+                        <label for="entrar-nick" class="form-label">Nick</label>
+                        <input type="text" id="entrar-nick" class="form-control" autocomplete="username" required maxlength="16">
+                      </div>
+                      <div class="mb-3">
+                        <label for="entrar-senha" class="form-label">Senha</label>
+                        <input type="password" id="entrar-senha" class="form-control" autocomplete="current-password" required>
+                      </div>
+                      <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="entrar-lembrar" checked>
+                        <label class="form-check-label" for="entrar-lembrar">Continuar conectado neste navegador</label>
+                      </div>
+                      <p class="mensagem-form" id="entrar-mensagem" role="alert"></p>
+                      <button type="submit" class="btn btn-ouro w-100">Entrar no salão</button>
+                    </form>
+                  </div>
+                  <div class="tab-pane fade" id="form-criar-painel" role="tabpanel" aria-labelledby="aba-criar" tabindex="0">
+                    <form id="form-criar" novalidate>
+                      <div class="row g-3">
+                        <div class="col-12 col-sm-8">
+                          <label for="criar-nick" class="form-label">Nick</label>
+                          <input type="text" id="criar-nick" class="form-control" autocomplete="username" required minlength="3" maxlength="16" aria-describedby="criar-nick-ajuda">
+                          <div id="criar-nick-ajuda" class="form-text">3 a 16 letras, números ou _</div>
+                        </div>
+                        <div class="col-12 col-sm-4">
+                          <label for="criar-tag" class="form-label">Clã <span class="text-body-secondary">(opcional)</span></label>
+                          <input type="text" id="criar-tag" class="form-control text-uppercase" maxlength="4" placeholder="CRC" aria-describedby="criar-tag-ajuda">
+                          <div id="criar-tag-ajuda" class="form-text">Até 4 letras</div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                          <label for="criar-senha" class="form-label">Senha</label>
+                          <input type="password" id="criar-senha" class="form-control" autocomplete="new-password" required minlength="4">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                          <label for="criar-senha2" class="form-label">Repita a senha</label>
+                          <input type="password" id="criar-senha2" class="form-control" autocomplete="new-password" required minlength="4">
+                        </div>
+                        <fieldset class="col-12">
+                          <legend class="form-label fs-6">Avatar</legend>
+                          <div id="escolha-avatar" class="escolha-avatar"></div>
+                        </fieldset>
+                      </div>
+                      <p class="mensagem-form mt-3" id="criar-mensagem" role="alert"></p>
+                      <button type="submit" class="btn btn-ouro w-100">Criar conta e entrar</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Salão (logado) -->
+        <div id="painel-salao" class="row g-3" hidden>
+          <div class="col-12 col-xl-9">
+            <div class="salao">
+              <div class="salao__cabecalho">
+                <h3 class="salao__titulo">Chat (online)</h3>
+                <span class="pilula-online"><span aria-hidden="true">👥</span> Online <strong id="contagem-online">0</strong></span>
+                <span class="status-conexao" id="status-conexao" data-status="desconectado">desconectado</span>
+                <div class="ms-auto d-flex gap-2">
+                  <a class="btn-redondo" href="#regras" title="Regras" aria-label="Regras">📖</a>
+                  <button type="button" class="btn-redondo" data-treino title="Treinar contra o Bot" aria-label="Treinar contra o Bot">🤖</button>
+                </div>
+              </div>
+              <div class="salao__info">
+                <p class="mb-1">Você pode desafiar um duelista clicando com o botão direito sobre o nome dele na lista de usuários online e selecionando a opção de duelo.</p>
+                <p class="mb-0 legenda"><strong>Legenda de cores:</strong> <span class="cor-voce">Você</span>, <span class="cor-duelando">Duelando</span> e <span class="cor-outros">Outros jogadores</span>.</p>
+              </div>
+              <div class="salao__corpo">
+                <div class="salao__chat">
+                  <div class="abas-chat" id="abas-chat" role="tablist" aria-label="Conversas"></div>
+                  <div class="mensagens" id="mensagens" aria-live="polite"></div>
+                  <div class="barra-emojis" id="barra-emojis" aria-label="Emojis"></div>
+                  <form class="envio-chat" id="form-chat">
+                    <label for="campo-chat" class="visually-hidden">Mensagem</label>
+                    <textarea id="campo-chat" class="form-control" rows="2" maxlength="300" placeholder="Mensagem para todos..."></textarea>
+                    <button type="submit" class="btn btn-marrom">Enviar</button>
+                    <button type="button" class="btn btn-duelo" id="botao-desafiar-aba" title="Desafiar para duelo" aria-label="Desafiar para duelo" hidden>⚔️</button>
+                  </form>
+                </div>
+                <aside class="salao__online" aria-labelledby="titulo-online">
+                  <h4 class="online-titulo" id="titulo-online"><span aria-hidden="true">🟢</span> Online <span class="pilula" id="contagem-online-2">0</span></h4>
+                  <label for="busca-online" class="visually-hidden">Pesquisar duelista</label>
+                  <input type="search" id="busca-online" class="form-control form-control-sm" placeholder="Pesquisar...">
+                  <ul class="lista-online" id="lista-online"></ul>
+                </aside>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-xl-3">
+            <div class="perfil" id="perfil"></div>
+            <div class="ranking">
+              <h4 class="ranking__titulo">🏆 Ranking dos carecas</h4>
+              <ol class="ranking__lista" id="ranking"></ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ARENA ===================== -->
+    <section class="tela tela-arena" data-tela="arena" aria-labelledby="titulo-arena" hidden>
+      <h2 id="titulo-arena" class="visually-hidden">Arena de duelo</h2>
+      <div id="arena-vazia" class="container-xl arena-vazia">
+        <span class="arena-vazia__emblema" data-emblema></span>
+        <h3>Nenhum duelo agora</h3>
+        <p>Desafie alguém no salão online ou aqueça contra o Bot Careca.</p>
+        <div class="d-flex flex-wrap gap-2 justify-content-center">
+          <a class="btn btn-ouro" href="#salao">💬 Ir para o Salão</a>
+          <button type="button" class="btn btn-outline-light" data-treino>🤖 Treinar contra o Bot</button>
+        </div>
+      </div>
+      <div id="arena" class="arena" hidden></div>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <div class="container-xl d-flex flex-column flex-md-row justify-content-between gap-2">
+      <p class="mb-0">Duelo da Zoeira · o card game mais careca do Brasil · 2026</p>
+      <p class="mb-0">Projeto de zoeira entre amigos, inspirado nas regras clássicas de Yu-Gi-Oh!, sem fins comerciais.</p>
+    </div>
+  </footer>
+
+  <!-- ===================== MODAL DE DETALHES DA CARTA ===================== -->
+  <div class="modal fade" id="modal-carta" tabindex="-1" aria-labelledby="modal-carta-titulo" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h4" id="modal-carta-titulo">Detalhes da carta</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-4">
+            <div class="col-12 col-md-5">
+              <div class="detalhe-carta" id="detalhe-carta"></div>
+            </div>
+            <div class="col-12 col-md-7">
+              <dl class="row ficha" id="detalhe-ficha"></dl>
+              <section aria-labelledby="titulo-efeito">
+                <h3 class="h6 titulo-ficha" id="titulo-efeito">Texto da carta</h3>
+                <p id="detalhe-texto"></p>
+              </section>
+              <section aria-labelledby="titulo-como">
+                <h3 class="h6 titulo-ficha" id="titulo-como">Como funciona no jogo</h3>
+                <p id="detalhe-como"></p>
+              </section>
+              <blockquote class="citacao-carta"><p id="detalhe-frase"></p></blockquote>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-secondary" id="detalhe-anterior" aria-label="Carta anterior">‹ Anterior</button>
+            <span class="posicao-carta" id="detalhe-posicao"></span>
+            <button type="button" class="btn btn-outline-secondary" id="detalhe-proxima" aria-label="Próxima carta">Próxima ›</button>
+          </div>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Avisos rápidos -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="avisos" aria-live="polite"></div>
+</body>
+</html>

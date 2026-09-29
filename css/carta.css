@@ -1,0 +1,471 @@
+/* ==========================================================================
+   Duelo da Zoeira · css/carta.css
+   Template das cartas. Tudo é medido em "cqw" (porcentagem da largura da
+   própria carta), então a mesma carta funciona em qualquer tamanho:
+   no catálogo, na mão, no campo e na pré-visualização.
+   ========================================================================== */
+
+.carta {
+  --moldura: #d8b35a;
+  --moldura-escura: #9c7a2c;
+  --caixa: #f3e6c4;
+  --texto-carta: #1b1208;
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 59 / 86;
+  border-radius: 4.6% / 3.2%;
+  color: var(--texto-carta);
+  font-family: var(--fonte-carta);
+  user-select: none;
+}
+
+.carta[data-moldura="efeito"] { --moldura: #cf7a44; --moldura-escura: #8f4620; --caixa: #f4e2cc; }
+.carta[data-moldura="magia"] { --moldura: #1f9a82; --moldura-escura: #0f5e4f; --caixa: #d9efe6; }
+.carta[data-moldura="armadilha"] { --moldura: #b53c80; --moldura-escura: #6e1e4b; --caixa: #f3dcea; }
+
+.carta__corpo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 4.2cqw 4.6cqw 2.4cqw;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 20% 15%, rgba(255, 255, 255, .28), transparent 45%),
+    radial-gradient(ellipse at 80% 90%, rgba(0, 0, 0, .25), transparent 50%),
+    repeating-radial-gradient(circle at 30% 40%, rgba(255, 255, 255, .06) 0 2cqw, rgba(0, 0, 0, .05) 2cqw 4cqw),
+    var(--moldura);
+  border: 1.4cqw solid #2c2f3a;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 .5cqw rgba(255, 255, 255, .18), 0 1.5cqw 4cqw rgba(0, 0, 0, .45);
+}
+
+/* ---------- Nome e atributo ---------- */
+.carta__topo {
+  display: flex;
+  align-items: center;
+  gap: 1.5cqw;
+  height: 11.5cqw;
+  padding: 0 1.2cqw 0 2.4cqw;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .35), rgba(255, 255, 255, .08));
+  border: .7cqw solid var(--moldura-escura);
+  border-radius: .8cqw;
+  box-shadow: inset 0 0 0 .4cqw rgba(255, 255, 255, .25);
+}
+
+.carta__nome {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--fonte-titulo);
+  font-size: min(7.4cqw, calc(118cqw / var(--letras, 12)));
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: -.01em;
+  font-variant: small-caps;
+}
+
+.carta[data-moldura="magia"] .carta__nome,
+.carta[data-moldura="armadilha"] .carta__nome {
+  color: #fff;
+  text-shadow: 0 .3cqw .6cqw rgba(0, 0, 0, .55);
+}
+
+/* Raridades: nome prateado, dourado ou arco-íris */
+.carta[data-raridade="rara"] .carta__nome,
+.carta[data-raridade="ultra"] .carta__nome,
+.carta[data-raridade="lendaria"] .carta__nome {
+  color: transparent;
+  text-shadow: none;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-stroke: .22cqw rgba(40, 24, 4, .85);
+  filter: drop-shadow(0 .3cqw .25cqw rgba(0, 0, 0, .75));
+}
+
+.carta[data-raridade="rara"] .carta__nome {
+  background-image: linear-gradient(180deg, #ffffff, #b9c3cc 45%, #7c8791 55%, #e9eef2);
+}
+
+.carta[data-raridade="ultra"] .carta__nome {
+  background-image: linear-gradient(180deg, #fff6c8, #f2c94c 40%, #a8741a 60%, #ffe28a);
+}
+
+.carta[data-raridade="lendaria"] .carta__nome {
+  background-image: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bff95, #4dd8ff, #b86bff, #ff6b6b);
+  background-size: 200% 100%;
+  animation: arco-iris 4s linear infinite;
+}
+
+@keyframes arco-iris {
+  to { background-position: 200% 0; }
+}
+
+.carta__atributo {
+  position: relative;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 9.6cqw;
+  height: 9.6cqw;
+  color: #fff;
+  font-family: "Noto Serif JP", "Yu Mincho", "MS Mincho", serif;
+  font-size: 5.6cqw;
+  font-weight: 700;
+  line-height: 1;
+  background: radial-gradient(circle at 35% 30%, var(--attr-claro), var(--attr-escuro) 70%);
+  border: .5cqw solid rgba(255, 255, 255, .7);
+  border-radius: 50%;
+  box-shadow: 0 .3cqw .8cqw rgba(0, 0, 0, .6), inset 0 -.6cqw 1cqw rgba(0, 0, 0, .35);
+  text-shadow: 0 .2cqw .4cqw rgba(0, 0, 0, .6);
+}
+
+.carta__atributo::before {
+  content: attr(data-rotulo);
+  position: absolute;
+  top: .9cqw;
+  font-family: var(--fonte-titulo);
+  font-size: 1.55cqw;
+  letter-spacing: .02em;
+  opacity: .95;
+}
+
+.carta__atributo span { margin-top: 1.4cqw; }
+
+.carta__atributo[data-atributo="terra"] { --attr-claro: #6d6a66; --attr-escuro: #1f1d1b; }
+.carta__atributo[data-atributo="trevas"] { --attr-claro: #a45bd6; --attr-escuro: #3a1057; }
+.carta__atributo[data-atributo="luz"] { --attr-claro: #fff3b0; --attr-escuro: #c99a12; color: #3a2a00; text-shadow: none; }
+.carta__atributo[data-atributo="magia"] { --attr-claro: #4fd1e8; --attr-escuro: #0c4f78; }
+.carta__atributo[data-atributo="armadilha"] { --attr-claro: #f06aa6; --attr-escuro: #6e1043; }
+
+/* ---------- Estrelas / tipo de magia ---------- */
+.carta__linha-nivel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .8cqw;
+  height: 8.4cqw;
+  padding: 0 2cqw;
+}
+
+.estrela {
+  display: grid;
+  place-items: center;
+  width: 6.2cqw;
+  height: 6.2cqw;
+  color: #ffe24a;
+  font-size: 4.6cqw;
+  line-height: 1;
+  background: radial-gradient(circle at 35% 30%, #ff9a52, #c3260c 65%, #7a1204);
+  border-radius: 50%;
+  box-shadow: 0 .3cqw .5cqw rgba(0, 0, 0, .5);
+  text-shadow: 0 0 .6cqw #ff8a00;
+}
+
+.carta__subtipo {
+  font-family: var(--fonte-titulo);
+  font-size: 5cqw;
+  font-weight: 700;
+  font-variant: small-caps;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+
+.carta__subtipo-icone {
+  display: inline-grid;
+  place-items: center;
+  width: 5.4cqw;
+  height: 5.4cqw;
+  margin-left: .8cqw;
+  color: #fff;
+  font-size: 3.6cqw;
+  vertical-align: .2cqw;
+  background: radial-gradient(circle at 35% 30%, #8a8a8a, #2a2a2a);
+  border-radius: 50%;
+}
+
+/* ---------- Arte ---------- */
+.carta__arte-moldura {
+  position: relative;
+  width: 78cqw;
+  height: 78cqw;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #222;
+  border: 1.3cqw solid #3c4250;
+  border-top-color: #7b8394;
+  border-left-color: #6b7383;
+  box-shadow: 0 .4cqw .8cqw rgba(0, 0, 0, .45);
+}
+
+.carta__arte {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* Brilho holográfico nas raridades mais altas */
+.carta[data-raridade="super"] .carta__arte-moldura::after,
+.carta[data-raridade="ultra"] .carta__arte-moldura::after,
+.carta[data-raridade="lendaria"] .carta__arte-moldura::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, .45) 45%, rgba(120, 220, 255, .35) 50%, rgba(255, 120, 230, .3) 55%, transparent 70%);
+  background-size: 250% 250%;
+  background-position: 100% 100%;
+  mix-blend-mode: color-dodge;
+  opacity: .55;
+  transition: background-position .9s ease, opacity .3s ease;
+  pointer-events: none;
+}
+
+.carta:hover .carta__arte-moldura::after {
+  background-position: 0 0;
+  opacity: .9;
+}
+
+.carta[data-raridade="lendaria"] .carta__arte-moldura::after {
+  animation: brilho-lendario 3.5s ease-in-out infinite;
+}
+
+@keyframes brilho-lendario {
+  0%, 100% { background-position: 100% 100%; }
+  50% { background-position: 0 0; }
+}
+
+/* ---------- Código e caixa de texto ---------- */
+.carta__codigo-linha {
+  display: flex;
+  justify-content: space-between;
+  height: 5cqw;
+  padding: .4cqw 1cqw 0;
+  font-family: var(--fonte-titulo);
+  font-size: 3cqw;
+  font-weight: 700;
+}
+
+.carta[data-moldura="magia"] .carta__codigo-linha,
+.carta[data-moldura="armadilha"] .carta__codigo-linha,
+.carta[data-moldura="magia"] .carta__rodape,
+.carta[data-moldura="armadilha"] .carta__rodape {
+  color: #fff;
+  text-shadow: 0 .2cqw .4cqw rgba(0, 0, 0, .6);
+}
+
+.carta__caixa {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 1.2cqw 2cqw 1cqw;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, .5), transparent 60%),
+    var(--caixa);
+  border: .8cqw solid #9b5a2a;
+  border-radius: .6cqw;
+  box-shadow: inset 0 0 1.5cqw rgba(120, 70, 20, .25);
+}
+
+.carta__tipo {
+  margin: 0 0 .4cqw;
+  font-family: var(--fonte-titulo);
+  font-size: 3.5cqw;
+  font-weight: 700;
+  font-variant: small-caps;
+}
+
+.carta__texto {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--tam-texto, 3.5cqw);
+  line-height: 1.12;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.carta[data-subtipo="normal"][data-moldura="normal"] .carta__texto {
+  font-style: italic;
+}
+
+.carta__stats {
+  display: flex;
+  justify-content: flex-end;
+  gap: 3cqw;
+  margin: .6cqw 0 0;
+  padding-top: .5cqw;
+  font-family: var(--fonte-titulo);
+  font-size: 4cqw;
+  font-weight: 700;
+  border-top: .35cqw solid #1b1208;
+}
+
+.carta__rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 4.4cqw;
+  padding: .4cqw 1cqw 0;
+  font-family: var(--fonte-titulo);
+  font-size: 2.6cqw;
+  font-weight: 700;
+}
+
+/* Selo holográfico da zoeira (canto inferior direito) */
+.carta__selo {
+  width: 4.2cqw;
+  height: 4.2cqw;
+  background:
+    radial-gradient(circle at 50% 38%, #f6d7b0 0 28%, transparent 30%),
+    radial-gradient(ellipse at 50% 78%, #3b2a1a 0 30%, transparent 32%),
+    conic-gradient(from 0deg, #ffe38a, #8ef0ff, #ff9ce6, #ffe38a);
+  border: .3cqw solid rgba(0, 0, 0, .5);
+  border-radius: .6cqw;
+}
+
+/* Contador (ex.: turnos restantes das Carecas da Luz) */
+.carta__contador {
+  position: absolute;
+  top: 26cqw;
+  right: 6cqw;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 22cqw;
+  height: 22cqw;
+  color: #1b1208;
+  font-family: var(--fonte-titulo);
+  font-size: 13cqw;
+  font-weight: 700;
+  background: radial-gradient(circle at 35% 30%, #fff6c8, #f2c94c 60%, #a8741a);
+  border: 1cqw solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 4cqw rgba(255, 215, 90, .9);
+}
+
+/* ---------- Carta pequena (mão e campo) ---------- */
+/* Abaixo de ~150px o texto some e aparece um selo grande de ATK/DEF */
+.carta__selo-stats {
+  display: none;
+}
+
+@container (max-width: 160px) {
+  .carta__corpo { padding: 4cqw 4cqw 3cqw; border-width: 2cqw; }
+  .carta__topo { height: 14cqw; padding: 0 1.4cqw; }
+  .carta__nome { font-size: min(9cqw, calc(128cqw / var(--letras, 12))); }
+  .carta__atributo { width: 11cqw; height: 11cqw; font-size: 7cqw; }
+  .carta__atributo::before { display: none; }
+  .carta__atributo span { margin-top: 0; }
+  .carta__linha-nivel { height: 10cqw; }
+  .estrela { width: 8.2cqw; height: 8.2cqw; font-size: 6cqw; }
+  .carta__subtipo { font-size: 6.4cqw; }
+  .carta__subtipo-icone { width: 7cqw; height: 7cqw; font-size: 4.8cqw; }
+  .carta__arte-moldura { width: 88cqw; height: 88cqw; border-width: 2cqw; }
+  .carta__codigo-linha,
+  .carta__rodape,
+  .carta__texto,
+  .carta__tipo { display: none; }
+  .carta__caixa { padding: 1cqw; border-width: 1.2cqw; margin-top: 3cqw; }
+  .carta__stats { display: none; }
+  .carta__selo-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3cqw;
+    height: 100%;
+    font-family: var(--fonte-titulo);
+    font-size: 11cqw;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .carta__selo-stats small {
+    font-size: 8cqw;
+    opacity: .75;
+  }
+  .carta[data-moldura="magia"] .carta__selo-stats,
+  .carta[data-moldura="armadilha"] .carta__selo-stats {
+    font-size: 7.4cqw;
+    letter-spacing: .02em;
+  }
+}
+
+.stat-mais { color: #137a2a; }
+.stat-menos { color: #b3121f; }
+
+/* ---------- Verso da carta ---------- */
+.carta-verso {
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 59 / 86;
+  border-radius: 4.6% / 3.2%;
+}
+
+.carta-verso__corpo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255, 170, 60, .55) 0 18%, transparent 42%),
+    repeating-conic-gradient(from 0deg at 50% 50%, #2a1206 0 8deg, #4a200c 8deg 16deg),
+    #2a1206;
+  border: 3.5cqw solid #3a2a20;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1cqw #7a5a3a, inset 0 0 12cqw rgba(0, 0, 0, .8), 0 1.5cqw 4cqw rgba(0, 0, 0, .45);
+}
+
+.carta-verso__corpo::before {
+  content: "";
+  position: absolute;
+  inset: 22% 14%;
+  background: radial-gradient(ellipse at 50% 45%, #ffb347 0 20%, #c2410c 45%, #3b0d02 72%, transparent 74%);
+  border-radius: 50%;
+  filter: blur(.6cqw);
+}
+
+.carta-verso__logo {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2cqw;
+  color: #fff4d6;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 0 0 3cqw #000, 0 .6cqw 1cqw #000;
+}
+
+.carta-verso__careca {
+  width: 34cqw;
+  height: 34cqw;
+  filter: drop-shadow(0 1cqw 2cqw rgba(0, 0, 0, .7));
+}
+
+.carta-verso__texto {
+  font-size: 8cqw;
+  line-height: 1;
+  letter-spacing: .08em;
+}
+
+.carta-verso__texto small {
+  display: block;
+  margin-top: 1cqw;
+  font-size: 5cqw;
+  letter-spacing: .3em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carta[data-raridade="lendaria"] .carta__nome,
+  .carta[data-raridade="lendaria"] .carta__arte-moldura::after {
+    animation: none;
+  }
+}

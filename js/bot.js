@@ -1,0 +1,288 @@
+/* ==========================================================================
+   Duelo da Zoeira · js/bot.js
+   O "Bot Careca": decide a próxima jogada no modo treino.
+   Joga limpo: só olha o que um jogador de verdade veria (cartas viradas
+   para baixo do oponente e a mão dele ficam escondidas).
+   ========================================================================== */
+
+import {
+  carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo,
+  luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNecessarios, validar,
+} from "./motor.js";
+
+const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
+
+// Próxima ação do bot (ou null se não for a vez dele)
+export function jogadaDoBot(estado, j) {
+  if (quemAge(estado) !== j) return null;
+  if (estado.pendente) return { tipo: "escolher", alvos: escolherAlvos(estado, j, estado.pendente) };
+
+  if (ehFasePrincipal(estado)) {
+    for (const acao of jogadasPrincipais(estado, j)) {
+      if (acao && !validar(estado, j, acao)) return acao;
+    }
+    if (estado.fase === "principal1" && estado.turno > 1 && temAtacante(estado, j)) {
+      return { tipo: "fase", para: "batalha" };
+    }
+    return { tipo: "fase", para: "final" };
+  }
+
+  if (estado.fase === "batalha") {
+    const ataque = escolherAtaque(estado, j);
+    if (ataque && !validar(estado, j, ataque)) return ataque;
+    return { tipo: "fase", para: "principal2" };
+  }
+  return { tipo: "fase", para: "final" };
+}
+
+
+/* ---------- Avaliação do campo ---------- */
+
+// Força de um monstro vista pelo jogador j
+function forca(estado, j, iid) {
+  const loc = localizar(estado, iid);
+  if (!loc || loc.zona !== "monstros") return 0;
+  if (!loc.obj.face && loc.j !== j) return VALOR_VIRADO;
+  const c = carta(estado, iid);
+  if (c.efeito === "flip-destruir" && !loc.obj.face) return 900;
+  return loc.obj.pos === "atk" || loc.obj.face ? atkAtual(estado, iid) : c.def;
+}
+
+const somaForca = (estado, j, iids) => iids.reduce((t, x) => t + forca(estado, j, x), 0);
+
+function maiorAtkVisivel(estado, j, lado) {
+  return estado.jogadores[lado].monstros
+    .filter((m) => m && (m.face || lado === j))
+    .reduce((maior, m) => Math.max(maior, atkAtual(estado, m.iid)), 0);
+}
+
+function temAtacante(estado, j) {
+  return estado.jogadores[j].monstros.some((m, s) => m && m.face && m.pos === "atk" && !m.atacou) &&
+    !luzAtiva(estado, oponente(j));
+}
+
+
+/* ---------- Fase Principal ---------- */
+
+// Lista de jogadas em ordem de prioridade (a primeira válida é usada)
+function* jogadasPrincipais(estado, j) {
+  const p = estado.jogadores[j];
+  const o = oponente(j);
+  const mao = p.mao.map((iid) => ({ iid, c: carta(estado, iid) }));
+  const opcoes = (iid) => opcoesDaCarta(estado, j, iid);
+  const meus = monstrosEmCampo(estado, j);
+  const deles = monstrosEmCampo(estado, o);
+  const primeira = estado.fase === "principal1";
+
+  // 1. Miro entra de penetra
+  for (const { iid } of mao) {
+    if (opcoes(iid).some((x) => x.id === "especial")) yield { tipo: "invocarEspecial", iid };
+  }
+
+  // 2. Invocador traz o Grande Mestre
+  for (const { iid, c } of mao) {
+    if (c.efeito !== "invocador") continue;
+    const op = opcoes(iid).find((x) => x.id === "ativar");
+    if (op) yield { tipo: "ativar", iid, alvos: [op.alvos.candidatos[0]] };
+  }
+
+  // 3. Soco do Big nas cartas do oponente (Luz ativa > viradas > equipamentos)
+  if (primeira) {
+    for (const { iid, c } of mao) {
+      if (c.efeito !== "soco") continue;
+      const op = opcoes(iid).find((x) => x.id === "ativar");
+      const alvo = op && melhorMagiaDoOponente(estado, j, op.alvos.candidatos);
+      if (alvo) yield { tipo: "ativar", iid, alvos: [alvo] };
+    }
+  }
+
+  // 4. Vapo! quando o oponente está bem melhor no campo
+  for (const { iid, c } of mao) {
+    if (c.efeito !== "vapo" || !deles.length) continue;
+    const saldo = somaForca(estado, j, deles) - somaForca(estado, j, meus);
+    if (saldo >= 1500 || (!meus.length && deles.length >= 2)) yield { tipo: "ativar", iid };
+  }
+
+  // 5. Carecas da Luz quando o oponente tem monstro mais forte ou meus PL estão baixos
+  if (!luzAtiva(estado, j)) {
+    for (const { iid, c } of mao) {
+      if (c.efeito !== "luz" || !deles.length) continue;
+      const perigo = maiorAtkVisivel(estado, j, o) > maiorAtkVisivel(estado, j, j) || p.pl <= 3000 || deles.length > meus.length + 1;
+      if (perigo) yield { tipo: "ativar", iid };
+    }
+  }
+
+  // 6. Invocação-Normal: a opção de maior ganho
+  if (!p.invocouNormal) {
+    const melhor = melhorInvocacao(estado, j, mao);
+    if (melhor) yield melhor;
+  }
+
+  // 7. Virar o Careca Cast Surpresa se houver alvo do oponente
+  if (primeira && deles.length) {
+    for (const [slot, m] of p.monstros.entries()) {
+      if (m && !m.face && carta(estado, m.iid).efeito === "flip-destruir") yield { tipo: "virar", slot };
+    }
+  }
+
+  // 8. Bust do Big no meu monstro mais forte
+  for (const { iid, c } of mao) {
+    if (c.efeito !== "bust") continue;
+    const op = opcoes(iid).find((x) => x.id === "ativar");
+    if (!op) continue;
+    const meusAlvos = op.alvos.candidatos.filter((x) => localizar(estado, x).j === j);
+    if (!meusAlvos.length) continue;
+    meusAlvos.sort((a, b) => atkAtual(estado, b) - atkAtual(estado, a));
+    yield { tipo: "ativar", iid, alvos: [meusAlvos[0]] };
+  }
+
+  // 9. Baixa as armadilhas
+  for (const { iid, c } of mao) {
+    if (c.categoria === "armadilha") yield { tipo: "baixarMagia", iid };
+  }
+
+  // 10. Posições
+  const maiorDeles = maiorAtkVisivel(estado, j, o);
+  for (const [slot, m] of p.monstros.entries()) {
+    if (!m || !m.face) continue;
+    const atk = atkAtual(estado, m.iid);
+    if (primeira && m.pos === "def" && atk > maiorDeles && atk >= 1000) yield { tipo: "mudarPosicao", slot };
+    if (!primeira && m.pos === "atk" && !m.atacou && atk < maiorDeles) yield { tipo: "mudarPosicao", slot };
+  }
+}
+
+// Avalia todas as Invocações-Normais possíveis e devolve a melhor (ou null)
+function melhorInvocacao(estado, j, mao) {
+  const p = estado.jogadores[j];
+  const o = oponente(j);
+  const maiorDeles = maiorAtkVisivel(estado, j, o);
+  const deles = monstrosEmCampo(estado, o);
+  // meus monstros do mais fraco para o mais forte (tributos saem daqui)
+  const meusSlots = p.monstros
+    .map((m, s) => (m ? { s, valor: forca(estado, j, m.iid) } : null))
+    .filter(Boolean)
+    .sort((a, b) => a.valor - b.valor);
+
+  let melhor = null;
+  let melhorGanho = 0;
+  for (const { iid, c } of mao) {
+    if (c.categoria !== "monstro") continue;
+    const n = tributosNecessarios(c.nivel);
+    if (meusSlots.length < n) continue;
+    const tributos = meusSlots.slice(0, n);
+    const custo = tributos.reduce((t, x) => t + x.valor, 0);
+
+    let valor = c.atk;
+    let modo = "atk";
+    if (c.efeito === "tributo-destruir-monstro" && deles.length) {
+      valor += Math.max(...deles.map((x) => forca(estado, j, x)));
+    }
+    if (c.efeito === "tributo-destruir-magias") {
+      valor += 700 * Math.min(2, estado.jogadores[o].magias.filter(Boolean).length);
+    }
+    if (c.efeito === "flip-destruir") {
+      modo = "baixar";
+      valor = deles.length ? 1100 : 700;
+    } else if (n === 0 && c.atk < maiorDeles) {
+      // não vale expor um monstro mais fraco: baixa em defesa
+      modo = "baixar";
+      valor = 400 + c.def / 4;
+    }
+    if (c.nivel >= 7 && mao.some((x) => x.c.efeito === "invocador")) valor -= 1500; // melhor esperar o Invocador
+
+    const ganho = valor - custo;
+    if (ganho > melhorGanho) {
+      melhorGanho = ganho;
+      melhor = { tipo: "invocar", iid, modo, tributos: tributos.map((x) => x.s) };
+    }
+  }
+  return melhor;
+}
+
+function melhorMagiaDoOponente(estado, j, candidatos) {
+  const doOponente = candidatos.filter((x) => localizar(estado, x).j !== j);
+  const peso = (x) => {
+    const loc = localizar(estado, x);
+    const c = carta(estado, x);
+    if (loc.obj.face && c.efeito === "luz") return 3;
+    if (!loc.obj.face) return 2;
+    return 1;
+  };
+  doOponente.sort((a, b) => peso(b) - peso(a));
+  return doOponente[0] || null;
+}
+
+
+/* ---------- Batalha ---------- */
+
+function escolherAtaque(estado, j) {
+  const p = estado.jogadores[j];
+  const o = estado.jogadores[oponente(j)];
+  const atacantes = p.monstros
+    .map((m, s) => (m && podeAtacar(estado, j, s) ? s : null))
+    .filter((s) => s !== null)
+    .sort((a, b) => atkAtual(estado, p.monstros[b].iid) - atkAtual(estado, p.monstros[a].iid));
+
+  for (const slot of atacantes) {
+    const atk = atkAtual(estado, p.monstros[slot].iid);
+    if (!o.monstros.some(Boolean)) return { tipo: "atacar", slot, alvo: null };
+
+    let melhorAlvo = null;
+    let melhorValor = -1;
+    o.monstros.forEach((m, s) => {
+      if (!m) return;
+      let vence = false;
+      let valor = 0;
+      if (!m.face) {
+        vence = atk >= 1800;
+        valor = 500;
+      } else if (m.pos === "atk") {
+        const atkD = atkAtual(estado, m.iid);
+        vence = atk > atkD;
+        valor = atkD + (atk - atkD);
+      } else {
+        const defD = defAtual(estado, m.iid);
+        vence = atk > defD;
+        valor = defD;
+      }
+      if (vence && valor > melhorValor) {
+        melhorValor = valor;
+        melhorAlvo = s;
+      }
+    });
+    if (melhorAlvo !== null) return { tipo: "atacar", slot, alvo: melhorAlvo };
+  }
+  return null;
+}
+
+
+/* ---------- Escolhas pendentes ---------- */
+
+const VALOR_NA_MAO = {
+  vapo: 9, "forca-careca": 8, "tributo-destruir-monstro": 7, soco: 6, "tributo-destruir-magias": 6,
+  "armadilha-big": 6, luz: 6, miro: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
+};
+
+function escolherAlvos(estado, j, pend) {
+  if (pend.tipo === "descarte") {
+    const valor = (iid) => {
+      const c = carta(estado, iid);
+      if (c.id === "careca-feijao") return 5;
+      if (c.id === "grande-mestre") return estado.jogadores[j].mao.some((x) => carta(estado, x).efeito === "invocador") ? 7 : 3;
+      return VALOR_NA_MAO[c.efeito] ?? 4;
+    };
+    return [...pend.candidatos].sort((a, b) => valor(a) - valor(b)).slice(0, pend.min);
+  }
+
+  const doOponente = pend.candidatos.filter((x) => localizar(estado, x).j !== j);
+  if (pend.efeito === "tributo-destruir-magias") {
+    const ordenadas = [...doOponente].sort((a, b) => Number(localizar(estado, a).obj.face) - Number(localizar(estado, b).obj.face));
+    return ordenadas.slice(0, pend.max);
+  }
+  // Destruir monstro: o mais forte do oponente; se só houver os meus, o mais fraco
+  if (doOponente.length) {
+    return [[...doOponente].sort((a, b) => forca(estado, j, b) - forca(estado, j, a))[0]];
+  }
+  if (pend.min === 0) return [];
+  return [[...pend.candidatos].sort((a, b) => forca(estado, j, a) - forca(estado, j, b))[0]];
+}

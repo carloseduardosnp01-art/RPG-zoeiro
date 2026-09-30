@@ -168,7 +168,8 @@
     "frase": "O irmão do mal do Midasgel. A flecha dele só acerta a sua mão.",
     "raridade": "Super Rara",
     "copias": 0,
-    "imagem": "img/cartas/midasmon.webp"
+    "imagem": "img/cartas/midasmon.webp",
+    "limite": 1
   },
   {
     "id": "karecoh-alado",
@@ -381,12 +382,13 @@
     "frase": "Tem remédio pra tudo. Principalmente pra falta de magia na mão.",
     "raridade": "Rara",
     "copias": 0,
-    "imagem": "img/cartas/alquimista-das-farmacias.webp"
+    "imagem": "img/cartas/alquimista-das-farmacias.webp",
+    "limite": 1
   },
   {
     "id": "mestre-das-laminas",
     "codigo": "ZOE-PT023",
-    "nome": "O Mestre das Lâminas e Punhos",
+    "nome": "Miqueas, o Mestre das Lâminas e Punhos",
     "categoria": "monstro",
     "subtipo": "efeito",
     "atributo": "TERRA",
@@ -400,7 +402,8 @@
     "frase": "Nem espada nem soco: os dois. Duas vezes.",
     "raridade": "Ultra Rara",
     "copias": 0,
-    "imagem": "img/cartas/mestre-das-laminas.webp"
+    "imagem": "img/cartas/mestre-das-laminas.webp",
+    "limite": 1
   },
   {
     "id": "manoel-do-gelo",
@@ -453,5 +456,68 @@
     "raridade": "Super Rara",
     "copias": 0,
     "imagem": "img/cartas/pote-do-gelo.webp"
+  },
+  {
+    "id": "lamento-prematuro",
+    "codigo": "ZOE-PT027",
+    "nome": "Lamento Prematuro",
+    "categoria": "magia",
+    "subtipo": "equipamento",
+    "efeito": "lamento",
+    "limite": 1,
+    "texto": "Ative esta carta pagando 800 PV e, depois, escolha 1 monstro no seu Cemitério; Invoque-o por Invocação-Especial em Posição de Ataque e equipe-o com esta carta. Quando esta carta for destruída, destrua o monstro equipado.",
+    "comoFunciona": "Limitada a 1 por deck. Você paga 800 PV (precisa ter mais de 800), escolhe um monstro do seu Cemitério e ele volta em Posição de Ataque, equipado com o Lamento. Se o Lamento for destruído (Soco do Big, Adm do PT...), o monstro vai junto.",
+    "frase": "Chorou antes da hora. E o defunto levantou.",
+    "raridade": "Ultra Rara",
+    "copias": 0,
+    "imagem": "img/cartas/lamento-prematuro.webp"
+  },
+  {
+    "id": "sai-daqui-obeso",
+    "codigo": "ZOE-PT028",
+    "nome": "Sai Daqui Obeso",
+    "categoria": "armadilha",
+    "subtipo": "normal",
+    "efeito": "sai-daqui",
+    "texto": "Quando um monstro do oponente declarar um ataque: devolva esse monstro para a mão do dono.",
+    "comoFunciona": "Automática: a partir do turno seguinte ao que foi baixada, no primeiro ataque que o oponente declarar, ela ativa sozinha e manda o atacante de volta para a mão dele (os equipamentos dele vão para o Cemitério). O ataque para.",
+    "frase": "Levantou o carro, levantou o obeso. Sai daqui!",
+    "raridade": "Super Rara",
+    "copias": 0,
+    "imagem": "img/cartas/sai-daqui-obeso.webp"
+  },
+  {
+    "id": "o-ultimo-gole",
+    "codigo": "ZOE-PT029",
+    "nome": "O Último Gole",
+    "categoria": "magia",
+    "subtipo": "equipamento",
+    "efeito": "gole",
+    "limite": 1,
+    "texto": "Equipe esta carta a 1 monstro com a face para cima no campo: o ATK dele é dobrado. No final do turno, destrua o monstro equipado.",
+    "comoFunciona": "Limitada a 1 por deck. O monstro equipado fica com o dobro do ATK (contando todos os bônus) até o fim do turno; aí ele é destruído. Use no seu monstro para um ataque devastador, ou no do oponente só para tirar ele do campo no fim do turno.",
+    "frase": "O último gole é sempre o mais forte. E o último.",
+    "raridade": "Ultra Rara",
+    "copias": 0,
+    "imagem": "img/cartas/o-ultimo-gole.webp"
+  },
+  {
+    "id": "o-heroi-do-lamento",
+    "codigo": "ZOE-PT030",
+    "nome": "O Herói do Lamento",
+    "categoria": "monstro",
+    "subtipo": "normal",
+    "atributo": "LUZ",
+    "nivel": 7,
+    "tipo": "Guerreiro",
+    "atk": 2500,
+    "def": 2000,
+    "efeito": null,
+    "texto": "Um herói vindo das estrelas que chegou atrasado para todas as batalhas. Agora compensa o lamento com os punhos.",
+    "comoFunciona": "Monstro Normal de Nível 7: pede 2 tributos, mas por ser Normal também pode entrar pelo \"Invocador\", direto da mão, sem tributo.",
+    "frase": "Chegou atrasado, mas chegou brilhando.",
+    "raridade": "Super Rara",
+    "copias": 0,
+    "imagem": "img/cartas/o-heroi-do-lamento.webp"
   }
 ]

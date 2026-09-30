@@ -57,6 +57,9 @@ const FRASES = {
   "manoel-gelo": "O GELO NÃO ACABA!",
   "gelo-careca": "CONGELOU GERAL!",
   "pote-gelo": "POTE DO GELO!",
+  lamento: "VOLTOU DO ALÉM!",
+  "sai-daqui": "SAI DAQUI, OBESO!",
+  gole: "O ÚLTIMO GOLE!",
 };
 
 const PROVOCACOES = ["😂 Chora não!", "🧑‍🦲 Careca demais!", "💨 Vapo!", "🤡 Tá com medo?", "🔥 Joga logo!", "👋 GG"];
@@ -471,7 +474,7 @@ function zonaCarta(estado, j, zona, slot) {
   }
   if (zona === "monstros" && equipamentos(estado, obj.iid)) {
     const eq = el("span", "selo-equip", "✚");
-    eq.title = "Equipado com Bust do Big";
+    eq.title = "Equipado";
     z.append(eq);
   }
 
@@ -601,6 +604,9 @@ function descreverEvento(estado, ev) {
     case "busca": return { texto: `${quem(ev.j)} ${ev.j === eu ? "adicionou" : "adicionou"} ${nome(ev.iid)} do deck à mão.`, classe: minha };
     case "aoDeck": return { texto: `${quem(ev.j)} devolveu ${ev.j === eu ? nome(ev.iid) : "uma carta"} ao deck.`, classe: minha };
     case "ataqueDuplo": return { texto: `⚔️ ${nome(ev.iid)} pode atacar duas vezes neste turno!`, classe: minha };
+    case "custo": return { texto: `${quem(ev.j)} pagou ${ev.valor} PV (${ev.pl}).`, classe: "log--dano" };
+    case "paraMao": return { texto: `↩️ ${nome(ev.iid)} voltou para a mão de ${quem(ev.j)}.`, classe: "log--armadilha" };
+    case "ajusteDeck": return { texto: `⚠️ ${ev.j === eu ? "Seu deck tinha" : `O deck de ${quem(ev.j)} tinha`} ${ev.trocadas} carta${ev.trocadas > 1 ? "s" : ""} acima do limite: ${ev.trocadas > 1 ? "viraram" : "virou"} Careca Feijão.`, classe: "log--turno" };
     case "protegido": return { texto: `🪽 ${ev.j === eu ? "Você não sofreu" : `${quem(ev.j)} não sofreu`} ${ev.valor} de dano de batalha (Karecoh Alado).`, classe: "log--armadilha" };
     case "posicao": return { texto: `${nome(ev.iid)} mudou para ${ev.pos === "atk" ? "Ataque" : "Defesa"}.`, classe: minha };
     case "descarte": return { texto: `${quem(ev.j)} descartou ${nome(ev.iid)}.`, classe: minha };
@@ -914,6 +920,21 @@ async function tocarEventos(eventos, estadoNovo) {
         if (alvo) {
           alvo.classList.add("explodindo");
           await esperar(320);
+        }
+        break;
+      }
+      case "custo":
+        tocar("dano");
+        mostrarDano(ev.j, ev.valor, ev.pl);
+        await esperar(450);
+        break;
+      case "paraMao": {
+        const alvo = raiz.querySelector(`.campo [data-iid="${ev.iid}"]`);
+        if (alvo) {
+          alvo.style.transition = "transform .35s ease, opacity .35s ease";
+          alvo.style.transform = `translateY(${ev.j === sessao.eu ? 60 : -60}px) scale(.6)`;
+          alvo.style.opacity = "0";
+          await esperar(380);
         }
         break;
       }

@@ -4,7 +4,7 @@
    deck para tirar. Regras: de 40 a 60 cartas e até 3 cópias de cada.
    ========================================================================== */
 
-import { montarDeck, DECK_MIN, DECK_MAX, MAX_COPIAS } from "./motor.js";
+import { montarDeck, DECK_MIN, DECK_MAX, limiteDaCarta, excessoDeLimite } from "./motor.js";
 import { criarCarta } from "./cartas-ui.js";
 import { deckAtual, salvarDeck, paraMapa, paraLista, totalDoMapa, ehDeckPadrao } from "./deck.js";
 import { abrirDetalhes } from "./catalogo.js";
@@ -60,7 +60,8 @@ function temAlteracoes() {
 
 function motivoParaNaoColocar(id) {
   if (total() >= DECK_MAX) return `O deck já tem ${DECK_MAX} cartas, o máximo. Tire uma antes de colocar outra.`;
-  if (copias(id) >= MAX_COPIAS) return `Já tem ${MAX_COPIAS} cópias dessa carta no deck (o máximo).`;
+  const limite = limiteDaCarta(id);
+  if (copias(id) >= limite) return limite < 3 ? `Carta limitada: no máximo ${limite} cópia${limite > 1 ? "s" : ""} por deck.` : `Já tem ${limite} cópias dessa carta no deck (o máximo).`;
   return null;
 }
 
@@ -118,7 +119,9 @@ function desenhar() {
   const status = $("#deck-status");
   const alterado = temAlteracoes();
   status.dataset.alterado = String(alterado);
-  if (n < DECK_MIN) status.textContent = `● Faltam ${DECK_MIN - n} carta${DECK_MIN - n > 1 ? "s" : ""} para poder salvar (mínimo ${DECK_MIN})`;
+  const excesso = excessoDeLimite(paraLista(rascunho));
+  if (excesso.length) status.textContent = `⚠ Acima do limite: ${excesso.map((x) => `${x.nome} (tire ${x.sobra})`).join(", ")}. No duelo, as sobras viram Careca Feijão`;
+  else if (n < DECK_MIN) status.textContent = `● Faltam ${DECK_MIN - n} carta${DECK_MIN - n > 1 ? "s" : ""} para poder salvar (mínimo ${DECK_MIN})`;
   else if (alterado) status.textContent = "● Alterações não salvas";
   else if (ehDeckPadrao(paraLista(salvo))) status.textContent = "✔ Usando o deck padrão";
   else status.textContent = "✔ Deck salvo: é esse que você usa nos duelos";
@@ -146,9 +149,9 @@ function desenhar() {
   colecao.replaceChildren();
   for (const c of cartas) {
     colecao.append(itemEditor(c, {
-      qtd: `${copias(c.id)}/${MAX_COPIAS}`,
+      qtd: `${copias(c.id)}/${limiteDaCarta(c.id)}`,
       ativo: !motivoParaNaoColocar(c.id),
-      rotulo: `Colocar uma cópia de ${c.nome} (${copias(c.id)} de ${MAX_COPIAS} no deck)`,
+      rotulo: `Colocar uma cópia de ${c.nome} (${copias(c.id)} de ${limiteDaCarta(c.id)} no deck)`,
       dica: "+ colocar",
       aoClicar: () => colocar(c.id),
     }));

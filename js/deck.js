@@ -28,9 +28,9 @@ export const totalDoMapa = (mapa) => Object.values(mapa || {}).reduce((t, n) => 
 // Deck que o jogador usa nos duelos (sempre válido)
 export function deckAtual() {
   const doPerfil = paraLista(conta.usuarioAtual()?.deck);
-  if (doPerfil.length && !problemaDoDeck(doPerfil)) return doPerfil;
+  if (doPerfil.length && !problemaDoDeck(doPerfil, { comLimite: false })) return doPerfil;
   const local = paraLista(guardar.ler(CHAVE));
-  if (local.length && !problemaDoDeck(local)) return local;
+  if (local.length && !problemaDoDeck(local, { comLimite: false })) return local;
   return montarDeck();
 }
 

@@ -160,6 +160,31 @@ function* jogadasPrincipais(estado, j) {
     }
   }
 
+  // 7b. Lamento Prematuro: traz de volta o monstro mais forte do Cemitério (com PV sobrando)
+  for (const { iid, c } of mao) {
+    if (c.efeito !== "lamento" || p.pl <= 2500) continue;
+    const op = opcoes(iid).find((x) => x.id === "ativar");
+    if (!op) continue;
+    const melhor = [...op.alvos.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0];
+    if (carta(estado, melhor).atk >= 1800) yield { tipo: "ativar", iid, alvos: [melhor] };
+  }
+
+  // 7c. O Último Gole: no meu monstro em ataque quando dá para atacar direto ou vencer uma batalha grande
+  if (primeira && estado.turno > 1 && !luzAtiva(estado, o)) {
+    for (const { iid, c } of mao) {
+      if (c.efeito !== "gole") continue;
+      const op = opcoes(iid).find((x) => x.id === "ativar");
+      if (!op) continue;
+      const meus2 = op.alvos.candidatos.filter((x) => {
+        const l = localizar(estado, x);
+        return l.j === j && l.obj.pos === "atk" && !l.obj.atacou;
+      });
+      if (!meus2.length) continue;
+      const forte = meus2.sort((a, b) => atkAtual(estado, b) - atkAtual(estado, a))[0];
+      if (!deles.length || atkAtual(estado, forte) * 2 >= estado.jogadores[o].pl) yield { tipo: "ativar", iid, alvos: [forte] };
+    }
+  }
+
   // 8. Bust do Big no meu monstro mais forte
   for (const { iid, c } of mao) {
     if (c.efeito !== "bust") continue;
@@ -297,7 +322,7 @@ const VALOR_NA_MAO = {
   vapo: 9, "forca-careca": 8, "tributo-destruir-monstro": 7, soco: 6, "tributo-destruir-magias": 6,
   "armadilha-big": 6, luz: 6, penetra: 5, saideira: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
   "flip-descartar": 5, "flip-comprar": 4, karecoh: 4,
-  wellington: 5, "mestre-laminas": 6, "manoel-gelo": 4, "gelo-careca": 5, "pote-gelo": 4, "flip-buscar-magia": 4,
+  wellington: 5, "mestre-laminas": 6, lamento: 5, gole: 5, "sai-daqui": 6, "manoel-gelo": 4, "gelo-careca": 5, "pote-gelo": 4, "flip-buscar-magia": 4,
 };
 
 function valorNaMao(estado, j, iid) {

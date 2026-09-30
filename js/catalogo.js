@@ -130,6 +130,7 @@ function criarItemCatalogo(c) {
 
   const info = el("div", "item-catalogo__info");
   info.append(el("span", "", c.copias ? `${c.codigo} · ${c.copias}x no deck padrão` : `${c.codigo} · carta extra`));
+  if (c.limite !== undefined && c.limite < 3) info.append(el("span", "selo-limite", c.limite === 0 ? "Banida" : `Limitada a ${c.limite}`));
   const selo = el("span", "selo-raridade", c.raridade);
   selo.dataset.raridade = chaveRaridade(c);
   info.append(selo);
@@ -206,6 +207,7 @@ function preencherDetalhes() {
     linha("Tributos", t ? `${t} monstro${t > 1 ? "s" : ""}` : "Nenhum");
   }
   linha("Raridade", c.raridade);
+  if (c.limite !== undefined && c.limite < 3) linha("Limite", c.limite === 0 ? "Banida" : `${c.limite} cópia${c.limite > 1 ? "s" : ""} por deck`);
   linha("Deck padrão", c.copias ? `${c.copias} cópia${c.copias > 1 ? "s" : ""}` : "Não está (use no seu deck)");
 
   document.querySelector("#detalhe-texto").textContent = c.texto;

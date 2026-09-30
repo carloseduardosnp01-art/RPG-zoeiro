@@ -45,7 +45,7 @@ export function registrarCartas(lista) {
 export function versaoDasCartas(lista = Object.values(CARTAS)) {
   let h = 2166136261;
   for (const c of [...lista].sort((a, b) => a.id.localeCompare(b.id))) {
-    for (const ch of `${c.id}|${c.efeito}|${c.nivel}|${c.atk}|${c.def};`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+    for (const ch of `${c.id}|${c.efeito}|${c.nivel}|${c.atk}|${c.def}|${c.limite ?? ""};`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
   }
   return (h >>> 0).toString(36);
 }
@@ -63,8 +63,37 @@ export function montarDeck() {
   return deck;
 }
 
-// Explica por que um deck (lista de ids) não vale, ou devolve null se estiver ok
-export function problemaDoDeck(lista) {
+// Quantas cópias a carta pode ter no deck (cartas fortes são limitadas a 1 ou 2; 0 = banida)
+export const limiteDaCarta = (id) => Math.min(MAX_COPIAS, CARTAS[id]?.limite ?? MAX_COPIAS);
+
+// Cópias acima do limite: [{ id, nome, sobra }]
+export function excessoDeLimite(lista) {
+  const contagem = {};
+  for (const id of lista) contagem[id] = (contagem[id] || 0) + 1;
+  return Object.entries(contagem)
+    .filter(([id, n]) => CARTAS[id] && n > limiteDaCarta(id))
+    .map(([id, n]) => ({ id, nome: CARTAS[id].nome, sobra: n - limiteDaCarta(id) }));
+}
+
+// Na hora do duelo, as cópias acima do limite (ou banidas) viram Careca Feijão
+// (mesmo que passe de 3 Feijões no deck)
+export function ajustarAoLimite(lista) {
+  const usadas = {};
+  let trocadas = 0;
+  const ajustada = lista.map((id) => {
+    usadas[id] = (usadas[id] || 0) + 1;
+    if (usadas[id] > limiteDaCarta(id)) {
+      trocadas++;
+      return "careca-feijao";
+    }
+    return id;
+  });
+  return { lista: ajustada, trocadas };
+}
+
+// Explica por que um deck (lista de ids) não vale, ou devolve null se estiver ok.
+// comLimite = false: não olha os limites de cópias (no duelo as sobras viram Careca Feijão)
+export function problemaDoDeck(lista, { comLimite = true } = {}) {
   if (!Array.isArray(lista)) return "Deck inválido.";
   if (lista.length < DECK_MIN) return `O deck precisa ter pelo menos ${DECK_MIN} cartas.`;
   if (lista.length > DECK_MAX) return `O deck pode ter no máximo ${DECK_MAX} cartas.`;
@@ -73,6 +102,7 @@ export function problemaDoDeck(lista) {
     if (!CARTAS[id]) return "O deck tem uma carta que não existe.";
     contagem[id] = (contagem[id] || 0) + 1;
     if (contagem[id] > MAX_COPIAS) return `No máximo ${MAX_COPIAS} cópias de "${CARTAS[id].nome}".`;
+    if (comLimite && contagem[id] > limiteDaCarta(id)) return `No máximo ${limiteDaCarta(id)} cópia${limiteDaCarta(id) > 1 ? "s" : ""} de "${CARTAS[id].nome}".`;
   }
   return null;
 }
@@ -121,9 +151,11 @@ export function novoDuelo({ id, jogadores, semente = Date.now() }) {
     historico: [],    // últimos eventos, para o log
   };
 
+  const ajustes = [];
   jogadores.forEach((info, j) => {
     const prefixo = j === 0 ? "a" : "b";
-    const deckBase = info.deck && !problemaDoDeck(info.deck) ? info.deck : montarDeck();
+    const { lista: deckBase, trocadas } = ajustarAoLimite(info.deck && !problemaDoDeck(info.deck, { comLimite: false }) ? info.deck : montarDeck());
+    if (trocadas) ajustes.push({ t: "ajusteDeck", j, trocadas });
     const deck = deckBase.map((idCarta, k) => {
       const iid = prefixo + k;
       estado.cartas[iid] = idCarta;
@@ -146,7 +178,7 @@ export function novoDuelo({ id, jogadores, semente = Date.now() }) {
     });
   });
 
-  const eventos = [];
+  const eventos = [...ajustes];
   estado.vez = sorteio() < 0.5 ? 0 : 1;
   eventos.push({ t: "inicio", j: estado.vez });
   for (const j of [0, 1]) comprar(estado, j, MAO_INICIAL, eventos, true);
@@ -215,6 +247,11 @@ export function atkAtual(estado, iid) {
   }
   const loc = localizar(estado, iid);
   if (loc && loc.zona === "monstros" && loc.obj.marcadores) atk += 300 * loc.obj.marcadores;
+  for (const p of estado.jogadores) {
+    for (const m of p.magias) {
+      if (m && m.face && m.equipadoEm === iid && carta(estado, m.iid).efeito === "gole") atk *= 2;
+    }
+  }
   return atk;
 }
 
@@ -598,6 +635,17 @@ export function requisitosMagia(estado, j, iid) {
         ? { alvos: { candidatos, min: 1, max: 1, titulo: "Invocador: escolha o Monstro Normal que vai entrar" } }
         : null;
     }
+    case "lamento": {
+      const candidatos = p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro");
+      if (!candidatos.length || zonaLivre(p.monstros) < 0 || p.pl <= 800) return null;
+      return { alvos: { candidatos, min: 1, max: 1, titulo: "Lamento Prematuro (paga 800 PV): escolha o monstro do seu Cemitério que volta" } };
+    }
+    case "gole": {
+      const candidatos = [0, 1].flatMap((q) => estado.jogadores[q].monstros.filter((m) => m && m.face).map((m) => m.iid));
+      return candidatos.length
+        ? { alvos: { candidatos, min: 1, max: 1, titulo: "O Último Gole: o monstro escolhido dobra o ATK e é destruído no fim do turno" } }
+        : null;
+    }
     case "pote-gelo": {
       const candidatos = p.mao.filter((x) => x !== iid && ehCartaGelo(carta(estado, x)));
       return candidatos.length >= 2
@@ -668,6 +716,22 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
       mandarProCemiterio(estado, iid, ev);
       break;
     }
+    case "lamento": {
+      const alvo = alvos[0];
+      p.pl = Math.max(0, p.pl - 800);
+      ev.push({ t: "custo", j, valor: 800, pl: p.pl });
+      p.cemiterio.splice(p.cemiterio.indexOf(alvo), 1);
+      const slot = zonaLivre(p.monstros);
+      p.monstros[slot] = { iid: alvo, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+      ev.push({ t: "invocacao", j, iid: alvo, modo: "especial", slot });
+      obj.equipadoEm = alvo;
+      ev.push({ t: "equipada", j, iid, alvo });
+      break;
+    }
+    case "gole":
+      obj.equipadoEm = alvos[0];
+      ev.push({ t: "equipada", j, iid, alvo: alvos[0] });
+      break;
     case "pote-gelo":
       for (const alvo of alvos) {
         p.mao.splice(p.mao.indexOf(alvo), 1);
@@ -727,6 +791,15 @@ function verificarArmadilhas(estado, gatilho, dados, ev) {
       m.face = true;
       ev.push({ t: "armadilha", j: defensor, iid: m.iid, alvo: dados.iid });
       destruir(estado, dados.iid, ev, "efeito");
+      mandarProCemiterio(estado, m.iid, ev);
+      return true;
+    }
+
+    if (gatilho === "ataque" && c.efeito === "sai-daqui") {
+      if (!noCampo(estado, dados.iid)) continue;
+      m.face = true;
+      ev.push({ t: "armadilha", j: defensor, iid: m.iid, alvo: dados.iid });
+      devolverParaMao(estado, dados.iid, ev);
       mandarProCemiterio(estado, m.iid, ev);
       return true;
     }
@@ -933,7 +1006,9 @@ function destruir(estado, iid, ev, causa) {
   const loc = localizar(estado, iid);
   if (!loc || (loc.zona !== "monstros" && loc.zona !== "magias")) return;
   ev.push({ t: "destruida", iid, j: loc.j, causa });
+  const equipado = loc.zona === "magias" ? loc.obj.equipadoEm : null;
   removerDoCampo(estado, iid, ev, causa);
+  if (equipado && carta(estado, iid).efeito === "lamento") destruir(estado, equipado, ev, "efeito");
   // Karecoh Alado: destruído no campo -> o dono não sofre dano de batalha pelo resto do turno
   if (loc.zona === "monstros" && carta(estado, iid).efeito === "karecoh") {
     estado.jogadores[loc.j].semDanoBatalha = estado.turno;
@@ -978,6 +1053,17 @@ function removerDoCampo(estado, iid, ev, causa) {
       });
     }
   }
+}
+
+// Monstro do campo volta para a mão do dono (equipamentos presos a ele vão para o Cemitério)
+function devolverParaMao(estado, iid, ev) {
+  const loc = localizar(estado, iid);
+  if (!loc || loc.zona !== "monstros") return;
+  removerDoCampo(estado, iid, ev, "mao");
+  const p = estado.jogadores[loc.j];
+  p.cemiterio.splice(p.cemiterio.indexOf(iid), 1);
+  p.mao.push(iid);
+  ev.push({ t: "paraMao", j: loc.j, iid });
 }
 
 // Magia/Armadilha que terminou de resolver
@@ -1050,6 +1136,16 @@ function encerrarTurno(estado, ev) {
 
 function passarTurno(estado, ev) {
   const terminou = estado.vez;
+  // O Último Gole: no fim do turno, o monstro equipado é destruído
+  for (const q of estado.jogadores) {
+    for (const m of [...q.magias]) {
+      if (m && m.face && m.equipadoEm && carta(estado, m.iid).efeito === "gole") {
+        ev.push({ t: "efeito", j: estado.jogadores.indexOf(q), iid: m.iid });
+        destruir(estado, m.equipadoEm, ev, "efeito");
+      }
+    }
+  }
+  if (estado.vencedor !== null) return;
   // Carecas da Luz Reveladora do outro jogador: conta um turno do oponente
   const donoLuz = oponente(terminou);
   estado.jogadores[donoLuz].magias.forEach((m) => {

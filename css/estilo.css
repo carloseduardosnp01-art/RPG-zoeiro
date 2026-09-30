@@ -1739,3 +1739,13 @@ a:hover {
 .navbar-zoeira .logo-navbar {
   height: 52px;
 }
+
+.selo-limite {
+  padding: .1rem .5rem;
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #a0222b;
+  border-radius: 1rem;
+}

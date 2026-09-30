@@ -789,7 +789,7 @@ function aceitarDesafio(d) {
 
 // Quem desafiou cria o duelo: cada um joga com o próprio deck (o motor confere se vale)
 function comecarComoAnfitriao(d, oponente, deckOponente) {
-  if (!Array.isArray(deckOponente) || problemaDoDeck(deckOponente)) {
+  if (!Array.isArray(deckOponente) || problemaDoDeck(deckOponente, { comLimite: false })) {
     aviso(`O deck de ${oponente.nick} não veio certo; ele vai jogar com o deck padrão. Se continuar, recarreguem a página.`, "erro", 9000);
   }
   const { estado, eventos } = novoDuelo({

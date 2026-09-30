@@ -1716,3 +1716,26 @@ a:hover {
 .marca:hover .careca-navbar {
   transform: rotate(-8deg) scale(1.08);
 }
+
+/* Início: só texto (o logo fica no menu) */
+.titulo-hero {
+  max-width: 34rem;
+  margin-bottom: 1.2rem;
+  color: #fff4dc;
+  font-size: clamp(2.3rem, 5.5vw, 3.9rem);
+  line-height: 1.08;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, .6);
+}
+
+.titulo-hero span {
+  color: transparent;
+  background: linear-gradient(100deg, #fff6d0 0%, var(--ouro) 30%, #fffbe6 45%, var(--ouro) 60%, #8a5f14 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: brilho-titulo 5s ease-in-out infinite;
+}
+
+.navbar-zoeira .logo-navbar {
+  height: 52px;
+}

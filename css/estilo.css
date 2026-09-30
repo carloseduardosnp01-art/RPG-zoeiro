@@ -1704,3 +1704,15 @@ a:hover {
     height: 38px;
   }
 }
+
+.careca-navbar {
+  display: block;
+  width: 52px;
+  height: 52px;
+  filter: drop-shadow(0 0 10px rgba(255, 170, 60, .35));
+  transition: transform .25s ease;
+}
+
+.marca:hover .careca-navbar {
+  transform: rotate(-8deg) scale(1.08);
+}

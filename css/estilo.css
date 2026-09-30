@@ -31,8 +31,8 @@
 
 /* ---------- Variáveis ---------- */
 :root {
-  --fundo: #0b1110;
-  --fundo-2: #111a18;
+  --fundo: #0c0806;
+  --fundo-2: #150d09;
   --painel: #1b1410;
   --painel-2: #241a13;
   --borda: rgba(224, 180, 74, .32);
@@ -70,9 +70,9 @@ body {
   color: var(--texto);
   font-family: var(--fonte-ui);
   background:
-    radial-gradient(ellipse at 10% 90%, rgba(31, 154, 130, .18), transparent 45%),
-    radial-gradient(ellipse at 90% 10%, rgba(120, 70, 190, .16), transparent 45%),
-    radial-gradient(ellipse at 50% 50%, #0f1715, var(--fundo) 70%);
+    radial-gradient(ellipse at 12% 95%, rgba(214, 110, 30, .16), transparent 45%),
+    radial-gradient(ellipse at 88% 5%, rgba(170, 45, 20, .16), transparent 45%),
+    radial-gradient(ellipse at 50% 40%, #1a110b, var(--fundo) 70%);
   background-attachment: fixed;
   overflow-x: hidden;
 }
@@ -293,7 +293,7 @@ a:hover {
   color: #fff;
   font-weight: 600;
   text-align: center;
-  background: linear-gradient(90deg, #0f8f7a, #14a38b, #0f8f7a);
+  background: linear-gradient(90deg, #a8561a, #d98a2b, #a8561a);
   box-shadow: 0 2px 10px rgba(0, 0, 0, .4);
   animation: pulsar-faixa 2s ease-in-out infinite;
 }
@@ -655,8 +655,8 @@ a:hover {
   padding: 1.1rem 1.1rem 1.4rem;
   background:
     radial-gradient(ellipse at 50% 0%, rgba(224, 180, 74, .14), transparent 60%),
-    linear-gradient(160deg, #1f3a33, #0e1a17);
-  border: 1px solid rgba(31, 154, 130, .45);
+    linear-gradient(160deg, #2c1d12, #140c08);
+  border: 1px solid var(--borda);
   border-radius: .8rem;
   box-shadow: inset 0 0 30px rgba(0, 0, 0, .5);
 }
@@ -713,7 +713,7 @@ a:hover {
   padding: .9rem 1rem;
   color: var(--texto-suave);
   background: rgba(0, 0, 0, .3);
-  border-left: 4px solid var(--teal);
+  border-left: 4px solid var(--ouro);
   border-radius: 0 .5rem .5rem 0;
 }
 
@@ -823,8 +823,8 @@ a:hover {
   padding: 1rem;
   background:
     radial-gradient(ellipse at 50% 0%, rgba(224, 180, 74, .12), transparent 60%),
-    linear-gradient(160deg, #1f3a33, #0e1a17);
-  border: 1px solid rgba(31, 154, 130, .45);
+    linear-gradient(160deg, #2c1d12, #140c08);
+  border: 1px solid var(--borda);
   border-radius: .8rem;
   box-shadow: inset 0 0 30px rgba(0, 0, 0, .5);
 }
@@ -1687,9 +1687,8 @@ a:hover {
   width: 100%;
   max-width: 640px;
   height: auto;
-  /* bordas do banner somem no fundo da página */
-  -webkit-mask-image: radial-gradient(ellipse 72% 90% at 50% 50%, #000 60%, transparent 100%);
-  mask-image: radial-gradient(ellipse 72% 90% at 50% 50%, #000 60%, transparent 100%);
+  margin-left: -1%;
+  filter: drop-shadow(0 6px 22px rgba(0, 0, 0, .7));
 }
 
 [data-emblema] img {

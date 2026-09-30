@@ -310,10 +310,10 @@
   gap: var(--gap);
   padding: calc(var(--gap) * 1.5);
   background:
-    radial-gradient(ellipse at 50% 50%, rgba(31, 154, 130, .12), transparent 70%),
+    radial-gradient(ellipse at 50% 50%, rgba(214, 120, 40, .1), transparent 70%),
     repeating-linear-gradient(135deg, rgba(255, 255, 255, .015) 0 6px, transparent 6px 14px),
-    rgba(4, 10, 9, .55);
-  border: 1px solid rgba(31, 154, 130, .3);
+    rgba(10, 6, 4, .6);
+  border: 1px solid rgba(224, 180, 74, .25);
   border-radius: 1rem;
   box-shadow: inset 0 0 40px rgba(0, 0, 0, .6);
 }

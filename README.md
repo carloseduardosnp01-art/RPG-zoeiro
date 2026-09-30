@@ -32,7 +32,7 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
 - **Catálogo**: busca (sem diferenciar acentos), filtros por categoria, atributo e raridade, ordenação, paginação e modal com a carta completa, ficha, "como funciona no jogo" e frase da carta (com navegação Anterior/Próxima).
 - **Template próprio das cartas**, feito em HTML/CSS e usado em todo o site: moldura por tipo (Normal, Efeito, Magia, Armadilha), atributo com kanji, estrelas, selo de raridade (nome prateado, dourado ou arco-íris e brilho holográfico na arte), número de série e selo careca. A mesma carta escala de 50 px (campo no celular) até a carta grande do modal.
 - **Deck**:
-  - **Meu deck**: editor para montar e salvar o seu deck. Clique na coleção para colocar uma cópia e no deck para tirar. Regras: de **40 a 60 cartas** e até **3 cópias** de cada (com 40 não dá para tirar, com 60 não dá para colocar). O deck salvo fica no navegador e na sua conta, e é o que você usa nos duelos online e no treino.
+  - **Meu deck**: editor para montar e salvar o seu deck. Clique na coleção para colocar uma cópia e no deck para tirar. Regras: de **40 a 60 cartas** e até **3 cópias** de cada (dá para tirar à vontade enquanto monta, mas só salva com 40 a 60; com 60 não dá para colocar mais). O deck salvo fica no navegador e na sua conta, e é o que você usa nos duelos online e no treino.
   - **Deck padrão** (Deck Careca Supremo): mesa com as pilhas de cópias e o resumo (40 cartas: 22 monstros, 12 magias, 6 armadilhas). É o deck de quem ainda não montou o seu e o deck do Bot Careca.
 - **Regras** em acordeão.
 - **Salão online** (igual ao chat do site de referência):
@@ -136,7 +136,7 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT005 | Careca do PT | Efeito · Nv 5 · 2400/1000 | 3 | Tributo: pode destruir 1 monstro |
 | ZOE-PT006 | Adm do PT | Efeito · Nv 6 · 2400/1000 | 2 | Tributo: destrói até 2 Magias/Armadilhas |
 | ZOE-PT007 | Feiticeira Careca | Efeito · Nv 6 · 2000/1700 | 3 | +300 ATK por Grande Mestre nos cemitérios |
-| ZOE-PT008 | Carecas da Luz Reveladora | Magia | 2 | Oponente não ataca por 3 turnos dele |
+| ZOE-PT008 | Carecas da Luz Reveladora | Magia | 2 | Revela os monstros virados do oponente (sem efeito VIRE) e ele não ataca por 3 turnos dele |
 | ZOE-PT009 | Vapo! | Magia | 2 | Destrói todos os monstros |
 | ZOE-PT010 | Soco do Big | Magia Rápida | 3 | Destrói 1 Magia/Armadilha |
 | ZOE-PT011 | Bust do Big | Magia de Equipamento | 2 | +700 ATK |
@@ -148,7 +148,7 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT017 | Carecelta | Monstro Normal · Nv 4 · 1400/1200 | – | Elfo careca espadachim |
 | ZOE-PT018 | Midasgel | Efeito/Virar · Nv 2 · 1000/400 | – | VIRE: compra 1 carta |
 | ZOE-PT019 | Midasmon | Efeito/Virar · Nv 2 · 1000/400 | – | VIRE: o oponente descarta 1 carta (você escolhe no seu turno; sorteada no turno dele) |
-| ZOE-PT020 | Karecoh Alado | Efeito · Nv 4 · 300/200 | – | Destruído no campo → sem dano de batalha pelo resto do turno |
+| ZOE-PT020 | Karecoh Alado | Efeito · Nv 1 · 300/200 | – | Destruído no campo → sem dano de batalha pelo resto do turno |
 
 A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra Careca, Carecelta, Midasgel, Midasmon e Karecoh Alado) ficam fora dele e entram nos decks personalizados. Deck padrão: **40 cartas** (22 monstros, 12 magias, 6 armadilhas). Com 15 cartas diferentes e no máximo 3 cópias, 10 cartas ficaram com 3 cópias e 5 com 2 (Careca Cast Surpresa, Adm do PT, Bust do Big, Vapo! e Carecas da Luz). A Feiticeira Careca original falava de "Mago Negro"; aqui ela conta o **Grande Mestre**, que é o "Mago Negro" do deck.
 

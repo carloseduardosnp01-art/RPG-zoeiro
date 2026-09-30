@@ -578,6 +578,13 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
       break;
     }
     case "luz":
+      // Revela os monstros virados do oponente (sem ativar os efeitos VIRE deles)
+      estado.jogadores[oponente(j)].monstros.forEach((m) => {
+        if (m && !m.face) {
+          m.face = true;
+          ev.push({ t: "virada", j: oponente(j), iid: m.iid, semEfeito: true });
+        }
+      });
       obj.turnosRestantes = 3;
       break;
   }

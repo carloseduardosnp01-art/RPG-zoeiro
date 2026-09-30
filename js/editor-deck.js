@@ -65,7 +65,7 @@ function motivoParaNaoColocar(id) {
 }
 
 function motivoParaNaoTirar() {
-  if (total() <= DECK_MIN) return `O deck não pode ficar com menos de ${DECK_MIN} cartas. Coloque outra carta antes de tirar esta.`;
+  if (total() <= 0) return "O deck já está vazio.";
   return null;
 }
 
@@ -110,7 +110,7 @@ function salvar() {
 function desenhar() {
   const n = total();
   $("#deck-total").textContent = n;
-  $("#deck-total").dataset.limite = n <= DECK_MIN ? "min" : n >= DECK_MAX ? "max" : "";
+  $("#deck-total").dataset.limite = n < DECK_MIN ? "min" : n >= DECK_MAX ? "max" : "";
 
   const porCategoria = (cat) => cartas.filter((c) => c.categoria === cat).reduce((t, c) => t + copias(c.id), 0);
   $("#deck-tipos").textContent = `${porCategoria("monstro")} monstros · ${porCategoria("magia")} magias · ${porCategoria("armadilha")} armadilhas`;
@@ -118,11 +118,13 @@ function desenhar() {
   const status = $("#deck-status");
   const alterado = temAlteracoes();
   status.dataset.alterado = String(alterado);
-  if (alterado) status.textContent = "● Alterações não salvas";
+  if (n < DECK_MIN) status.textContent = `● Faltam ${DECK_MIN - n} carta${DECK_MIN - n > 1 ? "s" : ""} para poder salvar (mínimo ${DECK_MIN})`;
+  else if (alterado) status.textContent = "● Alterações não salvas";
   else if (ehDeckPadrao(paraLista(salvo))) status.textContent = "✔ Usando o deck padrão";
   else status.textContent = "✔ Deck salvo: é esse que você usa nos duelos";
 
-  $("#deck-salvar").disabled = !alterado;
+  $("#deck-salvar").disabled = !alterado || n < DECK_MIN;
+  $("#deck-salvar").title = n < DECK_MIN ? `O deck precisa de pelo menos ${DECK_MIN} cartas para ser salvo` : "";
   $("#deck-desfazer").disabled = !alterado;
   $("#deck-padrao").disabled = ehDeckPadrao(paraLista(rascunho));
 

@@ -40,6 +40,16 @@ export function registrarCartas(lista) {
   for (const c of lista) CARTAS[c.id] = c;
 }
 
+// "Versão" das cartas: muda sempre que uma carta entra, sai ou muda de efeito/nível/ATK/DEF.
+// Os dois jogadores precisam da mesma versão para duelar.
+export function versaoDasCartas(lista = Object.values(CARTAS)) {
+  let h = 2166136261;
+  for (const c of [...lista].sort((a, b) => a.id.localeCompare(b.id))) {
+    for (const ch of `${c.id}|${c.efeito}|${c.nivel}|${c.atk}|${c.def};`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  }
+  return (h >>> 0).toString(36);
+}
+
 export function cartaPorId(id) {
   return CARTAS[id];
 }
@@ -203,8 +213,14 @@ export function atkAtual(estado, iid) {
       if (m && m.face && m.equipadoEm === iid) atk += carta(estado, m.iid).bonusAtk || 0;
     }
   }
+  const loc = localizar(estado, iid);
+  if (loc && loc.zona === "monstros" && loc.obj.marcadores) atk += 300 * loc.obj.marcadores;
   return atk;
 }
+
+// Cartas "gelo": atributo GELO ou "Gelo" no nome (Pote do Gelo)
+const ehMonstroGelo = (c) => c.categoria === "monstro" && c.atributo === "GELO";
+const ehCartaGelo = (c) => c.atributo === "GELO" || c.nome.toLowerCase().includes("gelo");
 
 export function defAtual(estado, iid) {
   return carta(estado, iid).def;
@@ -278,7 +294,9 @@ function executar(estado, j, acao, ev) {
 
   switch (acao.tipo) {
     case "invocar": return invocar(estado, j, acao, ev);
-    case "invocarEspecial": return invocarPenetra(estado, j, acao, ev);
+    case "invocarEspecial":
+      return carta(estado, acao.iid)?.efeito === "gelo-careca" ? invocarGeloCareca(estado, j, acao, ev) : invocarPenetra(estado, j, acao, ev);
+    case "efeitoMonstro": return efeitoMonstro(estado, j, acao, ev);
     case "virar": return invocarFlip(estado, j, acao, ev);
     case "mudarPosicao": return mudarPosicao(estado, j, acao, ev);
     case "ativar": return ativarMagia(estado, j, acao, ev);
@@ -363,6 +381,28 @@ function invocarPenetra(estado, j, { iid, pos = "atk" }, ev) {
   return null;
 }
 
+// Manoel do Gelo Careca: descarta 2 outros monstros GELO da mão e entra por Invocação-Especial
+export function requisitosGeloCareca(estado, j, iid) {
+  const p = estado.jogadores[j];
+  if (!ehFasePrincipal(estado) || !p.mao.includes(iid) || zonaLivre(p.monstros) < 0) return null;
+  const candidatos = p.mao.filter((x) => x !== iid && ehMonstroGelo(carta(estado, x)));
+  if (candidatos.length < 2) return null;
+  return { candidatos, min: 2, max: 2, titulo: `${carta(estado, iid).nome}: descarte 2 monstros GELO` };
+}
+
+function invocarGeloCareca(estado, j, { iid, alvos = [] }, ev) {
+  const req = requisitosGeloCareca(estado, j, iid);
+  if (!req) return "Precisa de 2 outros monstros GELO na mão e uma zona de monstro livre.";
+  if (new Set(alvos).size !== 2 || alvos.length !== 2 || alvos.some((a) => !req.candidatos.includes(a))) return "Escolha 2 monstros GELO para descartar.";
+  const p = estado.jogadores[j];
+  for (const a of alvos) descartar(estado, j, a, ev);
+  p.mao.splice(p.mao.indexOf(iid), 1);
+  const slot = zonaLivre(p.monstros);
+  p.monstros[slot] = { iid, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+  ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
+  return null;
+}
+
 function invocarFlip(estado, j, { slot }, ev) {
   const p = estado.jogadores[j];
   const m = p.monstros[slot];
@@ -398,6 +438,24 @@ function aposInvocar(estado, j, iid, modo, ev) {
   verificarArmadilhas(estado, "invocacao", { j, iid, modo }, ev);
   if (estado.vencedor !== null) return;
   const c = carta(estado, iid);
+
+  if ((modo === "normal" || modo === "tributo") && c.efeito === "wellington") {
+    const loc = localizar(estado, iid);
+    if (loc && loc.zona === "monstros") {
+      loc.obj.marcadores = 1;
+      ev.push({ t: "marcador", j, iid });
+    }
+  }
+  if (["normal", "tributo", "flip"].includes(modo) && c.efeito === "mestre-laminas") {
+    const candidatos = magiasEmCampo(estado);
+    if (candidatos.length) {
+      estado.pendente = {
+        tipo: "alvo", efeito: c.efeito, jogador: j, origem: iid, candidatos, min: 0, max: 1,
+        titulo: `${c.nome}: você pode destruir 1 Magia/Armadilha`,
+      };
+    }
+    return;
+  }
 
   if (modo === "tributo" && c.efeito === "tributo-destruir-monstro") {
     pedirAlvoMonstro(estado, j, iid, `${c.nome}: escolha 1 monstro para destruir`);
@@ -446,6 +504,22 @@ function efeitoVire(estado, dono, iid, manual, ev) {
       ev.push({ t: "efeito", j: dono, iid });
       if (estado.jogadores[dono].deck.length) comprar(estado, dono, 1, ev);
       break;
+    case "flip-buscar-magia": {
+      const magias = estado.jogadores[dono].deck.filter((x) => carta(estado, x).categoria === "magia");
+      if (!magias.length) break;
+      if (manual) {
+        const vistos = new Set();
+        const candidatos = magias.filter((x) => !vistos.has(estado.cartas[x]) && vistos.add(estado.cartas[x]));
+        estado.pendente = {
+          tipo: "alvo", efeito: c.efeito, jogador: dono, origem: iid, candidatos, min: 1, max: 1,
+          titulo: `${c.nome} (VIRE): escolha 1 Magia do seu deck para a sua mão`,
+        };
+        break;
+      }
+      ev.push({ t: "efeito", j: dono, iid });
+      buscar(estado, dono, magias[Math.floor(sorteioDoEstado(estado)() * magias.length)], ev);
+      break;
+    }
     case "flip-descartar": {
       const mao = estado.jogadores[o].mao;
       if (!mao.length) break;
@@ -468,6 +542,17 @@ function sorteioDoEstado(estado) {
   let h = 2166136261;
   for (const ch of `${estado.id}:${estado.seq}:${estado.turno}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
   return criarSorteio(h);
+}
+
+// Carta do deck para a mão (e o deck é embaralhado de novo)
+function buscar(estado, j, iid, ev) {
+  const p = estado.jogadores[j];
+  const i = p.deck.indexOf(iid);
+  if (i < 0) return;
+  p.deck.splice(i, 1);
+  p.mao.push(iid);
+  ev.push({ t: "busca", j, iid });
+  embaralhar(p.deck, sorteioDoEstado(estado));
 }
 
 function descartar(estado, j, iid, ev) {
@@ -511,6 +596,12 @@ export function requisitosMagia(estado, j, iid) {
       });
       return candidatos.length && zonaLivre(p.monstros) >= 0
         ? { alvos: { candidatos, min: 1, max: 1, titulo: "Invocador: escolha o Monstro Normal que vai entrar" } }
+        : null;
+    }
+    case "pote-gelo": {
+      const candidatos = p.mao.filter((x) => x !== iid && ehCartaGelo(carta(estado, x)));
+      return candidatos.length >= 2
+        ? { alvos: { candidatos, min: 2, max: 2, titulo: "Pote do Gelo: escolha 2 cartas \"gelo\" da mão para voltar ao deck" } }
         : null;
     }
     default:
@@ -577,6 +668,16 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
       mandarProCemiterio(estado, iid, ev);
       break;
     }
+    case "pote-gelo":
+      for (const alvo of alvos) {
+        p.mao.splice(p.mao.indexOf(alvo), 1);
+        p.deck.push(alvo);
+        ev.push({ t: "aoDeck", j, iid: alvo });
+      }
+      embaralhar(p.deck, sorteioDoEstado(estado));
+      comprar(estado, j, Math.min(3, p.deck.length), ev);
+      mandarProCemiterio(estado, iid, ev);
+      break;
     case "luz":
       // Revela os monstros virados do oponente (sem ativar os efeitos VIRE deles)
       estado.jogadores[oponente(j)].monstros.forEach((m) => {
@@ -644,6 +745,74 @@ function verificarArmadilhas(estado, gatilho, dados, ev) {
 }
 
 
+/* ---------- Efeitos que o jogador ativa (botão "Efeito" no monstro) ---------- */
+
+// Devolve { rotulo, alvos } se o monstro tem um efeito que dá para usar agora
+export function efeitoAtivavel(estado, j, iid) {
+  const loc = localizar(estado, iid);
+  if (!loc || loc.j !== j || loc.zona !== "monstros" || !loc.obj.face || estado.vez !== j) return null;
+  const m = loc.obj;
+  const c = carta(estado, iid);
+  const p = estado.jogadores[j];
+  const antesDoAtaque = estado.fase === "principal1" || estado.fase === "batalha";
+  switch (c.efeito) {
+    case "wellington": {
+      const candidatos = magiasEmCampo(estado);
+      if (!ehFasePrincipal(estado) || !m.marcadores || !candidatos.length) return null;
+      return {
+        rotulo: "Efeito: gastar o Marcador e destruir 1 Magia/Armadilha",
+        alvos: { candidatos, min: 1, max: 1, titulo: `${c.nome}: escolha 1 Magia/Armadilha para destruir` },
+      };
+    }
+    case "mestre-laminas":
+      if (!antesDoAtaque || m.efeitoUsado === estado.turno || !p.mao.length || m.pos !== "atk" || m.atacouDuas) return null;
+      return {
+        rotulo: "Efeito: descartar 1 carta e atacar 2 vezes",
+        alvos: { candidatos: [...p.mao], min: 1, max: 1, titulo: `${c.nome}: descarte 1 carta para atacar duas vezes neste turno` },
+      };
+    case "gelo-careca": {
+      if (!antesDoAtaque || m.ataqueDuplo === estado.turno || m.pos !== "atk") return null;
+      const candidatos = p.monstros.filter((x) => x && x.iid !== iid && x.face && x.pos === "atk" && ehMonstroGelo(carta(estado, x.iid))).map((x) => x.iid);
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: tributar 1 monstro GELO e atacar 2 vezes",
+        alvos: { candidatos, min: 1, max: 1, titulo: `${c.nome}: escolha o monstro GELO em ataque para tributar` },
+      };
+    }
+    default:
+      return null;
+  }
+}
+
+function efeitoMonstro(estado, j, { iid, alvos = [] }, ev) {
+  const efeito = efeitoAtivavel(estado, j, iid);
+  if (!efeito) return "Esse efeito não pode ser usado agora.";
+  if (alvos.length !== 1 || !efeito.alvos.candidatos.includes(alvos[0])) return "Escolha a carta do efeito.";
+  const m = localizar(estado, iid).obj;
+  const c = carta(estado, iid);
+  ev.push({ t: "efeito", j, iid, alvos });
+  switch (c.efeito) {
+    case "wellington":
+      m.marcadores = 0;
+      destruir(estado, alvos[0], ev, "efeito");
+      break;
+    case "mestre-laminas":
+      descartar(estado, j, alvos[0], ev);
+      m.efeitoUsado = estado.turno;
+      m.ataqueDuplo = estado.turno;
+      ev.push({ t: "ataqueDuplo", j, iid });
+      break;
+    case "gelo-careca":
+      ev.push({ t: "tributo", j, iid: alvos[0] });
+      removerDoCampo(estado, alvos[0], ev, "tributo");
+      m.ataqueDuplo = estado.turno;
+      ev.push({ t: "ataqueDuplo", j, iid });
+      break;
+  }
+  return null;
+}
+
+
 /* ---------- 8. Batalha ---------- */
 
 // Monstros do jogador que ainda podem atacar neste turno
@@ -654,9 +823,12 @@ export function podeAtacar(estado, j, slot) {
     estado.fase === "batalha" &&
     estado.turno > 1 &&
     !luzAtiva(estado, oponente(j)) &&
-    Boolean(m && m.face && m.pos === "atk" && !m.atacou)
+    Boolean(m && m.face && m.pos === "atk" && podeAtacarDeNovo(estado, m))
   );
 }
+
+// Ainda tem ataque sobrando: nenhum ainda, ou o segundo (Mestre das Lâminas / Manoel Careca)
+const podeAtacarDeNovo = (estado, m) => !m.atacou || (m.ataqueDuplo === estado.turno && !m.atacouDuas);
 
 function atacar(estado, j, { slot, alvo = null }, ev) {
   if (estado.fase !== "batalha") return "Ataques só na Fase de Batalha.";
@@ -666,7 +838,7 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
   const m = p.monstros[slot];
   if (!m) return "Não há monstro nessa zona.";
   if (!m.face || m.pos !== "atk") return "Só monstros em Posição de Ataque podem atacar.";
-  if (m.atacou) return "Esse monstro já atacou neste turno.";
+  if (!podeAtacarDeNovo(estado, m)) return "Esse monstro já atacou neste turno.";
   if (luzAtiva(estado, oponente(j))) return "As Carecas da Luz Reveladora estão te cegando: não dá para atacar!";
 
   const temMonstros = o.monstros.some(Boolean);
@@ -676,6 +848,7 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
     return "Não há monstro nessa zona do oponente.";
   }
 
+  if (m.atacou) m.atacouDuas = true;
   m.atacou = true;
   const atacante = m.iid;
   const defensor = alvo === null || alvo === undefined ? null : o.monstros[alvo].iid;
@@ -766,6 +939,26 @@ function destruir(estado, iid, ev, causa) {
     estado.jogadores[loc.j].semDanoBatalha = estado.turno;
     ev.push({ t: "efeito", j: loc.j, iid });
   }
+  if (loc.zona === "monstros" && carta(estado, iid).efeito === "manoel-gelo") chamarOutroManoel(estado, loc.j, iid, ev);
+}
+
+// Manoel do Gelo (1 vez por turno): Invocação-Especial de outro "Manoel do Gelo" sorteado do deck
+function chamarOutroManoel(estado, j, iid, ev) {
+  const p = estado.jogadores[j];
+  if (p.manoelUsado === estado.turno) return;
+  const opcoes = p.deck.filter((x) => {
+    const c = carta(estado, x);
+    return c.categoria === "monstro" && c.nome.includes("Manoel do Gelo") && c.id !== "manoel-do-gelo";
+  });
+  const slot = zonaLivre(p.monstros);
+  if (!opcoes.length || slot < 0) return;
+  p.manoelUsado = estado.turno;
+  const escolhido = opcoes[Math.floor(sorteioDoEstado(estado)() * opcoes.length)];
+  p.deck.splice(p.deck.indexOf(escolhido), 1);
+  p.monstros[slot] = { iid: escolhido, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+  ev.push({ t: "efeito", j, iid });
+  ev.push({ t: "invocacao", j, iid: escolhido, modo: "especial", slot });
+  embaralhar(p.deck, sorteioDoEstado(estado));
 }
 
 // Tira a carta do campo e manda para o Cemitério do dono (equipamentos presos a ela vão junto)
@@ -873,7 +1066,14 @@ function passarTurno(estado, ev) {
   estado.turno++;
   const p = estado.jogadores[estado.vez];
   p.invocouNormal = false;
-  for (const q of estado.jogadores) q.monstros.forEach((m) => m && (m.atacou = false));
+  for (const q of estado.jogadores) {
+    q.monstros.forEach((m) => {
+      if (m) {
+        m.atacou = false;
+        m.atacouDuas = false;
+      }
+    });
+  }
   iniciarTurno(estado, ev);
 }
 
@@ -926,6 +1126,10 @@ function resolverEscolha(estado, j, alvos, ev) {
     for (const alvo of alvos) descartar(estado, oponente(j), alvo, ev);
     return null;
   }
+  if (pend.efeito === "flip-buscar-magia") {
+    buscar(estado, j, alvos[0], ev);
+    return null;
+  }
   for (const alvo of alvos) destruir(estado, alvo, ev, "efeito");
   return null;
 }
@@ -934,9 +1138,9 @@ function resolverEscolha(estado, j, alvos, ev) {
 export function escolhaAutomatica(estado, pend) {
   const j = pend.jogador;
   if (pend.tipo === "descarte") return pend.candidatos.slice(0, pend.min);
-  if (pend.efeito === "flip-descartar") return pend.candidatos.slice(0, 1);
+  if (pend.efeito === "flip-descartar" || pend.efeito === "flip-buscar-magia") return pend.candidatos.slice(0, 1);
   const doOponente = pend.candidatos.filter((x) => localizar(estado, x).j !== j);
-  if (pend.efeito === "tributo-destruir-magias") return doOponente.slice(0, pend.max);
+  if (pend.efeito === "tributo-destruir-magias" || pend.efeito === "mestre-laminas") return doOponente.slice(0, pend.max);
   const alvo = maisForte(estado, doOponente) || pend.candidatos[0];
   return pend.min > 0 || doOponente.length ? [alvo] : [];
 }
@@ -969,6 +1173,10 @@ export function opcoesDaCarta(estado, j, iid) {
       if (podeInvocarPenetra(estado, j, iid)) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial (penetra)", acao: { tipo: "invocarEspecial", iid } });
       }
+      const gelo = c.efeito === "gelo-careca" && requisitosGeloCareca(estado, j, iid);
+      if (gelo) {
+        opcoes.push({ id: "especial", rotulo: "Invocação-Especial (descartar 2 GELO)", acao: { tipo: "invocarEspecial", iid }, alvos: gelo });
+      }
     } else {
       const livre = zonaLivre(p.magias) >= 0;
       if (c.categoria === "magia" && livre) {
@@ -989,6 +1197,8 @@ export function opcoesDaCarta(estado, j, iid) {
       const alvos = o.monstros.map((x, s) => (x ? s : null)).filter((s) => s !== null);
       opcoes.push({ id: "atacar", rotulo: "Atacar", acao: { tipo: "atacar", slot: loc.slot }, ataque: { alvos, direto: alvos.length === 0 } });
     }
+    const efeito = efeitoAtivavel(estado, j, iid);
+    if (efeito) opcoes.push({ id: "efeito", rotulo: efeito.rotulo, acao: { tipo: "efeitoMonstro", iid }, alvos: efeito.alvos });
     if (principal && !m.face && m.turnoEntrou < estado.turno && m.mudouPos !== estado.turno) {
       opcoes.push({ id: "virar", rotulo: "Virar (Invocação-Flip)", acao: { tipo: "virar", slot: loc.slot } });
     }

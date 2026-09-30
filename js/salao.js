@@ -14,7 +14,7 @@
 
 import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js";
 import * as conta from "./conta.js";
-import { novoDuelo } from "./motor.js";
+import { novoDuelo, versaoDasCartas, problemaDoDeck } from "./motor.js";
 import { deckAtual, ehDeckPadrao } from "./deck.js";
 import { criarSessaoOnline, topicosDuelo } from "./sessao.js";
 import { abrirArena, arenaAtiva, fecharArena } from "./arena.js";
@@ -363,6 +363,7 @@ function desenharPerfil() {
 
 function receberPerfil(perfil, topico) {
   const chave = topico.split("/").pop();
+  if (perfil && chave === conta.usuarioAtual()?.chave) conta.sincronizarComRemoto(perfil);
   if (perfil) s.perfis.set(chave, perfil);
   else s.perfis.delete(chave);
   desenharRanking();
@@ -660,7 +661,7 @@ function receberDM(dados) {
     case "cancela": {
       const d = s.desafios.get(dados.duelo);
       if (!d || d.estado !== "pendente") return;
-      mudarDesafio(d, dados.tipo === "cancela" ? "cancelado" : dados.motivo === "ocupado" ? "ocupado" : "recusado");
+      mudarDesafio(d, dados.tipo === "cancela" ? "cancelado" : ["ocupado", "versao"].includes(dados.motivo) ? dados.motivo : "recusado");
       break;
     }
   }
@@ -686,7 +687,7 @@ function desafiar(cartao) {
   s.desafios.set(id, d);
   const aba = abrirAbaPrivada(cartao, true);
   adicionarItem(aba.id, { tipo: "desafio", id });
-  enviarDM(cartao.chave, { tipo: "desafio", duelo: id });
+  enviarDM(cartao.chave, { tipo: "desafio", duelo: id, versao: versaoDasCartas() });
   d.timer = setTimeout(() => d.estado === "pendente" && mudarDesafio(d, "expirado"), 60000);
   tocar("desafio");
 }
@@ -694,6 +695,12 @@ function desafiar(cartao) {
 function receberDesafio(dados) {
   if (arenaAtiva() || s.statusDuelo !== "livre") {
     enviarDM(dados.de.chave, { tipo: "recusa", duelo: dados.duelo, motivo: "ocupado" });
+    return;
+  }
+  // Versões diferentes do site (um dos dois está com a página antiga): não dá para duelar
+  if (dados.versao !== versaoDasCartas()) {
+    enviarDM(dados.de.chave, { tipo: "recusa", duelo: dados.duelo, motivo: "versao" });
+    aviso(`${dados.de.nick} te desafiou, mas vocês estão com versões diferentes do jogo. Os dois precisam recarregar a página (Ctrl+F5 no PC ou puxar para baixo no celular).`, "erro", 12000);
     return;
   }
   const d = { id: dados.duelo, com: dados.de, meu: false, estado: "pendente" };
@@ -720,6 +727,7 @@ function caixaDesafio(d) {
     aceito: d.meu ? "Desafio aceito! Indo para a arena..." : "Este desafio foi aceito.",
     recusado: d.meu ? `${nome} recusou o desafio.` : "Você recusou este desafio.",
     ocupado: `${nome} está ocupado em outro duelo.`,
+    versao: `Vocês estão com versões diferentes do jogo. Os dois precisam recarregar a página (Ctrl+F5 no PC ou puxar para baixo no celular) e desafiar de novo.`,
     expirado: "O desafio expirou.",
     cancelado: d.meu ? "Você cancelou o desafio." : `${nome} cancelou o desafio.`,
     "sem-resposta": "O desafiante não respondeu. Tente desafiar de volta.",
@@ -781,6 +789,9 @@ function aceitarDesafio(d) {
 
 // Quem desafiou cria o duelo: cada um joga com o próprio deck (o motor confere se vale)
 function comecarComoAnfitriao(d, oponente, deckOponente) {
+  if (!Array.isArray(deckOponente) || problemaDoDeck(deckOponente)) {
+    aviso(`O deck de ${oponente.nick} não veio certo; ele vai jogar com o deck padrão. Se continuar, recarreguem a página.`, "erro", 9000);
+  }
   const { estado, eventos } = novoDuelo({
     id: d.id,
     jogadores: [{ ...conta.cartaoPublico(), deck: deckAtual() }, { ...oponente, deck: Array.isArray(deckOponente) ? deckOponente : undefined }],

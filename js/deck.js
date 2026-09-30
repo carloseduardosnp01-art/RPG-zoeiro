@@ -46,6 +46,6 @@ export function salvarDeck(lista) {
   if (problema) throw new Error(problema);
   const mapa = paraMapa(lista);
   guardar.gravar(CHAVE, mapa);
-  if (conta.usuarioAtual()) conta.atualizarPerfil({ deck: mapa });
+  if (conta.usuarioAtual()) conta.atualizarPerfil({ deck: mapa, deckAtualizado: Date.now() });
   document.dispatchEvent(new CustomEvent("deck-mudou"));
 }

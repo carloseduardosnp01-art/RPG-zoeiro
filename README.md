@@ -113,6 +113,12 @@ Tópicos (todos começam com `rpgdazoeira/v1/`):
 
 **Ausência:** cada navegador manda um sinal a cada 5 s. Se o oponente sumir por 20 s aparece um aviso; depois de 60 s dá para **reivindicar vitória por W.O.** Se o tempo da ação (60 s) acabar, o turno passa sozinho.
 
+### Deck e versões do site
+
+- O deck salvo tem data própria. Quando o perfil chega de outra aba ou aparelho, o jogo junta as duas cópias: vale o **deck salvo mais recente** e as estatísticas nunca diminuem (antes, uma cópia antiga do perfil, publicada ao ganhar XP, podia apagar o deck).
+- Cada desafio leva a "versão" das cartas. Se os dois jogadores estiverem com versões diferentes do site (um deles com a página antiga em cache), o desafio é recusado com o aviso para recarregar, em vez de o jogo trocar o deck pelo padrão sem avisar.
+- A cada 3 minutos o site confere se saiu uma versão nova das cartas e avisa para recarregar.
+
 ### Limitações (é zoeira, mas é bom saber)
 
 - O broker é **público**: qualquer pessoa que conheça os tópicos consegue ler as mensagens. Não mande nada sério pelo chat.
@@ -149,6 +155,12 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT018 | Midasgel | Efeito/Virar · Nv 2 · 1000/400 | – | VIRE: compra 1 carta |
 | ZOE-PT019 | Midasmon | Efeito/Virar · Nv 2 · 1000/400 | – | VIRE: o oponente descarta 1 carta (você escolhe no seu turno; sorteada no turno dele) |
 | ZOE-PT020 | Karecoh Alado | Efeito · Nv 1 · 300/200 | – | Destruído no campo → sem dano de batalha pelo resto do turno |
+| ZOE-PT021 | Wellington, O Guerreiro Mágico | Efeito · Nv 4 · 1600/1600 | – | Entra com 1 Marcador (+300 ATK); botão Efeito gasta o marcador e destrói 1 Magia/Armadilha |
+| ZOE-PT022 | O Alquimista das Farmácias | Efeito/Virar · Nv 3 · 1500/1300 | – | VIRE: busca 1 Magia do deck (você escolhe no seu turno; sorteada no turno do oponente) |
+| ZOE-PT023 | O Mestre das Lâminas e Punhos | Efeito · Nv 6 · 2400/2200 | – | Ao ser Invocado pode destruir 1 Magia/Armadilha; botão Efeito: descarta 1 carta e ataca 2 vezes |
+| ZOE-PT024 | Manoel do Gelo | Efeito · GELO · Nv 3 · 1500/1200 | – | Destruído: chama outro "Manoel do Gelo" sorteado do deck (1 vez por turno) |
+| ZOE-PT025 | Manoel do Gelo Careca | Efeito · GELO · Nv 7 · 2400/1900 | – | Invocação-Especial descartando 2 GELO; botão Efeito: tributa 1 GELO em ataque e ataca 2 vezes |
+| ZOE-PT026 | Pote do Gelo | Magia | – | Devolve 2 cartas "gelo" da mão ao deck e compra 3 |
 
 A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra Careca, Carecelta, Midasgel, Midasmon e Karecoh Alado) ficam fora dele e entram nos decks personalizados. Deck padrão: **40 cartas** (22 monstros, 12 magias, 6 armadilhas). Com 15 cartas diferentes e no máximo 3 cópias, 10 cartas ficaram com 3 cópias e 5 com 2 (Careca Cast Surpresa, Adm do PT, Bust do Big, Vapo! e Carecas da Luz). A Feiticeira Careca original falava de "Mago Negro"; aqui ela conta o **Grande Mestre**, que é o "Mago Negro" do deck.
 
@@ -199,7 +211,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
-├── data/cartas.json      # As 20 cartas (texto, stats, cópias no deck padrão, efeito)
+├── data/cartas.json      # As 26 cartas (texto, stats, cópias no deck padrão, efeito)
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```

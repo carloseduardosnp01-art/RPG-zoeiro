@@ -79,6 +79,35 @@ function* jogadasPrincipais(estado, j) {
     if (opcoes(iid).some((x) => x.id === "especial")) yield { tipo: "invocarEspecial", iid };
   }
 
+  // 1b. Manoel do Gelo Careca entra descartando 2 GELO
+  for (const { iid } of mao) {
+    const op = opcoes(iid).find((x) => x.id === "especial" && x.alvos);
+    if (op) yield { tipo: "invocarEspecial", iid, alvos: op.alvos.candidatos.slice(0, 2) };
+  }
+
+  // 1c. Pote do Gelo: devolve as 2 cartas gelo menos úteis e compra 3
+  for (const { iid, c } of mao) {
+    if (c.efeito !== "pote-gelo") continue;
+    const op = opcoes(iid).find((x) => x.id === "ativar");
+    if (op) yield { tipo: "ativar", iid, alvos: [...op.alvos.candidatos].sort((a, b) => valorNaMao(estado, j, a) - valorNaMao(estado, j, b)).slice(0, 2) };
+  }
+
+  // 1d. Efeitos com botão dos monstros em campo
+  for (const m of p.monstros) {
+    if (!m) continue;
+    const op = opcoes(m.iid).find((x) => x.id === "efeito");
+    if (!op) continue;
+    const ef = carta(estado, m.iid).efeito;
+    if (ef === "wellington") {
+      const alvo = melhorMagiaDoOponente(estado, j, op.alvos.candidatos);
+      if (alvo) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [alvo] };
+    }
+    if (ef === "mestre-laminas" && primeira && estado.turno > 1 && p.mao.length >= 3) {
+      const pior = [...op.alvos.candidatos].sort((a, b) => valorNaMao(estado, j, a) - valorNaMao(estado, j, b))[0];
+      yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [pior] };
+    }
+  }
+
   // 2. Invocador traz o Grande Mestre
   for (const { iid, c } of mao) {
     if (c.efeito !== "invocador") continue;
@@ -124,7 +153,8 @@ function* jogadasPrincipais(estado, j) {
     for (const [slot, m] of p.monstros.entries()) {
       if (!m || m.face) continue;
       const ef = carta(estado, m.iid).efeito;
-      if ((ef === "flip-destruir" && deles.length) || (ef === "flip-descartar" && maoDeles) || ef === "flip-comprar") {
+      const temMagia = p.deck.some((x) => carta(estado, x).categoria === "magia");
+      if ((ef === "flip-destruir" && deles.length) || (ef === "flip-descartar" && maoDeles) || ef === "flip-comprar" || (ef === "flip-buscar-magia" && temMagia)) {
         yield { tipo: "virar", slot };
       }
     }
@@ -267,7 +297,15 @@ const VALOR_NA_MAO = {
   vapo: 9, "forca-careca": 8, "tributo-destruir-monstro": 7, soco: 6, "tributo-destruir-magias": 6,
   "armadilha-big": 6, luz: 6, penetra: 5, saideira: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
   "flip-descartar": 5, "flip-comprar": 4, karecoh: 4,
+  wellington: 5, "mestre-laminas": 6, "manoel-gelo": 4, "gelo-careca": 5, "pote-gelo": 4, "flip-buscar-magia": 4,
 };
+
+function valorNaMao(estado, j, iid) {
+  const c = carta(estado, iid);
+  if (c.id === "careca-feijao") return 5;
+  if (c.id === "grande-mestre") return estado.jogadores[j].mao.some((x) => carta(estado, x).efeito === "invocador") ? 7 : 3;
+  return VALOR_NA_MAO[c.efeito] ?? 4;
+}
 
 function escolherAlvos(estado, j, pend) {
   if (pend.tipo === "descarte") {
@@ -281,12 +319,16 @@ function escolherAlvos(estado, j, pend) {
   }
 
   const doOponente = pend.candidatos.filter((x) => localizar(estado, x).j !== j);
+  // Alquimista: a melhor Magia do deck
+  if (pend.efeito === "flip-buscar-magia") {
+    return [[...pend.candidatos].sort((a, b) => valorNaMao(estado, j, b) - valorNaMao(estado, j, a))[0]];
+  }
   // Midasmon: descarta a melhor carta da mão do oponente
   if (pend.efeito === "flip-descartar") {
     const valor = (iid) => VALOR_NA_MAO[carta(estado, iid).efeito] ?? (carta(estado, iid).atk || 0) / 500;
     return [[...pend.candidatos].sort((a, b) => valor(b) - valor(a))[0]];
   }
-  if (pend.efeito === "tributo-destruir-magias") {
+  if (pend.efeito === "tributo-destruir-magias" || pend.efeito === "mestre-laminas") {
     const ordenadas = [...doOponente].sort((a, b) => Number(localizar(estado, a).obj.face) - Number(localizar(estado, b).obj.face));
     return ordenadas.slice(0, pend.max);
   }

@@ -4,7 +4,7 @@
    pelo endereço (#inicio, #catalogo, #deck, #regras, #salao, #arena).
    ========================================================================== */
 
-import { registrarCartas } from "./motor.js";
+import { registrarCartas, versaoDasCartas } from "./motor.js";
 import { iniciarCatalogo } from "./catalogo.js";
 import { iniciarEditorDeck } from "./editor-deck.js";
 import { deckAtual } from "./deck.js";
@@ -40,6 +40,21 @@ async function iniciar() {
   addEventListener("hashchange", mostrarTela);
   document.addEventListener("arena-mudou", atualizarFaixa);
   mostrarTela();
+  setInterval(verificarVersaoNova, 3 * 60 * 1000);
+}
+
+// Se o GitHub Pages já tem cartas novas e esta página ainda está com as antigas, avisa
+let avisouVersao = false;
+async function verificarVersaoNova() {
+  if (avisouVersao) return;
+  try {
+    const resposta = await fetch(`data/cartas.json?v=${Date.now()}`, { cache: "no-store" });
+    const novas = await resposta.json();
+    if (versaoDasCartas(novas) !== versaoDasCartas()) {
+      avisouVersao = true;
+      aviso("Saiu uma versão nova do jogo! Recarregue a página (Ctrl+F5 no PC) quando terminar o duelo.", "info", 30000);
+    }
+  } catch { /* sem internet: tenta de novo depois */ }
 }
 
 function mostrarTela() {

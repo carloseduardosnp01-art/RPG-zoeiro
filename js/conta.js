@@ -103,12 +103,11 @@ export async function entrar({ nick, senha, lembrar = true }) {
   if (!conta) throw new Error("Conta não encontrada. Confira o nick ou crie uma conta.");
   if ((await hashSenha(senha, conta.sal)) !== conta.hash) throw new Error("Senha incorreta.");
 
-  // Usa o perfil mais recente entre o do broker e o do navegador
+  // Junta o perfil do broker com o do navegador (o deck mais recente e as estatísticas maiores)
   const remoto = await lerRetido(topicoPerfil(chave));
-  let perfil = remoto;
-  if (local && (!remoto || (local.perfil.atualizado || 0) > (remoto.atualizado || 0))) perfil = local.perfil;
+  let perfil = mesclarPerfis(local?.perfil, remoto);
   if (!perfil) perfil = { chave, nick: nick.trim(), tag: "", avatar: "careca-feijao", vitorias: 0, derrotas: 0, xp: 0, atualizado: Date.now() };
-  if (perfil !== remoto) publicar(topicoPerfil(chave), perfil, { reter: true });
+  if (JSON.stringify(perfil) !== JSON.stringify(remoto)) publicar(topicoPerfil(chave), perfil, { reter: true });
 
   salvarContaLocal(conta, perfil);
   iniciarSessao(perfil, lembrar);
@@ -127,7 +126,7 @@ export function restaurarSessao() {
   const salvo = guardar.ler(CHAVE_SESSAO, null, true) || guardar.ler(CHAVE_SESSAO);
   if (!salvo) return null;
   const local = contasLocais()[salvo.chave];
-  usuario = local ? local.perfil : salvo;
+  usuario = mesclarPerfis(local?.perfil, salvo);
   avisar();
   return usuario;
 }
@@ -139,6 +138,47 @@ function iniciarSessao(perfil, lembrar) {
   if (lembrar) guardar.gravar(CHAVE_SESSAO, perfil);
   else guardar.apagar(CHAVE_SESSAO);
   avisar();
+}
+
+
+/* ---------- Mesclar cópias do perfil ---------- */
+
+// Cada aba/aparelho tem uma cópia do perfil. Para uma cópia velha não apagar o que foi
+// salvo em outro lugar: o deck vale o mais recente (deckAtualizado) e as estatísticas
+// nunca diminuem.
+export function mesclarPerfis(a, b) {
+  if (!a) return b || null;
+  if (!b) return a;
+  const maisNovo = (b.atualizado || 0) > (a.atualizado || 0) ? b : a;
+  const outro = maisNovo === a ? b : a;
+  const perfil = { ...outro, ...maisNovo };
+  const deckDe = (b.deckAtualizado || 0) > (a.deckAtualizado || 0) || (!a.deck && b.deck) ? b : a;
+  perfil.deck = deckDe.deck;
+  perfil.deckAtualizado = deckDe.deckAtualizado;
+  perfil.vitorias = Math.max(a.vitorias || 0, b.vitorias || 0);
+  perfil.derrotas = Math.max(a.derrotas || 0, b.derrotas || 0);
+  perfil.xp = Math.max(a.xp || 0, b.xp || 0);
+  perfil.atualizado = Math.max(a.atualizado || 0, b.atualizado || 0);
+  return perfil;
+}
+
+// O salão recebe o perfil do broker (outra aba ou aparelho pode ter mudado): junta com o daqui
+export function sincronizarComRemoto(remoto) {
+  if (!usuario || !remoto || remoto.chave !== usuario.chave) return;
+  const junto = mesclarPerfis(usuario, remoto);
+  if (JSON.stringify(junto) === JSON.stringify(usuario)) return;
+  usuario = junto;
+  guardarLocalmente();
+  // se o daqui tinha algo mais novo, devolve para o broker
+  if (JSON.stringify(junto) !== JSON.stringify(remoto)) publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
+  avisar();
+}
+
+function guardarLocalmente() {
+  const local = contasLocais()[usuario.chave];
+  if (local) salvarContaLocal(local.conta, usuario);
+  guardar.gravar(CHAVE_SESSAO, usuario, true);
+  if (guardar.ler(CHAVE_SESSAO)) guardar.gravar(CHAVE_SESSAO, usuario);
 }
 
 
@@ -160,10 +200,7 @@ export function registrarResultado({ dueloId, venceu }) {
     atualizado: Date.now(),
   };
   publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
-  const local = contasLocais()[usuario.chave];
-  if (local) salvarContaLocal(local.conta, usuario);
-  guardar.gravar(CHAVE_SESSAO, usuario, true);
-  if (guardar.ler(CHAVE_SESSAO)) guardar.gravar(CHAVE_SESSAO, usuario);
+  guardarLocalmente();
   avisar();
   return ganho;
 }
@@ -172,10 +209,7 @@ export function atualizarPerfil(mudancas) {
   if (!usuario) return;
   usuario = { ...usuario, ...mudancas, atualizado: Date.now() };
   publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
-  const local = contasLocais()[usuario.chave];
-  if (local) salvarContaLocal(local.conta, usuario);
-  guardar.gravar(CHAVE_SESSAO, usuario, true);
-  if (guardar.ler(CHAVE_SESSAO)) guardar.gravar(CHAVE_SESSAO, usuario);
+  guardarLocalmente();
   avisar();
 }
 

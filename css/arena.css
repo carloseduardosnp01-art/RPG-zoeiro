@@ -1533,3 +1533,28 @@ button.fase:not(:disabled):hover {
 .resultado__caixa > .d-flex {
   padding: 0 1rem;
 }
+
+/* Marcador de Magia (Wellington) e ataque duplo */
+.selo-marcador {
+  position: absolute;
+  top: calc(var(--cw) * -.08);
+  left: calc(var(--cw) * -.08);
+  z-index: 3;
+  padding: .05em .35em;
+  color: #fff;
+  font-size: max(10px, calc(var(--cw) * .15));
+  font-weight: 800;
+  background: linear-gradient(180deg, #8a4fd4, #4b1f8a);
+  border: 2px solid #e6d2ff;
+  border-radius: 1rem;
+  box-shadow: 0 0 8px rgba(160, 100, 255, .8);
+  pointer-events: none;
+}
+
+.selo-marcador--duplo {
+  top: auto;
+  bottom: calc(var(--cw) * .22);
+  background: linear-gradient(180deg, #e0313b, #8a0f16);
+  border-color: #ffd0d0;
+  box-shadow: 0 0 8px rgba(255, 60, 60, .8);
+}

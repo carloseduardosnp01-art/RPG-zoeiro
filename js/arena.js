@@ -51,6 +51,12 @@ const FRASES = {
   "flip-comprar": "COMPRA UMA!",
   "flip-descartar": "DESCARTA ESSA!",
   karecoh: "NEM ENCOSTA!",
+  wellington: "QUEBRA-MAGIA!",
+  "flip-buscar-magia": "TADALAFILA NA MÃO!",
+  "mestre-laminas": "LÂMINAS E PUNHOS!",
+  "manoel-gelo": "O GELO NÃO ACABA!",
+  "gelo-careca": "CONGELOU GERAL!",
+  "pote-gelo": "POTE DO GELO!",
 };
 
 const PROVOCACOES = ["😂 Chora não!", "🧑‍🦲 Careca demais!", "💨 Vapo!", "🤡 Tá com medo?", "🔥 Joga logo!", "👋 GG"];
@@ -453,6 +459,16 @@ function zonaCarta(estado, j, zona, slot) {
     selo.append(sAtk, " / ", sDef);
     z.append(selo);
   }
+  if (zona === "monstros" && obj.marcadores) {
+    const mc = el("span", "selo-marcador", `✦${obj.marcadores}`);
+    mc.title = "Marcador de Magia";
+    z.append(mc);
+  }
+  if (zona === "monstros" && obj.ataqueDuplo === estado.turno && !obj.atacouDuas && estado.vez === j) {
+    const dup = el("span", "selo-marcador selo-marcador--duplo", "⚔×2");
+    dup.title = "Pode atacar duas vezes neste turno";
+    z.append(dup);
+  }
   if (zona === "monstros" && equipamentos(estado, obj.iid)) {
     const eq = el("span", "selo-equip", "✚");
     eq.title = "Equipado com Bust do Big";
@@ -581,6 +597,10 @@ function descreverEvento(estado, ev) {
     case "virada": return { texto: `${nome(ev.iid)} foi virado para cima.` };
     case "destruida": return { texto: `💥 ${nome(ev.iid)} foi destruído${ev.causa === "batalha" ? " em batalha" : ""}.`, classe: "log--destruida" };
     case "dano": return { texto: `${quem(ev.j)} perdeu ${ev.valor} LP (${ev.pl}).`, classe: "log--dano" };
+    case "marcador": return { texto: `✦ ${nome(ev.iid)} recebeu 1 Marcador de Magia (+300 ATK).`, classe: minha };
+    case "busca": return { texto: `${quem(ev.j)} ${ev.j === eu ? "adicionou" : "adicionou"} ${nome(ev.iid)} do deck à mão.`, classe: minha };
+    case "aoDeck": return { texto: `${quem(ev.j)} devolveu ${ev.j === eu ? nome(ev.iid) : "uma carta"} ao deck.`, classe: minha };
+    case "ataqueDuplo": return { texto: `⚔️ ${nome(ev.iid)} pode atacar duas vezes neste turno!`, classe: minha };
     case "protegido": return { texto: `🪽 ${ev.j === eu ? "Você não sofreu" : `${quem(ev.j)} não sofreu`} ${ev.valor} de dano de batalha (Karecoh Alado).`, classe: "log--armadilha" };
     case "posicao": return { texto: `${nome(ev.iid)} mudou para ${ev.pos === "atk" ? "Ataque" : "Defesa"}.`, classe: minha };
     case "descarte": return { texto: `${quem(ev.j)} descartou ${nome(ev.iid)}.`, classe: minha };
@@ -748,7 +768,7 @@ function escolherCartas({ titulo, sub = "", candidatos, min, max, podeCancelar =
       b.setAttribute("aria-pressed", "false");
       b.setAttribute("aria-label", visivel ? c.nome : "Carta virada do oponente");
       b.append(visivel ? criarCarta(c, { atk: loc.zona === "monstros" ? atkAtual(estado, iid) : undefined }) : criarVerso());
-      const lado = loc.zona === "mao" ? (loc.j === eu ? "Na sua mão" : "Mão do oponente") : loc.j === eu ? "Seu campo" : "Campo do oponente";
+      const lado = loc.zona === "mao" ? (loc.j === eu ? "Na sua mão" : "Mão do oponente") : loc.zona === "deck" ? "No seu deck" : loc.j === eu ? "Seu campo" : "Campo do oponente";
       b.append(el("span", "escolha__lado", lado));
       b.addEventListener("click", () => {
         if (escolhidos.has(iid)) escolhidos.delete(iid);

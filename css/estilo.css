@@ -1515,6 +1515,41 @@ a:hover {
   text-transform: uppercase;
 }
 
+.escolha-avatar--perfil {
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  margin-top: .8rem;
+}
+
+.avatar-opcao {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+}
+
+.avatar-opcao img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  filter: saturate(.7) brightness(.85);
+  transition: transform .15s ease, filter .15s ease;
+}
+
+.avatar-opcao:hover img,
+.avatar-opcao:focus-visible img {
+  filter: none;
+  transform: scale(1.08);
+}
+
+.avatar-opcao[aria-pressed="true"] img {
+  border-color: var(--ouro);
+  filter: none;
+  box-shadow: 0 0 12px rgba(224, 180, 74, .6);
+}
+
 .perfil__deck {
   margin-bottom: .8rem;
   color: var(--texto-suave);

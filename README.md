@@ -41,7 +41,7 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
   - lista de duelistas online com nível, clã e busca;
   - **botão direito** (ou toque) no duelista → *Desafiar para duelo* / *Mensagem privada*;
   - o desafio aparece numa aba privada com **Aceitar** e **Recusar**; ao aceitar, os dois vão direto para a arena;
-  - perfil com nível, XP, vitórias/derrotas e ranking dos carecas.
+  - perfil com nível, XP, vitórias/derrotas, botão para trocar a foto de perfil (as artes das cartas) e ranking dos carecas.
 - **Arena**:
   - no PC, a arena ocupa a tela toda: os jogadores e o relógio ficam numa coluna à esquerda, as fases na vertical ao lado do campo, e o menu do site some durante o duelo (botões **⛶ Tela cheia** e **🏠 Ir ao site** na coluna dos jogadores);
   - placar com nível, cartas na mão, barra de LP e relógio da ação (60 s);

@@ -325,7 +325,40 @@ function desenharPerfil() {
   editar.href = "#deck";
   deck.append(editar);
 
-  area.append(topo, barra, stats, deck, botoes);
+  // Trocar a foto de perfil (as mesmas opções do cadastro: as artes das cartas)
+  const trocar = el("button", "btn btn-sm btn-outline-light", "🖼️ Trocar foto de perfil");
+  trocar.type = "button";
+  trocar.setAttribute("aria-expanded", "false");
+  const grade = el("div", "escolha-avatar escolha-avatar--perfil");
+  grade.hidden = true;
+  grade.setAttribute("role", "group");
+  grade.setAttribute("aria-label", "Escolha a foto de perfil");
+  for (const c of s.cartas) {
+    const b = el("button", "avatar-opcao");
+    b.type = "button";
+    b.title = c.nome;
+    b.setAttribute("aria-label", c.nome);
+    b.setAttribute("aria-pressed", String(c.id === u.avatar));
+    const im = el("img");
+    im.src = c.imagem;
+    im.alt = "";
+    im.loading = "lazy";
+    b.append(im);
+    b.addEventListener("click", () => {
+      if (c.id === conta.usuarioAtual()?.avatar) return;
+      conta.atualizarPerfil({ avatar: c.id }); // redesenha o perfil e avisa a presença
+      aviso(`Foto de perfil trocada para ${c.nome}!`, "ok");
+      tocar("carta");
+    });
+    grade.append(b);
+  }
+  trocar.addEventListener("click", () => {
+    grade.hidden = !grade.hidden;
+    trocar.setAttribute("aria-expanded", String(!grade.hidden));
+  });
+  botoes.prepend(trocar);
+
+  area.append(topo, barra, stats, deck, botoes, grade);
 }
 
 function receberPerfil(perfil, topico) {

@@ -5,7 +5,6 @@
    ========================================================================== */
 
 import { registrarCartas } from "./motor.js";
-import { SVG_CARECA } from "./cartas-ui.js";
 import { iniciarCatalogo } from "./catalogo.js";
 import { iniciarEditorDeck } from "./editor-deck.js";
 import { deckAtual } from "./deck.js";
@@ -19,7 +18,7 @@ import { aviso } from "./util.js";
 const TELAS = ["inicio", "catalogo", "deck", "regras", "salao", "arena"];
 
 async function iniciar() {
-  document.querySelectorAll("[data-emblema]").forEach((e) => (e.innerHTML = SVG_CARECA));
+  document.querySelectorAll("[data-emblema]").forEach((e) => (e.innerHTML = '<img src="img/emblema.webp" alt="" width="256" height="256">'));
 
   let cartas;
   try {

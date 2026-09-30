@@ -1674,3 +1674,34 @@ a:hover {
     transition-duration: .01ms !important;
   }
 }
+
+/* ---------- Logo e emblema (artes) ---------- */
+.logo-navbar {
+  display: block;
+  width: auto;
+  height: 46px;
+}
+
+.logo-hero {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  /* bordas do banner somem no fundo da página */
+  -webkit-mask-image: radial-gradient(ellipse 72% 90% at 50% 50%, #000 60%, transparent 100%);
+  mask-image: radial-gradient(ellipse 72% 90% at 50% 50%, #000 60%, transparent 100%);
+}
+
+[data-emblema] img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+@media (max-width: 575.98px) {
+  .logo-navbar {
+    height: 38px;
+  }
+}

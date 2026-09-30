@@ -15,7 +15,7 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada,
 } from "./motor.js";
-import { criarCarta as criarCartaBase, criarVerso, SVG_CARECA, linhaTipo, nomeCategoria } from "./cartas-ui.js";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js";
 import { el, esperar, aviso } from "./util.js";
 import { tocar } from "./som.js";
 import { abrirDetalhes } from "./catalogo.js";
@@ -1065,12 +1065,15 @@ function mostrarResultado(estado) {
   fundo.setAttribute("aria-modal", "true");
   fundo.setAttribute("aria-labelledby", "titulo-resultado");
   const caixa = el("div", "resultado__caixa");
-  const emblema = el("span", "resultado__emblema");
-  emblema.innerHTML = SVG_CARECA;
-  const titulo = el("h2", "resultado__titulo", venceu ? "VITÓRIA!" : "DERROTA");
+  const arte = el("img", "resultado__arte");
+  arte.src = venceu ? "img/vitoria.webp" : "img/derrota.webp";
+  arte.alt = "";
+  arte.width = 700;
+  arte.height = 717;
+  const titulo = el("h2", "visually-hidden", venceu ? "Vitória!" : "Derrota");
   titulo.id = "titulo-resultado";
   const [frVitoria, frDerrota] = FRASES_FIM[estado.motivo] || ["Vitória!", "Derrota."];
-  caixa.append(emblema, titulo, el("p", "resultado__frase", venceu ? frVitoria : frDerrota));
+  caixa.append(arte, titulo, el("p", "resultado__frase", venceu ? frVitoria : frDerrota));
   if (extra && extra.xp) caixa.append(el("p", "resultado__xp", `+${extra.xp} XP`));
 
   const botoes = el("div", "d-flex flex-wrap gap-2 justify-content-center mt-3");

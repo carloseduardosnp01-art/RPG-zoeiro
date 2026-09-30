@@ -225,7 +225,7 @@ O **motor** é independente da tela: dá para rodar partidas inteiras no Node (f
 
 | Recurso | Origem | Licença |
 |---|---|---|
-| Artes das cartas | Montagens enviadas pelo dono do projeto, recortadas para o site | — |
+| Artes das cartas, logo e telas de vitória/derrota | Enviadas pelo dono do projeto, recortadas e comprimidas para o site | — |
 | Código, textos, template das cartas, emblema careca e sons | Feitos para este projeto | — |
 | [Bootstrap 5.3.3](https://getbootstrap.com/) | CDN jsDelivr | MIT |
 | [MQTT.js 5](https://github.com/mqttjs/MQTT.js) | CDN jsDelivr | MIT |

@@ -7,7 +7,9 @@
   <meta name="theme-color" content="#0b1110">
   <title>Duelo da Zoeira · O card game mais careca do Brasil</title>
 
-  <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="img/favicon.png" type="image/png" sizes="64x64">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="preload" as="image" href="img/logo.webp" fetchpriority="high">
   <link rel="preload" as="font" type="font/woff2" href="fontes/cinzel.woff2" crossorigin>
   <link rel="preload" as="font" type="font/woff2" href="fontes/crimson-pro.woff2" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -43,8 +45,7 @@
     <nav class="navbar navbar-expand-lg navbar-zoeira" aria-label="Navegação principal">
       <div class="container-xl">
         <a class="navbar-brand marca" href="#inicio">
-          <span class="marca__emblema" data-emblema></span>
-          <span class="marca__texto">Duelo <small>da</small> Zoeira</span>
+          <img class="logo-navbar" src="img/logo.webp" alt="Duelo da Zoeira: início" width="1000" height="250" fetchpriority="high">
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu-principal"
                 aria-controls="menu-principal" aria-expanded="false" aria-label="Abrir menu de navegação">
@@ -79,9 +80,7 @@
           <div class="col-12 col-lg-6">
             <p class="sobretitulo">O card game mais careca do Brasil</p>
             <h1 id="titulo-inicio" class="titulo-hero">
-              <span class="titulo-hero__linha">Duelo</span>
-              <span class="titulo-hero__da">da</span>
-              <span class="titulo-hero__linha titulo-hero__linha--brilho">Zoeira</span>
+              <img class="logo-hero" src="img/logo.webp" alt="Duelo da Zoeira" width="1000" height="250" fetchpriority="high">
             </h1>
             <p class="lead">
               Monte a mão, invoque o <strong>Careca do PT</strong>, baixe a <strong>Força Careca</strong> e deixe o

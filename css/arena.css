@@ -1507,3 +1507,29 @@ button.fase:not(:disabled):hover {
     animation-duration: .01ms !important;
   }
 }
+
+/* Arte de vitória/derrota no resultado */
+.resultado__caixa {
+  padding: 0 0 1.4rem;
+  overflow: hidden;
+}
+
+.resultado__arte {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 62vh;
+  object-fit: contain;
+  background: #000;
+}
+
+.resultado__frase {
+  margin: 1rem 1.2rem .3rem;
+  color: #f1e6cf;
+  font-family: var(--fonte-carta);
+  font-size: 1.3rem;
+}
+
+.resultado__caixa > .d-flex {
+  padding: 0 1rem;
+}

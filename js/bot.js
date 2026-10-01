@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNecessarios, validar, alvosDeAtaque,
-} from "./motor.js?v=202609302231";
+} from "./motor.js?v=202610010020";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 
@@ -77,6 +77,13 @@ function* jogadasPrincipais(estado, j) {
   // 1. Carecalla entra de penetra
   for (const { iid } of mao) {
     if (opcoes(iid).some((x) => x.id === "especial")) yield { tipo: "invocarEspecial", iid };
+  }
+
+  // 1a. John Animal: descarta o "Animal" mais fraco e chama o mais forte do deck
+  for (const m of p.monstros) {
+    if (!m || carta(estado, m.iid).efeito !== "john") continue;
+    const op = opcoes(m.iid).find((x) => x.id === "efeito");
+    if (op) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [[...op.alvos.candidatos].sort((a, b) => (carta(estado, a).atk || 0) - (carta(estado, b).atk || 0))[0]] };
   }
 
   // 1b. Manoel do Gelo Careca entra descartando 2 GELO
@@ -360,8 +367,9 @@ function escolherAlvos(estado, j, pend) {
     const deles = pend.candidatos.filter((x) => localizar(estado, x).j !== j).sort((a, b) => atkAtual(estado, b) - atkAtual(estado, a));
     return atkAtual(estado, deles[0]) >= 1500 ? [meus[0], deles[0]] : [];
   }
+  if (pend.efeito === "midas-invocar") return [];
   // buscas no deck: a de maior ATK (ou a primeira)
-  if (pend.efeito === "davi-cemiterio" || pend.efeito === "thales") {
+  if (pend.efeito === "davi-cemiterio" || pend.efeito === "thales" || pend.efeito === "big" || pend.efeito === "john-invocar") {
     return [[...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0]];
   }
   if (pend.efeito === "tributo-destruir-magias" || pend.efeito === "mestre-laminas") {

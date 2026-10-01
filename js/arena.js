@@ -14,11 +14,11 @@
 
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada,
-} from "./motor.js?v=202609302231";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202609302231";
-import { el, esperar, aviso } from "./util.js?v=202609302231";
-import { tocar } from "./som.js?v=202609302231";
-import { abrirDetalhes } from "./catalogo.js?v=202609302231";
+} from "./motor.js?v=202610010020";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610010020";
+import { el, esperar, aviso } from "./util.js?v=202610010020";
+import { tocar } from "./som.js?v=202610010020";
+import { abrirDetalhes } from "./catalogo.js?v=202610010020";
 
 const raiz = document.querySelector("#arena");
 
@@ -65,6 +65,11 @@ const FRASES = {
   "davi-cemiterio": "O ANIMAL VOLTOU!",
   thales: "CHAMA OS IRMÃOS!",
   george: "PROTEGE A MANADA!",
+  john: "VEM, MANO!",
+  "midas-animal": "TROCA DE TURNO NA BOCA!",
+  "big-animal": "O BIG CHEGOU!",
+  "miqueas-animal": "PATO MAROMBEIRO!",
+  emanoel: "VOLTEI COM REFORÇO!",
   gole: "O ÚLTIMO GOLE!",
 };
 

@@ -17,10 +17,10 @@
    duas jogadas ao mesmo tempo.
    ========================================================================== */
 
-import { novoDuelo, aplicar, quemAge, carta, ErroJogada } from "./motor.js";
-import { jogadaDoBot } from "./bot.js";
-import { PREFIXO, publicar, assinar } from "./rede.js";
-import { esperar, gerarId } from "./util.js";
+import { novoDuelo, aplicar, quemAge, carta, ErroJogada } from "./motor.js?v=202609302202";
+import { jogadaDoBot } from "./bot.js?v=202609302202";
+import { PREFIXO, publicar, assinar } from "./rede.js?v=202609302202";
+import { esperar, gerarId } from "./util.js?v=202609302202";
 
 export const SEM_SINAL_AVISO = 20;  // segundos sem sinal do oponente para avisar
 export const SEM_SINAL_WO = 60;     // segundos sem sinal para poder pedir W.O.

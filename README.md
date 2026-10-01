@@ -70,7 +70,16 @@ O código já está em `github.com/carloseduardosnp01-art/RPG-zoeiro`. Para o si
 2. Abra **Settings → Pages**, em *Build and deployment* escolha **Deploy from a branch**, branch **main**, pasta **/ (root)** e salve.
 3. Em um ou dois minutos o jogo fica em `https://carloseduardosnp01-art.github.io/RPG-zoeiro/`.
 
-Para mandar atualizações depois: `git add -A`, `git commit -m "mensagem"` e `git push`.
+Para mandar atualizações depois:
+
+```bash
+python ferramentas/nova-versao.py
+git add -A
+git commit -m "mensagem"
+git push
+```
+
+O `nova-versao.py` coloca um número de versão (`?v=...`) no endereço dos arquivos CSS, JS e das cartas. Como o endereço muda a cada versão, o navegador baixa os arquivos novos sozinho, sem precisar de Ctrl+F5.
 
 Pronto: é só mandar o link para os amigos, cada um cria a conta e todos se encontram no salão.
 

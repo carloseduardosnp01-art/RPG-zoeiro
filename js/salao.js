@@ -12,14 +12,14 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js";
-import * as conta from "./conta.js";
-import { novoDuelo, versaoDasCartas, problemaDoDeck } from "./motor.js";
-import { deckAtual, ehDeckPadrao } from "./deck.js";
-import { criarSessaoOnline, topicosDuelo } from "./sessao.js";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js";
-import { tocar } from "./som.js";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202609302202";
+import * as conta from "./conta.js?v=202609302202";
+import { novoDuelo, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202609302202";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202609302202";
+import { criarSessaoOnline, topicosDuelo } from "./sessao.js?v=202609302202";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202609302202";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202609302202";
+import { tocar } from "./som.js?v=202609302202";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {

@@ -4,16 +4,19 @@
    pelo endereço (#inicio, #catalogo, #deck, #regras, #salao, #arena).
    ========================================================================== */
 
-import { registrarCartas, versaoDasCartas } from "./motor.js";
-import { iniciarCatalogo } from "./catalogo.js";
-import { iniciarEditorDeck } from "./editor-deck.js";
-import { deckAtual } from "./deck.js";
-import { iniciarSalao, ativarSalao } from "./salao.js";
-import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js";
-import { criarSessaoBot } from "./sessao.js";
-import * as conta from "./conta.js";
-import { alternarSom, somLigado } from "./som.js";
-import { aviso } from "./util.js";
+import { registrarCartas, versaoDasCartas } from "./motor.js?v=202609302202";
+import { iniciarCatalogo } from "./catalogo.js?v=202609302202";
+import { iniciarEditorDeck } from "./editor-deck.js?v=202609302202";
+import { deckAtual } from "./deck.js?v=202609302202";
+import { iniciarSalao, ativarSalao } from "./salao.js?v=202609302202";
+import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202609302202";
+import { criarSessaoBot } from "./sessao.js?v=202609302202";
+import * as conta from "./conta.js?v=202609302202";
+import { alternarSom, somLigado } from "./som.js?v=202609302202";
+import { aviso } from "./util.js?v=202609302202";
+
+// Número da versão (atualizado por ferramentas/nova-versao.py a cada envio)
+const VERSAO = "202609302202";
 
 const TELAS = ["inicio", "catalogo", "deck", "regras", "salao", "arena"];
 
@@ -22,7 +25,7 @@ async function iniciar() {
 
   let cartas;
   try {
-    const resposta = await fetch("data/cartas.json");
+    const resposta = await fetch(`data/cartas.json?v=${VERSAO}`, { cache: "no-cache" });
     if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
     cartas = await resposta.json();
   } catch (erro) {
@@ -52,7 +55,7 @@ async function verificarVersaoNova() {
     const novas = await resposta.json();
     if (versaoDasCartas(novas) !== versaoDasCartas()) {
       avisouVersao = true;
-      aviso("Saiu uma versão nova do jogo! Recarregue a página (Ctrl+F5 no PC) quando terminar o duelo.", "info", 30000);
+      aviso("Saiu uma versão nova do jogo! Recarregue a página (F5) quando terminar o duelo.", "info", 30000);
     }
   } catch { /* sem internet: tenta de novo depois */ }
 }

@@ -150,7 +150,7 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT001 | Careca Feijão | Monstro Normal · Nv 3 · 1750/0 | 3 | Bate forte e é o tributo perfeito |
 | ZOE-PT002 | Grande Mestre | Monstro Normal · Nv 7 · 2500/2100 | 3 | O chefão (2 tributos, ou via Invocador) |
 | ZOE-PT003 | Careca Cast Surpresa | Efeito/Virar · Nv 2 · 450/600 | 2 | VIRE: pode destruir 1 monstro |
-| ZOE-PT004 | Miro Animal | Efeito · Nv 4 · 2000/1500 | 3 | Saideira: destruiu monstro em batalha → +500 de dano **(efeito inventado: a carta original está sem texto)** |
+| ZOE-PT004 | Miro Animal | Efeito · VENTO · Besta Alada · Nv 4 · 2000/1500 | 3 | Saideira: destruiu monstro em batalha → +500 de dano **(efeito inventado: a carta original está sem texto)** |
 | ZOE-PT005 | Careca do PT | Efeito · Nv 5 · 2400/1000 | 3 | Tributo: pode destruir 1 monstro |
 | ZOE-PT006 | Adm do PT | Efeito · Nv 6 · 2400/1000 | 2 | Tributo: destrói até 2 Magias/Armadilhas |
 | ZOE-PT007 | Feiticeira Careca | Efeito · Nv 6 · 2000/1700 | 3 | +300 ATK por Grande Mestre nos cemitérios |
@@ -178,6 +178,12 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT029 | O Último Gole **(limitada a 1)** | Magia de Equipamento | – | Dobra o ATK de 1 monstro; no fim do turno ele é destruído |
 | ZOE-PT030 | O Herói do Lamento | Monstro Normal · LUZ · Nv 7 · 2500/2000 | – | Guerreiro das estrelas |
 | ZOE-PT031 | ADM Ditador **(limitada a 2)** | Armadilha | – | Oponente Invocou (qualquer tipo, inclusive Especial) um monstro com 1500+ de ATK → esse monstro é banido (sai do jogo) |
+| ZOE-PT032 | David Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1300/1400 | – | Todos os monstros de VENTO ganham 300 de ATK |
+| ZOE-PT033 | Davi Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1700/600 | – | Invocação-Normal: devolve 1 Besta Alada sua + 1 monstro do oponente para a mão. No Cemitério: busca 1 Besta Alada Nv 4 de até 1500 ATK |
+| ZOE-PT034 | Thales Animal **(limitada a 2)** | Efeito · VENTO · Besta Alada · Nv 4 · 1400/1300 | – | Ao ser Invocado: busca Magias/Armadilhas que mencionam "Irmãos Animal" (ainda não existe nenhuma) |
+| ZOE-PT035 | George Animal | Efeito · VENTO · Dragão · Nv 7 · 2000/2500 | – | "Animal" de Nv 6 ou menos não podem ser atacados; Invocação-Especial em defesa com VENTO Nv ≤ 6; ao ir pro Cemitério manda 1 VENTO Besta Alada do deck pro Cemitério |
+
+**Cartas "Animal":** todo monstro com "Animal" no nome conta como "Animal" para esses efeitos. Para criar uma Magia/Armadilha que o Thales Animal consiga buscar, coloque `"mencionaIrmaos": true` nela em `data/cartas.json`.
 
 **Cartas limitadas:** algumas cartas fortes só podem ter 1 (ou 2) cópias por deck (o campo `"limite"` em `data/cartas.json`; `0` = banida). O editor não deixa passar do limite e não salva um deck acima dele. Se um jogador entrar num duelo com cópias acima do limite (um deck salvo antes da carta ser limitada, por exemplo), as sobras viram **Careca Feijão** na hora, mesmo passando de 3 Feijões, e o registro do duelo avisa.
 
@@ -230,7 +236,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
-├── data/cartas.json      # As 31 cartas (texto, stats, cópias no deck padrão, efeito)
+├── data/cartas.json      # As 35 cartas (texto, stats, cópias no deck padrão, efeito)
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```

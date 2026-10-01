@@ -7,8 +7,8 @@
 
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo,
-  luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNecessarios, validar,
-} from "./motor.js?v=202609302202";
+  luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNecessarios, validar, alvosDeAtaque,
+} from "./motor.js?v=202609302231";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 
@@ -285,12 +285,13 @@ function escolherAtaque(estado, j) {
 
   for (const slot of atacantes) {
     const atk = atkAtual(estado, p.monstros[slot].iid);
-    if (!o.monstros.some(Boolean)) return { tipo: "atacar", slot, alvo: null };
+    const atacaveis = alvosDeAtaque(estado, j);
+    if (!atacaveis.length) return { tipo: "atacar", slot, alvo: null };
 
     let melhorAlvo = null;
     let melhorValor = -1;
     o.monstros.forEach((m, s) => {
-      if (!m) return;
+      if (!m || !atacaveis.includes(s)) return;
       let vence = false;
       let valor = 0;
       if (!m.face) {
@@ -352,6 +353,16 @@ function escolherAlvos(estado, j, pend) {
   if (pend.efeito === "flip-descartar") {
     const valor = (iid) => VALOR_NA_MAO[carta(estado, iid).efeito] ?? (carta(estado, iid).atk || 0) / 500;
     return [[...pend.candidatos].sort((a, b) => valor(b) - valor(a))[0]];
+  }
+  // Davi: devolve a minha Besta Alada mais fraca e o monstro mais forte do oponente
+  if (pend.efeito === "davi") {
+    const meus = pend.candidatos.filter((x) => localizar(estado, x).j === j).sort((a, b) => atkAtual(estado, a) - atkAtual(estado, b));
+    const deles = pend.candidatos.filter((x) => localizar(estado, x).j !== j).sort((a, b) => atkAtual(estado, b) - atkAtual(estado, a));
+    return atkAtual(estado, deles[0]) >= 1500 ? [meus[0], deles[0]] : [];
+  }
+  // buscas no deck: a de maior ATK (ou a primeira)
+  if (pend.efeito === "davi-cemiterio" || pend.efeito === "thales") {
+    return [[...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0]];
   }
   if (pend.efeito === "tributo-destruir-magias" || pend.efeito === "mestre-laminas") {
     const ordenadas = [...doOponente].sort((a, b) => Number(localizar(estado, a).obj.face) - Number(localizar(estado, b).obj.face));

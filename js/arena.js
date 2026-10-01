@@ -14,11 +14,11 @@
 
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada,
-} from "./motor.js?v=202609302202";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202609302202";
-import { el, esperar, aviso } from "./util.js?v=202609302202";
-import { tocar } from "./som.js?v=202609302202";
-import { abrirDetalhes } from "./catalogo.js?v=202609302202";
+} from "./motor.js?v=202609302231";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202609302231";
+import { el, esperar, aviso } from "./util.js?v=202609302231";
+import { tocar } from "./som.js?v=202609302231";
+import { abrirDetalhes } from "./catalogo.js?v=202609302231";
 
 const raiz = document.querySelector("#arena");
 
@@ -60,6 +60,11 @@ const FRASES = {
   lamento: "VOLTOU DO ALÉM!",
   "sai-daqui": "SAI DAQUI, OBESO!",
   "adm-ditador": "BANIDO PELO ADM!",
+  david: "FORÇA DO VENTO!",
+  davi: "VOLTA PRA MÃO!",
+  "davi-cemiterio": "O ANIMAL VOLTOU!",
+  thales: "CHAMA OS IRMÃOS!",
+  george: "PROTEGE A MANADA!",
   gole: "O ÚLTIMO GOLE!",
 };
 
@@ -606,6 +611,7 @@ function descreverEvento(estado, ev) {
     case "aoDeck": return { texto: `${quem(ev.j)} devolveu ${ev.j === eu ? nome(ev.iid) : "uma carta"} ao deck.`, classe: minha };
     case "ataqueDuplo": return { texto: `⚔️ ${nome(ev.iid)} pode atacar duas vezes neste turno!`, classe: minha };
     case "custo": return { texto: `${quem(ev.j)} pagou ${ev.valor} PV (${ev.pl}).`, classe: "log--dano" };
+    case "aoCemiterio": return { texto: `🪦 ${nome(ev.iid)} foi do deck de ${quem(ev.j)} para o Cemitério.`, classe: minha };
     case "banida": return { texto: `🚫 ${nome(ev.iid)} foi banido do jogo.`, classe: "log--armadilha" };
     case "paraMao": return { texto: `↩️ ${nome(ev.iid)} voltou para a mão de ${quem(ev.j)}.`, classe: "log--armadilha" };
     case "ajusteDeck": return { texto: `⚠️ ${ev.j === eu ? "Seu deck tinha" : `O deck de ${quem(ev.j)} tinha`} ${ev.trocadas} carta${ev.trocadas > 1 ? "s" : ""} acima do limite: ${ev.trocadas > 1 ? "viraram" : "virou"} Careca Feijão.`, classe: "log--turno" };
@@ -842,7 +848,10 @@ async function abrirEscolhaPendente(estado) {
   escolhaAberta = escolhaAtual;
   const alvos = await promessa;
   escolhaAberta = null;
-  if (alvos && sessao && sessao.estado.seq === seq) agir({ tipo: "escolher", alvos });
+  if (alvos && sessao && sessao.estado.seq === seq && !agir({ tipo: "escolher", alvos })) {
+    // combinação inválida (ex.: Davi Animal): mostra o aviso e abre a escolha de novo
+    if (sessao.estado.pendente && quemAge(sessao.estado) === sessao.eu) abrirEscolhaPendente(sessao.estado);
+  }
 }
 
 function verCemiterio(estado, j) {

@@ -25,6 +25,7 @@ export const ATRIBUTOS = {
   TREVAS: { chave: "trevas", kanji: "闇", nome: "Trevas" },
   LUZ: { chave: "luz", kanji: "光", nome: "Luz" },
   GELO: { chave: "gelo", kanji: "氷", nome: "Gelo" },
+  VENTO: { chave: "vento", kanji: "風", nome: "Vento" },
   MAGIA: { chave: "magia", kanji: "魔", nome: "Magia" },
   ARMADILHA: { chave: "armadilha", kanji: "罠", nome: "Armadilha" },
 };

@@ -1805,3 +1805,110 @@ a:hover {
   color: var(--texto-suave);
   font-size: .72rem;
 }
+
+/* ---------- Perfil de um duelista ---------- */
+:where(.link-perfil) {
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.link-perfil:hover,
+.link-perfil:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pj__topo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.pj__avatar {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border: 3px solid var(--ouro);
+  border-radius: .8rem;
+  box-shadow: 0 0 16px rgba(224, 180, 74, .45);
+}
+
+.pj__info {
+  flex: 1;
+}
+
+.pj__nivel {
+  color: var(--ouro-claro);
+  font-weight: 700;
+}
+
+.pj__status {
+  color: var(--texto-suave);
+  font-size: .88rem;
+}
+
+.pj__subtitulo {
+  margin: 1rem 0 .6rem;
+  color: #e3a85a;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.historico {
+  margin: 0;
+  padding: .6rem;
+  list-style: none;
+  background: rgba(0, 0, 0, .35);
+  border: 1px solid var(--borda);
+  border-radius: .6rem;
+}
+
+.historico__item {
+  margin-bottom: .4rem;
+  padding: .55rem .7rem;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: .82rem;
+  line-height: 1.45;
+  background: rgba(255, 255, 255, .04);
+  border-radius: .35rem;
+}
+
+.historico__item:last-child {
+  margin-bottom: 0;
+}
+
+.historico__data {
+  color: #8b8378;
+}
+
+.historico__venceu {
+  color: #2fe08a;
+  font-weight: 700;
+}
+
+.historico__perdeu {
+  color: #ff5a5f;
+  font-weight: 700;
+}
+
+.historico__oponente {
+  color: #5aa9ff;
+  font-weight: 700;
+}
+
+.historico__extra {
+  color: #8b8378;
+}
+
+.historico__vazio {
+  padding: .6rem;
+  color: var(--texto-suave);
+  font-size: .9rem;
+}

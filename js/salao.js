@@ -285,7 +285,7 @@ function desenharPerfil() {
   const nomes = el("div");
   const nick = el("h3", "perfil__nick");
   if (u.tag) nick.append(el("span", "tag-cla", `[${u.tag}] `));
-  nick.append(u.nick);
+  nick.append(botaoPerfil(u, u.nick));
   nomes.append(nick, el("div", "perfil__nivel", `Nível ${nivelDoXp(u.xp)} · ${u.xp} XP`));
   topo.append(img, nomes);
 
@@ -403,8 +403,8 @@ function desenharRanking() {
     if (u && p.chave === u.chave) li.classList.add("ranking__minha");
     const medalha = ["🥇", "🥈", "🥉"][i];
     if (medalha) li.dataset.medalha = medalha;
-    if (p.tag) li.append(el("span", "tag-cla", `[${p.tag}] `));
-    li.append(p.nick);
+    const nome = botaoPerfil(p, `${p.tag ? `[${p.tag}] ` : ""}${p.nick}`);
+    li.append(nome);
     const valor = porXp ? `Nv ${nivelDoXp(p.xp)} · ${p.xp} XP` : `${p.vitorias}V ${p.derrotas}D`;
     li.append(el("span", "ranking__v", valor));
     lista.append(li);
@@ -414,6 +414,90 @@ function desenharRanking() {
   const eu = $("#ranking-eu");
   const pos = u ? todos.findIndex((p) => p.chave === u.chave) : -1;
   eu.textContent = pos >= 10 ? `Você está em ${pos + 1}º lugar (${porXp ? `${u.xp} XP` : `${u.vitorias}V ${u.derrotas}D`}).` : "";
+}
+
+
+/* ---------- Perfil de um duelista (janela) ---------- */
+
+// Botão com o nome que abre o perfil
+function botaoPerfil(cartao, texto, classe = "link-perfil") {
+  const b = el("button", classe.includes("link-perfil") ? classe : `${classe} link-perfil`, texto || null);
+  b.type = "button";
+  b.title = `Ver o perfil de ${cartao.nick}`;
+  b.addEventListener("click", (e) => {
+    e.stopPropagation();
+    abrirPerfil(cartao);
+  });
+  return b;
+}
+
+const TEXTO_MOTIVO = { desistencia: " (desistência)", wo: " (W.O.)", deck: " (deck acabou)" };
+
+function abrirPerfil(cartao) {
+  const u = conta.usuarioAtual();
+  // o perfil completo vem do broker; o meu, da conta (mais novo)
+  const p = (u && cartao.chave === u.chave ? u : s.perfis.get(cartao.chave)) || { ...cartao, xp: 0, vitorias: 0, derrotas: 0 };
+  const online = duelistasOnline().find((x) => x.chave === p.chave);
+
+  const corpo = $("#perfil-jogador-corpo");
+  corpo.replaceChildren();
+  $("#perfil-jogador-titulo").textContent = `${p.tag ? `[${p.tag}] ` : ""}${p.nick}`;
+
+  const topo = el("div", "pj__topo");
+  const img = el("img", "pj__avatar");
+  img.src = `img/cartas/${p.avatar || "careca-feijao"}.webp`;
+  img.alt = "";
+  const info = el("div", "pj__info");
+  info.append(el("div", "pj__nivel", `Nível ${nivelDoXp(p.xp || 0)} · ${p.xp || 0} XP`));
+  const barra = el("div", "barra-xp");
+  const cheio = el("span");
+  cheio.style.width = `${progressoNivel(p.xp || 0) * 100}%`;
+  barra.append(cheio);
+  info.append(barra);
+  const status = online ? (online.status === "duelando" ? "🟠 Duelando agora" : "🟢 Online") : "⚫ Offline";
+  info.append(el("div", "pj__status", status));
+  topo.append(img, info);
+
+  const total = (p.vitorias || 0) + (p.derrotas || 0);
+  const stats = el("div", "perfil__stats");
+  for (const [valor, rotulo] of [[p.vitorias || 0, "Vitórias"], [p.derrotas || 0, "Derrotas"], [total ? `${Math.round(((p.vitorias || 0) / total) * 100)}%` : "–", "Aproveit."]]) {
+    const d = el("div");
+    d.append(el("strong", "", String(valor)), el("span", "", rotulo));
+    stats.append(d);
+  }
+
+  const historico = el("section", "pj__historico");
+  historico.append(el("h3", "pj__subtitulo", "Histórico de duelos"));
+  const lista = el("ol", "historico");
+  for (const d of p.historico || []) {
+    const li = el("li", "historico__item");
+    const quando = new Date(d.t);
+    li.append(el("span", "historico__data", `${quando.toLocaleDateString("pt-BR")} às ${quando.toLocaleTimeString("pt-BR")} - `));
+    li.append(el("span", d.venceu ? "historico__venceu" : "historico__perdeu", d.venceu ? "Venceu" : "Perdeu"));
+    li.append(d.tipo === "bot" ? " um treino contra " : " um duelo contra ");
+    const contra = d.contra ? `${d.contra.tag ? `[${d.contra.tag}] ` : ""}${d.contra.nick}` : "alguém";
+    if (d.tipo !== "bot" && d.contra && d.contra.chave) {
+      li.append(botaoPerfil({ chave: d.contra.chave, nick: d.contra.nick, tag: d.contra.tag }, contra, "historico__oponente"));
+    } else {
+      li.append(el("span", "historico__oponente", contra));
+    }
+    li.append(el("span", "historico__extra", `${TEXTO_MOTIVO[d.motivo] || ""} · +${d.xp} XP`));
+    lista.append(li);
+  }
+  if (!(p.historico || []).length) lista.append(el("li", "historico__vazio", "Nenhum duelo registrado ainda."));
+  historico.append(lista);
+
+  corpo.append(topo, stats, historico);
+
+  const botaoDesafiar = $("#perfil-jogador-desafiar");
+  const souEu = u && p.chave === u.chave;
+  botaoDesafiar.hidden = souEu || !online || online.status === "duelando";
+  botaoDesafiar.onclick = () => {
+    bootstrap.Modal.getOrCreateInstance("#modal-perfil").hide();
+    desafiar(online);
+  };
+
+  bootstrap.Modal.getOrCreateInstance("#modal-perfil").show();
 }
 
 
@@ -506,6 +590,7 @@ function abrirMenuDuelista(p, ev) {
   };
   opcao("⚔️ Desafiar para duelo", () => desafiar(p), souEu || p.status === "duelando");
   opcao("💬 Mensagem privada", () => abrirAbaPrivada(p, true), souEu);
+  opcao("👤 Ver perfil", () => abrirPerfil(p));
   document.body.append(menu);
   const x = ev.clientX || ev.currentTarget.getBoundingClientRect().left;
   const y = ev.clientY || ev.currentTarget.getBoundingClientRect().bottom;
@@ -592,7 +677,7 @@ function desenharMensagens() {
     } else {
       const d = el("div", "msg" + (u && item.de.chave === u.chave ? " msg--minha" : ""));
       d.append(el("span", "msg__hora", `[${hora(item.t)}]`));
-      const autor = el("span", "msg__autor");
+      const autor = botaoPerfil(item.de, "", "msg__autor");
       if (item.de.tag) autor.append(el("span", "tag-cla", `|${item.de.tag}| `));
       autor.append(`${item.de.nick}:`);
       d.append(autor, item.texto);
@@ -859,7 +944,7 @@ function entrarNoDuelo(estado, eventos) {
 
 function terminarDuelo(estado, eu) {
   const venceu = estado.vencedor === eu;
-  const xp = conta.registrarResultado({ dueloId: estado.id, venceu });
+  const xp = conta.registrarResultado({ dueloId: estado.id, venceu, oponente: estado.jogadores[1 - eu], motivo: estado.motivo });
   mudarStatusDuelo("livre");
   guardar.apagar(DUELO_ATIVO);
   desenharPerfil();

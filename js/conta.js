@@ -159,7 +159,17 @@ export function mesclarPerfis(a, b) {
   perfil.derrotas = Math.max(a.derrotas || 0, b.derrotas || 0);
   perfil.xp = Math.max(a.xp || 0, b.xp || 0);
   perfil.atualizado = Math.max(a.atualizado || 0, b.atualizado || 0);
+  perfil.historico = juntarHistoricos(a.historico, b.historico);
   return perfil;
+}
+
+export const HISTORICO_MAX = 10;
+
+// Últimos duelos das duas cópias, sem repetir, do mais novo para o mais antigo
+function juntarHistoricos(a = [], b = []) {
+  const porId = new Map();
+  for (const d of [...(a || []), ...(b || [])]) if (d && d.id) porId.set(d.id, d);
+  return [...porId.values()].sort((x, y) => y.t - x.t).slice(0, HISTORICO_MAX);
 }
 
 // O salão recebe o perfil do broker (outra aba ou aparelho pode ter mudado): junta com o daqui
@@ -190,7 +200,8 @@ export const FATOR_BOT = 0.3; // contra o bot: 30% do XP de uma partida online
 
 // Soma o resultado de um duelo (uma vez por duelo). Devolve o XP ganho.
 // contraBot: vale só 30% do XP e não conta vitória/derrota (o ranking de vitórias é só online)
-export function registrarResultado({ dueloId, venceu, contraBot = false }) {
+// oponente: { nick, tag } para o histórico de duelos; motivo: "pl", "deck", "desistencia", "wo"
+export function registrarResultado({ dueloId, venceu, contraBot = false, oponente = null, motivo = null }) {
   if (!usuario) return 0;
   const feitos = guardar.ler(CHAVE_RESULTADOS, []);
   if (feitos.includes(dueloId)) return 0;
@@ -205,6 +216,16 @@ export function registrarResultado({ dueloId, venceu, contraBot = false }) {
     xp: usuario.xp + ganho,
     atualizado: Date.now(),
   };
+  const duelo = {
+    id: dueloId,
+    t: Date.now(),
+    venceu,
+    tipo: contraBot ? "bot" : "online",
+    contra: oponente ? { nick: oponente.nick, tag: oponente.tag || "", chave: oponente.chave || null } : null,
+    motivo,
+    xp: ganho,
+  };
+  usuario.historico = juntarHistoricos([duelo], usuario.historico);
   publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
   guardarLocalmente();
   avisar();

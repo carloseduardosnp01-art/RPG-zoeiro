@@ -111,7 +111,8 @@ function xpDoTreino(estado, eu) {
   if (!conta.usuarioAtual()) return null;
   const venceu = estado.vencedor === eu;
   if (!venceu && estado.motivo === "desistencia" && estado.turno < 3) return null;
-  return { xp: conta.registrarResultado({ dueloId: estado.id, venceu, contraBot: true }) };
+  const bot = estado.jogadores[1 - eu];
+  return { xp: conta.registrarResultado({ dueloId: estado.id, venceu, contraBot: true, oponente: bot, motivo: estado.motivo }) };
 }
 
 function ligarBotoes() {

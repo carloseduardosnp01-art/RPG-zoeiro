@@ -42,6 +42,7 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
   - **botão direito** (ou toque) no duelista → *Desafiar para duelo* / *Mensagem privada*;
   - o desafio aparece numa aba privada com **Aceitar** e **Recusar**; ao aceitar, os dois vão direto para a arena;
   - perfil com nível, XP, vitórias/derrotas e botão para trocar a foto de perfil (as artes das cartas);
+  - clique no nome de um duelista (ranking, chat, lista de online, histórico ou no seu próprio perfil) para abrir o **perfil** dele: nível, XP, vitórias/derrotas, se está online e os **últimos 10 duelos** com resultado, oponente e XP (o histórico fica salvo no perfil público e sincroniza entre aparelhos);
   - ranking com duas abas: **XP geral** (online + treino) e **Vitórias online**, com medalhas no top 3 e a sua posição se você estiver fora do top 10;
   - XP: online vitória +100 e derrota +40; contra o Bot, 30% disso (+30 / +12) sem contar vitória/derrota. Desistir do treino antes do 3º turno não dá XP.
 - **Arena**:

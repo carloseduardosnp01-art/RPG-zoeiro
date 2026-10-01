@@ -495,7 +495,13 @@
             <div class="perfil" id="perfil"></div>
             <div class="ranking">
               <h4 class="ranking__titulo">🏆 Ranking dos carecas</h4>
+              <div class="abas-ranking" role="tablist" aria-label="Tipo de ranking">
+                <button type="button" role="tab" aria-selected="true" data-ranking="xp">⭐ XP geral</button>
+                <button type="button" role="tab" aria-selected="false" data-ranking="vitorias">⚔️ Vitórias online</button>
+              </div>
               <ol class="ranking__lista" id="ranking"></ol>
+              <p class="ranking__eu" id="ranking-eu"></p>
+              <p class="ranking__nota">Online: vitória +100 XP, derrota +40. Contra o Bot: 30% disso (+30 / +12).</p>
             </div>
           </div>
         </div>

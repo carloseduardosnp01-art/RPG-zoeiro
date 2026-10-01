@@ -97,12 +97,21 @@ function iniciarTreino() {
   const perfil = u ? conta.cartaoPublico(u) : null;
   const treino = () => {
     abrirArena(criarSessaoBot(perfil, deckAtual()), {
+      aoTerminar: (estado, eu) => xpDoTreino(estado, eu),
       aoSair: () => (location.hash = "#inicio"),
       revanche: treino,
     });
     location.hash = "#arena";
   };
   treino();
+}
+
+// Treino dá 30% do XP online. Desistir antes do 3º turno não dá XP (para ninguém farmar desistindo).
+function xpDoTreino(estado, eu) {
+  if (!conta.usuarioAtual()) return null;
+  const venceu = estado.vencedor === eu;
+  if (!venceu && estado.motivo === "desistencia" && estado.turno < 3) return null;
+  return { xp: conta.registrarResultado({ dueloId: estado.id, venceu, contraBot: true }) };
 }
 
 function ligarBotoes() {

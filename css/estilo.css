@@ -1749,3 +1749,59 @@ a:hover {
   background: #a0222b;
   border-radius: 1rem;
 }
+
+/* Ranking com abas */
+.abas-ranking {
+  display: flex;
+  gap: .3rem;
+  margin-bottom: .6rem;
+}
+
+.abas-ranking button {
+  flex: 1;
+  padding: .3rem .4rem;
+  color: var(--texto-suave);
+  font-size: .78rem;
+  font-weight: 700;
+  background: rgba(0, 0, 0, .3);
+  border: 1px solid var(--borda);
+  border-radius: .4rem;
+}
+
+.abas-ranking button[aria-selected="true"] {
+  color: #1b1208;
+  background: var(--ouro);
+  border-color: var(--ouro);
+}
+
+.ranking__lista li[data-medalha]::marker {
+  content: attr(data-medalha) " ";
+}
+
+.ranking__minha {
+  color: #5ee6b0;
+  font-weight: 700;
+}
+
+.ranking__vazio {
+  list-style: none;
+  margin-left: -1.4rem;
+  color: var(--texto-suave);
+}
+
+.ranking__eu {
+  margin: .5rem 0 0;
+  color: #5ee6b0;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.ranking__eu:empty {
+  display: none;
+}
+
+.ranking__nota {
+  margin: .6rem 0 0;
+  color: var(--texto-suave);
+  font-size: .72rem;
+}

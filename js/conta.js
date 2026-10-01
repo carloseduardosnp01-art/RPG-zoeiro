@@ -184,18 +184,24 @@ function guardarLocalmente() {
 
 /* ---------- Estatísticas ---------- */
 
+export const XP_VITORIA = 100;
+export const XP_DERROTA = 40;
+export const FATOR_BOT = 0.3; // contra o bot: 30% do XP de uma partida online
+
 // Soma o resultado de um duelo (uma vez por duelo). Devolve o XP ganho.
-export function registrarResultado({ dueloId, venceu }) {
+// contraBot: vale só 30% do XP e não conta vitória/derrota (o ranking de vitórias é só online)
+export function registrarResultado({ dueloId, venceu, contraBot = false }) {
   if (!usuario) return 0;
   const feitos = guardar.ler(CHAVE_RESULTADOS, []);
   if (feitos.includes(dueloId)) return 0;
   guardar.gravar(CHAVE_RESULTADOS, [...feitos.slice(-50), dueloId]);
 
-  const ganho = venceu ? 100 : 40;
+  const base = venceu ? XP_VITORIA : XP_DERROTA;
+  const ganho = contraBot ? Math.round(base * FATOR_BOT) : base;
   usuario = {
     ...usuario,
-    vitorias: usuario.vitorias + (venceu ? 1 : 0),
-    derrotas: usuario.derrotas + (venceu ? 0 : 1),
+    vitorias: usuario.vitorias + (!contraBot && venceu ? 1 : 0),
+    derrotas: usuario.derrotas + (!contraBot && !venceu ? 1 : 0),
     xp: usuario.xp + ganho,
     atualizado: Date.now(),
   };

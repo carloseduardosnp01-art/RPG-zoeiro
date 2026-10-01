@@ -70,6 +70,7 @@ export function iniciarSalao({ cartas }) {
 
   conta.aoMudarUsuario(atualizarUsuario);
   document.addEventListener("deck-mudou", desenharPerfil);
+  conta.aoMudarUsuario(() => desenharRanking());
   setInterval(() => desenharOnline(), 10000);
 
   const usuario = conta.restaurarSessao();
@@ -369,23 +370,50 @@ function receberPerfil(perfil, topico) {
   desenharRanking();
 }
 
+let tipoRanking = "xp";
+
+document.addEventListener("click", (e) => {
+  const aba = e.target.closest("[data-ranking]");
+  if (!aba) return;
+  tipoRanking = aba.dataset.ranking;
+  document.querySelectorAll("[data-ranking]").forEach((b) => b.setAttribute("aria-selected", String(b === aba)));
+  desenharRanking();
+});
+
 function desenharRanking() {
   const lista = $("#ranking");
-  const top = [...s.perfis.values()]
-    .filter((p) => p.vitorias + p.derrotas > 0)
-    .sort((a, b) => b.vitorias - a.vitorias || b.xp - a.xp)
-    .slice(0, 10);
+  const u = conta.usuarioAtual();
+  // o meu perfil sempre entra com os números mais novos
+  const perfis = new Map(s.perfis);
+  if (u) perfis.set(u.chave, u);
+  const porXp = tipoRanking === "xp";
+  const todos = [...perfis.values()]
+    .filter((p) => (porXp ? (p.xp || 0) > 0 : (p.vitorias || 0) + (p.derrotas || 0) > 0))
+    .sort(porXp
+      ? (a, b) => (b.xp || 0) - (a.xp || 0) || (b.vitorias || 0) - (a.vitorias || 0)
+      : (a, b) => (b.vitorias || 0) - (a.vitorias || 0) || (b.xp || 0) - (a.xp || 0));
+  const top = todos.slice(0, 10);
+
   lista.replaceChildren();
   if (!top.length) {
-    lista.append(el("li", "", "Ninguém venceu ainda. Seja o primeiro careca da lista!"));
-    return;
+    lista.append(el("li", "ranking__vazio", porXp ? "Ninguém fez XP ainda. Jogue uma partida e apareça aqui!" : "Ninguém venceu online ainda. Seja o primeiro careca da lista!"));
   }
-  for (const p of top) {
+  top.forEach((p, i) => {
     const li = el("li");
+    if (u && p.chave === u.chave) li.classList.add("ranking__minha");
+    const medalha = ["🥇", "🥈", "🥉"][i];
+    if (medalha) li.dataset.medalha = medalha;
     if (p.tag) li.append(el("span", "tag-cla", `[${p.tag}] `));
-    li.append(p.nick, el("span", "ranking__v", `${p.vitorias}V ${p.derrotas}D`));
+    li.append(p.nick);
+    const valor = porXp ? `Nv ${nivelDoXp(p.xp)} · ${p.xp} XP` : `${p.vitorias}V ${p.derrotas}D`;
+    li.append(el("span", "ranking__v", valor));
     lista.append(li);
-  }
+  });
+
+  // a minha posição, se eu não estiver no top 10
+  const eu = $("#ranking-eu");
+  const pos = u ? todos.findIndex((p) => p.chave === u.chave) : -1;
+  eu.textContent = pos >= 10 ? `Você está em ${pos + 1}º lugar (${porXp ? `${u.xp} XP` : `${u.vitorias}V ${u.derrotas}D`}).` : "";
 }
 
 

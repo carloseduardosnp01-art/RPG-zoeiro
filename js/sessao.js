@@ -17,10 +17,10 @@
    duas jogadas ao mesmo tempo.
    ========================================================================== */
 
-import { novoDuelo, aplicar, quemAge, carta, ErroJogada } from "./motor.js?v=202610010125";
-import { jogadaDoBot } from "./bot.js?v=202610010125";
-import { PREFIXO, publicar, assinar } from "./rede.js?v=202610010125";
-import { esperar, gerarId } from "./util.js?v=202610010125";
+import { novoDuelo, aplicar, quemAge, carta, ErroJogada, membroAtivo } from "./motor.js?v=202610010152";
+import { jogadaDoBot } from "./bot.js?v=202610010152";
+import { PREFIXO, publicar, assinar } from "./rede.js?v=202610010152";
+import { esperar, gerarId } from "./util.js?v=202610010152";
 
 export const SEM_SINAL_AVISO = 20;  // segundos sem sinal do oponente para avisar
 export const SEM_SINAL_WO = 60;     // segundos sem sinal para poder pedir W.O.
@@ -245,6 +245,112 @@ export function criarSessaoOnline({ estado, eventos = [], minha }) {
     }
     const segundos = Math.floor((Date.now() - ultimoSinal) / 1000);
     const novo = segundos >= SEM_SINAL_AVISO ? { semSinal: segundos, podeWO: segundos >= SEM_SINAL_WO && quemAge(sessao.estado) !== eu } : null;
+    if (JSON.stringify(novo) !== JSON.stringify(avisoAtual)) {
+      avisoAtual = novo;
+      base.emitir("status", novo);
+    }
+  }
+
+  return sessao;
+}
+
+
+/* ---------- Tag da Zoeira 2vs2 (online, 4 jogadores) ---------- */
+
+// Igual à sessão online do 1vs1, mas: só o membro da vez joga pelo time, cada um dos 4
+// manda o próprio sinal, e se o membro da vez sumir o parceiro pode passar a vez por ele.
+export function criarSessaoTag({ estado, eventos = [], minha }) {
+  const base = criarBase();
+  const eu = estado.jogadores.findIndex((p) => p.membros.some((m) => m.chave === minha.chave));
+  const membro = estado.jogadores[eu].membros.findIndex((m) => m.chave === minha.chave);
+  const topicos = topicosDuelo(estado.id);
+  const sinais = {}; // chave -> último sinal
+  for (const p of estado.jogadores) for (const m of p.membros) sinais[m.chave] = Date.now();
+  let avisoAtual = null;
+  const cancelamentos = [];
+  const intervalos = [];
+
+  const sessao = {
+    ...base,
+    tipo: "tag",
+    eu,
+    membro,
+    estado,
+    eventosIniciais: eventos,
+
+    iniciar() {
+      cancelamentos.push(assinar(topicos.estado, receberEstado));
+      cancelamentos.push(assinar(topicos.sinal, receberSinal));
+      mandarSinal("ping");
+      intervalos.push(setInterval(() => mandarSinal("ping"), 5000));
+      intervalos.push(setInterval(verificarQuemJoga, 1000));
+    },
+
+    // Só o membro da vez joga (desistir vale para o time todo, a qualquer momento)
+    agir(acao) {
+      if (!["desistir", "wo"].includes(acao.tipo) && membroAtivo(sessao.estado, eu) !== membro) {
+        throw new ErroJogada("É a vez do seu parceiro jogar.");
+      }
+      aplicarEPublicar(acao);
+    },
+
+    // O parceiro da vez sumiu: passa a vez dele (como se o tempo tivesse acabado)
+    passarPeloParceiro() {
+      aplicarEPublicar({ tipo: "tempo" });
+    },
+
+    enviarChat(texto) {
+      mandarSinal("chat", { texto, nick: sessao.estado.jogadores[eu].membros[membro].nick });
+    },
+
+    pedirWO() {
+      aplicarEPublicar({ tipo: "wo" });
+    },
+
+    encerrar() {
+      cancelamentos.forEach((c) => c());
+      intervalos.forEach(clearInterval);
+      mandarSinal("saiu");
+    },
+  };
+
+  function aplicarEPublicar(acao) {
+    const r = aplicar(sessao.estado, eu, acao);
+    sessao.estado = r.estado;
+    publicar(topicos.estado, { seq: r.estado.seq, estado: r.estado, eventos: r.eventos, autor: minha.sid, autorChave: minha.chave }, { reter: true });
+    base.emitir("atualizar", r.estado, r.eventos);
+  }
+
+  function receberEstado(dados) {
+    if (!dados || !dados.estado || dados.seq <= sessao.estado.seq) return;
+    sessao.estado = dados.estado;
+    if (dados.autorChave) sinais[dados.autorChave] = Date.now();
+    base.emitir("atualizar", dados.estado, dados.autor === minha.sid ? [] : dados.eventos || []);
+  }
+
+  function receberSinal(dados) {
+    if (!dados || !(dados.chave in sinais)) return;
+    const j = sessao.estado.jogadores.findIndex((p) => p.membros.some((m) => m.chave === dados.chave));
+    sinais[dados.chave] = dados.tipo === "saiu" ? Date.now() - SEM_SINAL_AVISO * 1000 : Date.now();
+    if (dados.tipo === "chat") base.emitir("chat", { j, nick: dados.nick, texto: String(dados.texto).slice(0, 200), t: dados.t, minha: dados.chave === minha.chave });
+  }
+
+  function mandarSinal(tipo, extra = {}) {
+    publicar(topicos.sinal, { tipo, chave: minha.chave, sid: minha.sid, t: Date.now(), ...extra });
+  }
+
+  // Avisa se quem precisa jogar agora está sem sinal
+  function verificarQuemJoga() {
+    const e = sessao.estado;
+    let novo = null;
+    const q = quemAge(e);
+    if (q !== null) {
+      const daVez = e.jogadores[q].membros[membroAtivo(e, q)];
+      const segundos = Math.floor((Date.now() - (sinais[daVez.chave] || Date.now())) / 1000);
+      if (daVez.chave !== minha.chave && segundos >= SEM_SINAL_AVISO) {
+        novo = { semSinal: segundos, nick: daVez.nick, podeWO: q !== eu && segundos >= SEM_SINAL_WO, podePassar: q === eu && segundos >= 30 };
+      }
+    }
     if (JSON.stringify(novo) !== JSON.stringify(avisoAtual)) {
       avisoAtual = novo;
       base.emitir("status", novo);

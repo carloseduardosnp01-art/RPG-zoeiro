@@ -9,8 +9,8 @@
    Uma cópia fica no navegador; se o broker "esquecer", o login republica.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610010125";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610010125";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610010152";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610010152";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -201,7 +201,7 @@ export const FATOR_BOT = 0.3; // contra o bot: 30% do XP de uma partida online
 // Soma o resultado de um duelo (uma vez por duelo). Devolve o XP ganho.
 // contraBot: vale só 30% do XP e não conta vitória/derrota (o ranking de vitórias é só online)
 // oponente: { nick, tag } para o histórico de duelos; motivo: "pl", "deck", "desistencia", "wo"
-export function registrarResultado({ dueloId, venceu, contraBot = false, oponente = null, motivo = null }) {
+export function registrarResultado({ dueloId, venceu, contraBot = false, oponente = null, motivo = null, tipo = null }) {
   if (!usuario) return 0;
   const feitos = guardar.ler(CHAVE_RESULTADOS, []);
   if (feitos.includes(dueloId)) return 0;
@@ -220,7 +220,7 @@ export function registrarResultado({ dueloId, venceu, contraBot = false, oponent
     id: dueloId,
     t: Date.now(),
     venceu,
-    tipo: contraBot ? "bot" : "online",
+    tipo: contraBot ? "bot" : tipo || "online",
     contra: oponente ? { nick: oponente.nick, tag: oponente.tag || "", chave: oponente.chave || null } : null,
     motivo,
     xp: ganho,

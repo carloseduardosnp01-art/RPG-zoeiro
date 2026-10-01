@@ -189,6 +189,86 @@ export function novoDuelo({ id, jogadores, semente = Date.now() }) {
 }
 
 
+/* ---------- 2b. Tag da Zoeira 2vs2 ---------- */
+
+// Mesmas regras do Tag Duel: cada lado é um TIME (campo, cemitério e PV compartilhados) e cada
+// membro tem o próprio deck e a própria mão. Ordem dos turnos: P1 (time 0), P2 (time 1), P3 (time 0),
+// P4 (time 1). O "controlador inimigo atual" é sempre o membro do outro time que jogou por último.
+//
+// Para o motor, cada time é um "jogador" comum: o membro da vez fica em deck/mao e o outro
+// fica guardado em "reserva". Assim nenhuma regra do 1vs1 precisou mudar.
+export const ehTag = (estado) => estado.modo === "tag";
+
+// Membro (0 ou 1) que está jogando pelo time j
+export const membroAtivo = (estado, j) => estado.jogadores[j].ativo || 0;
+
+// jogadores: [P1, P2, P3, P4] (P1 e P3 = time 0; P2 e P4 = time 1)
+export function novoDueloTag({ id, jogadores, semente = Date.now() }) {
+  const sorteio = criarSorteio(semente);
+  const estado = {
+    versao: 1, id, modo: "tag", seq: 0, turno: 1, vez: 0, fase: "compra", tempoAcao: TEMPO_ACAO,
+    jogadores: [], cartas: {}, pendente: null, vencedor: null, motivo: null, historico: [],
+  };
+  const times = [[jogadores[0], jogadores[2]], [jogadores[1], jogadores[3]]];
+  const prefixos = [["a", "c"], ["b", "d"]];
+  const ajustes = [];
+
+  times.forEach((membros, j) => {
+    const decks = membros.map((info, k) => {
+      const { lista, trocadas } = ajustarAoLimite(info.deck && !problemaDoDeck(info.deck, { comLimite: false }) ? info.deck : montarDeck());
+      if (trocadas) ajustes.push({ t: "ajusteDeck", j, trocadas, nick: info.nick });
+      return embaralhar(lista.map((idCarta, n) => {
+        const iid = prefixos[j][k] + n;
+        estado.cartas[iid] = idCarta;
+        return iid;
+      }), sorteio);
+    });
+    const cartoes = membros.map((info) => ({ chave: info.chave, nick: info.nick, tag: info.tag || "", avatar: info.avatar || "", nivel: info.nivel || 1 }));
+    // mão inicial do membro que espera
+    const maoReserva = decks[1].splice(-MAO_INICIAL).reverse();
+    estado.jogadores.push({
+      ...cartoes[0],
+      chave: `time-${j}`,
+      bot: false,
+      pl: PL_INICIAL,
+      deck: decks[0],
+      mao: [],
+      cemiterio: [],
+      monstros: Array(ZONAS).fill(null),
+      magias: Array(ZONAS).fill(null),
+      campo: null,
+      invocouNormal: false,
+      membros: cartoes,
+      ativo: 0,
+      reserva: { deck: decks[1], mao: maoReserva },
+      turnosJogados: 0,
+    });
+  });
+
+  const eventos = [...ajustes];
+  estado.vez = 0; // P1 começa
+  estado.jogadores[0].turnosJogados = 1;
+  eventos.push({ t: "inicio", j: 0 });
+  for (const j of [0, 1]) comprar(estado, j, MAO_INICIAL, eventos, true);
+  iniciarTurno(estado, eventos);
+  registrarHistorico(estado, eventos);
+  return { estado, eventos };
+}
+
+// Começo do turno de um time: a partir do 2º turno dele, entra o outro membro
+function proximoMembro(estado, j, ev) {
+  const p = estado.jogadores[j];
+  if (p.turnosJogados > 0) {
+    [p.deck, p.reserva.deck] = [p.reserva.deck, p.deck];
+    [p.mao, p.reserva.mao] = [p.reserva.mao, p.mao];
+    p.ativo = 1 - p.ativo;
+    Object.assign(p, { nick: p.membros[p.ativo].nick, tag: p.membros[p.ativo].tag, avatar: p.membros[p.ativo].avatar, nivel: p.membros[p.ativo].nivel });
+    ev.push({ t: "troca", j, nick: p.nick });
+  }
+  p.turnosJogados++;
+}
+
+
 /* ---------- 3. Consultas ---------- */
 
 export function carta(estado, iid) {
@@ -1497,13 +1577,22 @@ function banir(estado, iid, ev) {
 }
 
 // Monstro do campo volta para a mão do dono (equipamentos presos a ele vão para o Cemitério)
+// Mão do dono da carta. No Tag 2vs2 a carta volta para a mão do membro que é dono dela
+// (as cartas do 2º membro de cada time têm o prefixo "c" ou "d"), mesmo que seja o parceiro.
+function maoDoDono(estado, j, iid) {
+  const p = estado.jogadores[j];
+  if (!ehTag(estado)) return p.mao;
+  const membro = iid[0] === "c" || iid[0] === "d" ? 1 : 0;
+  return membro === p.ativo ? p.mao : p.reserva.mao;
+}
+
 function devolverParaMao(estado, iid, ev) {
   const loc = localizar(estado, iid);
   if (!loc || loc.zona !== "monstros") return;
   removerDoCampo(estado, iid, ev, "mao");
   const p = estado.jogadores[loc.j];
   p.cemiterio.splice(p.cemiterio.indexOf(iid), 1);
-  p.mao.push(iid);
+  maoDoDono(estado, loc.j, iid).push(iid);
   ev.push({ t: "paraMao", j: loc.j, iid });
 }
 
@@ -1605,6 +1694,7 @@ function passarTurno(estado, ev) {
 
   estado.vez = oponente(terminou);
   estado.turno++;
+  if (ehTag(estado)) proximoMembro(estado, estado.vez, ev);
   const p = estado.jogadores[estado.vez];
   p.invocouNormal = false;
   for (const q of estado.jogadores) {
@@ -1693,7 +1783,7 @@ function resolverEscolha(estado, j, alvos, ev) {
   if (pend.efeito === "big") {
     const p = estado.jogadores[j];
     p.cemiterio.splice(p.cemiterio.indexOf(alvos[0]), 1);
-    p.mao.push(alvos[0]);
+    maoDoDono(estado, j, alvos[0]).push(alvos[0]);
     ev.push({ t: "busca", j, iid: alvos[0] });
     return null;
   }

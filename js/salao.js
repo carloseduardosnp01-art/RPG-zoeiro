@@ -12,14 +12,14 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610010125";
-import * as conta from "./conta.js?v=202610010125";
-import { novoDuelo, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610010125";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610010125";
-import { criarSessaoOnline, topicosDuelo } from "./sessao.js?v=202610010125";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610010125";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610010125";
-import { tocar } from "./som.js?v=202610010125";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610010152";
+import * as conta from "./conta.js?v=202610010152";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610010152";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610010152";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610010152";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610010152";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610010152";
+import { tocar } from "./som.js?v=202610010152";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -29,6 +29,9 @@ const T = {
   historico: `${PREFIXO}/chat/historico`,
   dm: (chave) => `${PREFIXO}/dm/${chave}`,
   perfis: `${PREFIXO}/perfis/+`,
+  mesas: `${PREFIXO}/mesas/+`,
+  mesa: (id) => `${PREFIXO}/mesas/${id}`,
+  pedidos: (id) => `${PREFIXO}/mesas/${id}/pedidos`,
 };
 const EMOJIS = ["😂", "😎", "😡", "😱", "💀", "🤡", "🏆", "⚔️", "🔥", "👀", "👍", "👎", "👋", "🧑‍🦲", "💨", "🪤", "🍺", "🤝"];
 const PRESENCA_VALIDA = 80 * 1000;
@@ -95,6 +98,7 @@ async function garantirConexao() {
   assinar(T.presencas, receberPresenca);
   assinar(T.chat, receberChatGlobal);
   assinar(T.perfis, receberPerfil);
+  assinar(T.mesas, receberMesa);
   lerRetido(T.historico).then((lista) => {
     if (Array.isArray(lista)) lista.forEach((m) => adicionarMensagemGlobal(m, false));
   });
@@ -474,7 +478,7 @@ function abrirPerfil(cartao) {
     const quando = new Date(d.t);
     li.append(el("span", "historico__data", `${quando.toLocaleDateString("pt-BR")} às ${quando.toLocaleTimeString("pt-BR")} - `));
     li.append(el("span", d.venceu ? "historico__venceu" : "historico__perdeu", d.venceu ? "Venceu" : "Perdeu"));
-    li.append(d.tipo === "bot" ? " um treino contra " : " um duelo contra ");
+    li.append(d.tipo === "bot" ? " um treino contra " : d.tipo === "tag" ? " um Tag 2vs2 contra " : " um duelo contra ");
     const contra = d.contra ? `${d.contra.tag ? `[${d.contra.tag}] ` : ""}${d.contra.nick}` : "alguém";
     if (d.tipo !== "bot" && d.contra && d.contra.chave) {
       li.append(botaoPerfil({ chave: d.contra.chave, nick: d.contra.nick, tag: d.contra.tag }, contra, "historico__oponente"));
@@ -674,6 +678,8 @@ function desenharMensagens() {
       area.append(el("div", "msg msg--sistema", item.texto));
     } else if (item.tipo === "desafio") {
       area.append(caixaDesafio(s.desafios.get(item.id)));
+    } else if (item.tipo === "mesa" && item.mesa) {
+      area.append(caixaMesa(item.mesa));
     } else {
       const d = el("div", "msg" + (u && item.de.chave === u.chave ? " msg--minha" : ""));
       d.append(el("span", "msg__hora", `[${hora(item.t)}]`));
@@ -739,7 +745,7 @@ function enviarMensagem() {
 function enviarGlobal(msg) {
   publicar(T.chat, msg);
   // Atualiza o histórico retido (últimas 40)
-  const anteriores = s.abas.get("global").itens.filter((i) => i.tipo === "msg" || i.tipo === "sistema").slice(-39);
+  const anteriores = s.abas.get("global").itens.filter((i) => i.tipo === "msg" || i.tipo === "sistema" || i.tipo === "mesa").slice(-39);
   publicar(T.historico, [...anteriores, msg], { reter: true });
 }
 
@@ -786,6 +792,10 @@ function receberDM(dados) {
 function desafiar(cartao) {
   const u = conta.usuarioAtual();
   if (!u || cartao.chave === u.chave) return;
+  if (minhaMesa()) {
+    aviso("Você está sentado numa mesa de Tag 2vs2. Saia da mesa antes de desafiar alguém.", "erro");
+    return;
+  }
   if (arenaAtiva()) {
     aviso("Termine (ou saia) do duelo atual antes de desafiar alguém.", "erro");
     return;
@@ -917,6 +927,10 @@ function comecarComoAnfitriao(d, oponente, deckOponente) {
 function entrarNoDuelo(estado, eventos) {
   const u = conta.usuarioAtual();
   if (!u || arenaAtiva()) return;
+  if (ehTag(estado)) {
+    entrarNoTag(estado, eventos);
+    return;
+  }
   guardar.gravar(DUELO_ATIVO, estado.id);
   mudarStatusDuelo("duelando");
   const sessao = criarSessaoOnline({ estado, eventos, minha: { chave: u.chave, sid: SID } });
@@ -943,6 +957,7 @@ function entrarNoDuelo(estado, eventos) {
 }
 
 function terminarDuelo(estado, eu) {
+  if (ehTag(estado)) return terminarTag(estado, eu);
   const venceu = estado.vencedor === eu;
   const xp = conta.registrarResultado({ dueloId: estado.id, venceu, oponente: estado.jogadores[1 - eu], motivo: estado.motivo });
   mudarStatusDuelo("livre");
@@ -970,7 +985,8 @@ async function voltarParaDueloAtivo() {
   const u = conta.usuarioAtual();
   if (!id || !u || arenaAtiva()) return;
   const dados = await lerRetido(topicosDuelo(id).estado, 2500);
-  const valido = dados && dados.estado && dados.estado.vencedor === null && dados.estado.jogadores.some((p) => p.chave === u.chave);
+  const participa = (p) => p.chave === u.chave || (p.membros || []).some((m) => m.chave === u.chave);
+  const valido = dados && dados.estado && dados.estado.vencedor === null && dados.estado.jogadores.some(participa);
   if (!valido) {
     guardar.apagar(DUELO_ATIVO);
     return;
@@ -978,3 +994,318 @@ async function voltarParaDueloAtivo() {
   aviso("Voltando para o duelo em andamento...", "ok");
   entrarNoDuelo(dados.estado, []);
 }
+
+
+/* ---------- Tag da Zoeira 2vs2: mesas ---------- */
+
+// Quem abre a mesa é o "juiz": os outros só mandam pedidos (sentar/sair) para ele, que
+// aplica na ordem em que chegam e publica a mesa atualizada. Assim duas pessoas nunca
+// ficam na mesma vaga, mesmo clicando ao mesmo tempo.
+//
+// Vagas: 0 = Time 1 (P1), 1 = Time 1 (P3), 2 = Time 2 (P2), 3 = Time 2 (P4)
+const VAGAS = [
+  { time: 0, p: "P1" }, { time: 0, p: "P3" },
+  { time: 1, p: "P2" }, { time: 1, p: "P4" },
+];
+const MESA_EXPIRA = 60 * 1000;      // sem sinal do juiz por 1 minuto: mesa expirada
+const MESA_MAX_ABERTA = 10 * 60 * 1000;
+const mesas = new Map();             // id -> mesa (como publicada)
+const hospedando = new Map();        // id -> { mesa, cancelar, batimento }
+const entrandoEmTag = new Set();
+
+const mesaExpirada = (m) => m.estado === "aberta" && Date.now() - (m.atualizado || 0) > MESA_EXPIRA;
+const cartaoMesa = () => ({ ...conta.cartaoPublico(), deck: deckAtual() });
+
+// Mesa aberta em que eu estou sentado (se houver)
+function minhaMesa() {
+  const u = conta.usuarioAtual();
+  if (!u) return null;
+  for (const m of mesas.values()) {
+    if (m.estado === "aberta" && !mesaExpirada(m) && m.assentos.some((a) => a && a.chave === u.chave)) return m;
+  }
+  return null;
+}
+
+function abrirMesaTag() {
+  const u = conta.usuarioAtual();
+  if (!u) return;
+  if (arenaAtiva() || s.statusDuelo === "duelando") {
+    aviso("Termine o duelo atual antes de abrir uma mesa.", "erro");
+    return;
+  }
+  const atual = minhaMesa();
+  if (atual) {
+    aviso("Você já está numa mesa de Tag 2vs2.", "erro");
+    return;
+  }
+  const id = gerarId(10);
+  const mesa = {
+    id,
+    criador: conta.cartaoPublico(),
+    versao: versaoDasCartas(),
+    assentos: [cartaoMesa(), null, null, null],
+    estado: "aberta",
+    criadoEm: Date.now(),
+    atualizado: Date.now(),
+  };
+  const host = { mesa };
+  host.cancelar = assinar(T.pedidos(id), (dados) => receberPedido(id, dados));
+  host.batimento = setInterval(() => {
+    const m = host.mesa;
+    if (m.estado !== "aberta") return;
+    if (Date.now() - m.criadoEm > MESA_MAX_ABERTA) {
+      m.estado = "cancelada";
+      aviso("Sua mesa de Tag 2vs2 fechou: ninguém completou as vagas em 10 minutos.");
+    }
+    publicarMesa(m);
+  }, 15000);
+  hospedando.set(id, host);
+  publicarMesa(mesa);
+  mudarStatusDuelo("aguardando");
+  enviarGlobal({ id: gerarId(), tipo: "mesa", mesa: id, de: conta.cartaoPublico(), texto: "abriu uma mesa de Tag da Zoeira 2vs2", t: Date.now() });
+  if (s.abaAtual !== "global") trocarAba("global");
+  tocar("desafio");
+}
+
+function publicarMesa(m) {
+  m.atualizado = Date.now();
+  mesas.set(m.id, m);
+  publicar(T.mesa(m.id), m, { reter: true });
+  desenharMesas();
+}
+
+// Só o juiz (quem abriu) recebe e aplica os pedidos
+function receberPedido(id, dados) {
+  const host = hospedando.get(id);
+  if (!host || !dados || !dados.cartao) return;
+  const m = host.mesa;
+  if (m.estado !== "aberta") return;
+  const chave = dados.cartao.chave;
+  if (dados.tipo === "sentar") {
+    if (dados.versao !== m.versao) return;                  // versão diferente do jogo
+    const vaga = dados.vaga;
+    if (!(vaga >= 0 && vaga < 4)) return;
+    if (m.assentos[vaga] && m.assentos[vaga].chave !== chave) return; // já ocupada: perdeu a corrida
+    m.assentos = m.assentos.map((a) => (a && a.chave === chave ? null : a)); // troca de vaga
+    m.assentos[vaga] = { ...dados.cartao, deck: Array.isArray(dados.deck) ? dados.deck : undefined };
+  } else if (dados.tipo === "sair") {
+    m.assentos = m.assentos.map((a) => (a && a.chave === chave ? null : a));
+  } else {
+    return;
+  }
+  if (m.assentos.every(Boolean)) iniciarMesa(m);
+  else publicarMesa(m);
+}
+
+// As 4 vagas cheias: o juiz cria o duelo e todo mundo entra sozinho
+function iniciarMesa(m) {
+  const [p1, p3, p2, p4] = m.assentos;
+  const { estado, eventos } = novoDueloTag({
+    id: m.id,
+    jogadores: [p1, p2, p3, p4],
+    semente: crypto.getRandomValues(new Uint32Array(1))[0],
+  });
+  publicar(topicosDuelo(m.id).estado, { seq: estado.seq, estado, eventos, autor: SID }, { reter: true });
+  m.estado = "iniciada";
+  m.assentos = m.assentos.map(({ deck, ...resto }) => resto); // os decks já estão no duelo
+  publicarMesa(m);
+  entrarNoDuelo(estado, eventos); // o juiz entra direto
+}
+
+function cancelarMesa(id) {
+  const host = hospedando.get(id);
+  if (!host) return;
+  host.mesa.estado = "cancelada";
+  publicarMesa(host.mesa);
+  encerrarHost(id);
+  mudarStatusDuelo("livre");
+}
+
+function encerrarHost(id) {
+  const host = hospedando.get(id);
+  if (!host) return;
+  host.cancelar();
+  clearInterval(host.batimento);
+  hospedando.delete(id);
+}
+
+function pedirVaga(m, vaga) {
+  const u = conta.usuarioAtual();
+  if (!u) return;
+  if (arenaAtiva() || s.statusDuelo === "duelando") {
+    aviso("Termine o duelo atual antes de entrar numa mesa.", "erro");
+    return;
+  }
+  const outra = minhaMesa();
+  if (outra && outra.id !== m.id) {
+    aviso("Você já está em outra mesa. Saia dela primeiro.", "erro");
+    return;
+  }
+  const pedido = { tipo: "sentar", vaga, cartao: conta.cartaoPublico(), deck: deckAtual(), versao: versaoDasCartas() };
+  if (hospedando.has(m.id)) receberPedido(m.id, pedido);
+  else publicar(T.pedidos(m.id), pedido);
+  mudarStatusDuelo("aguardando");
+  tocar("clique");
+}
+
+function sairDaMesa(m) {
+  const pedido = { tipo: "sair", cartao: conta.cartaoPublico() };
+  if (hospedando.has(m.id)) receberPedido(m.id, pedido);
+  else publicar(T.pedidos(m.id), pedido);
+  mudarStatusDuelo("livre");
+}
+
+function receberMesa(m, topico) {
+  const id = topico.split("/").pop();
+  if (!m) {
+    mesas.delete(id);
+    desenharMesas();
+    return;
+  }
+  if (hospedando.has(id)) return; // o juiz confia na própria cópia
+  mesas.set(id, m);
+  desenharMesas();
+  const u = conta.usuarioAtual();
+  if (u && m.estado === "iniciada" && m.assentos.some((a) => a && a.chave === u.chave)) esperarDueloTag(id);
+}
+
+// A mesa começou e eu estou nela: lê o estado do duelo e entra
+async function esperarDueloTag(id) {
+  if (entrandoEmTag.has(id) || arenaAtiva()) return;
+  entrandoEmTag.add(id);
+  try {
+    const dados = await lerRetido(topicosDuelo(id).estado, 4000);
+    if (dados && dados.estado && dados.estado.vencedor === null && !arenaAtiva()) entrarNoDuelo(dados.estado, dados.eventos || []);
+  } finally {
+    entrandoEmTag.delete(id);
+  }
+}
+
+// Rede de segurança: se o aviso "mesa completa" se perder, entra do mesmo jeito em até 3 s
+setInterval(() => {
+  const u = conta.usuarioAtual();
+  if (!u || arenaAtiva()) return;
+  for (const m of mesas.values()) {
+    const recente = Date.now() - (m.atualizado || 0) < 2 * 60 * 60 * 1000;
+    if (m.estado === "iniciada" && recente && m.assentos.some((a) => a && a.chave === u.chave)) esperarDueloTag(m.id);
+  }
+}, 3000);
+
+function entrarNoTag(estado, eventos) {
+  const u = conta.usuarioAtual();
+  if (!u || arenaAtiva()) return;
+  guardar.gravar(DUELO_ATIVO, estado.id);
+  mudarStatusDuelo("duelando");
+  const sessao = criarSessaoTag({ estado, eventos, minha: { chave: u.chave, sid: SID } });
+  abrirArena(sessao, {
+    aoTerminar: (final, meuIndice) => terminarDuelo(final, meuIndice),
+    aoSair: () => {
+      mudarStatusDuelo("livre");
+      guardar.apagar(DUELO_ATIVO);
+      // o juiz limpa a mesa e o duelo do broker
+      if (hospedando.has(estado.id) || mesas.get(estado.id)?.criador?.chave === u.chave) {
+        encerrarHost(estado.id);
+        publicar(T.mesa(estado.id), null, { reter: true });
+        publicar(topicosDuelo(estado.id).estado, null, { reter: true });
+      }
+      location.hash = "#salao";
+    },
+  });
+  location.hash = "#arena";
+}
+
+function terminarTag(estado, eu) {
+  const u = conta.usuarioAtual();
+  const venceu = estado.vencedor === eu;
+  const nomes = (p) => p.membros.map((m) => m.nick).join(" & ");
+  const xp = conta.registrarResultado({
+    dueloId: estado.id, venceu, tipo: "tag", motivo: estado.motivo,
+    oponente: { nick: nomes(estado.jogadores[1 - eu]), tag: "", chave: null },
+  });
+  mudarStatusDuelo("livre");
+  guardar.apagar(DUELO_ATIVO);
+  desenharPerfil();
+  encerrarHost(estado.id);
+  // só o primeiro membro do time vencedor anuncia (para não sair repetido)
+  if (venceu && xp && estado.jogadores[eu].membros[0].chave === u.chave) {
+    const texto = `🏆 ${nomes(estado.jogadores[eu])} venceram ${nomes(estado.jogadores[1 - eu])} no Tag da Zoeira 2vs2!`;
+    enviarGlobal({ id: gerarId(), tipo: "sistema", texto, t: Date.now() });
+  }
+  return { xp };
+}
+
+function desenharMesas() {
+  if (s.abaAtual === "global") desenharMensagens();
+}
+
+// A mesa dentro do chat (estilo Clash Royale)
+function caixaMesa(id) {
+  const m = mesas.get(id);
+  const u = conta.usuarioAtual();
+  const caixa = el("div", "mesa-tag");
+  if (!m) {
+    caixa.append(el("div", "mesa-tag__estado", "Mesa de Tag 2vs2 encerrada."));
+    return caixa;
+  }
+  const expirada = mesaExpirada(m);
+  const aberta = m.estado === "aberta" && !expirada;
+  const versaoOk = m.versao === versaoDasCartas();
+  const souJuiz = hospedando.has(id);
+
+  caixa.append(el("div", "mesa-tag__titulo", `👥 Entrar para o Tag da Zoeira 2vs2! (mesa de ${m.criador.nick})`));
+  const grade = el("div", "mesa-tag__grade");
+  for (const time of [0, 1]) {
+    const coluna = el("div", `mesa-tag__time mesa-tag__time--${time}`);
+    coluna.append(el("div", "mesa-tag__nome-time", `Time ${time + 1}`));
+    VAGAS.forEach((v, i) => {
+      if (v.time !== time) return;
+      const a = m.assentos[i];
+      const minha = a && u && a.chave === u.chave;
+      const b = el("button", "mesa-tag__vaga" + (a ? " mesa-tag__vaga--ocupada" : "") + (minha ? " mesa-tag__vaga--minha" : ""));
+      b.type = "button";
+      b.append(el("span", "mesa-tag__p", v.p));
+      if (a) {
+        const img = el("img");
+        img.src = `img/cartas/${a.avatar || "careca-feijao"}.webp`;
+        img.alt = "";
+        b.append(img, el("span", "mesa-tag__nick", `${a.tag ? `[${a.tag}] ` : ""}${a.nick}${minha ? " (você)" : ""}`));
+        b.title = minha ? "Clique para sair da vaga" : a.nick;
+        b.disabled = !aberta || !minha;
+        b.addEventListener("click", () => sairDaMesa(m));
+      } else {
+        b.append(el("span", "mesa-tag__nick", aberta ? "Aguardando..." : "—"));
+        b.title = "Clique para entrar nesta vaga";
+        b.disabled = !aberta || !versaoOk || !u;
+        b.addEventListener("click", () => pedirVaga(m, i));
+      }
+      coluna.append(b);
+    });
+    grade.append(coluna);
+    if (time === 0) {
+      const meio = el("div", "mesa-tag__meio");
+      meio.innerHTML = '<img src="img/emblema.webp" alt="">';
+      grade.append(meio);
+    }
+  }
+  caixa.append(grade);
+
+  const ocupadas = m.assentos.filter(Boolean).length;
+  let estadoTxt = `${ocupadas}/4 jogadores. Toque numa vaga livre para entrar. Começa sozinho quando lotar.`;
+  if (m.estado === "iniciada") estadoTxt = "Mesa completa: duelo em andamento!";
+  else if (m.estado === "cancelada") estadoTxt = "Mesa cancelada.";
+  else if (expirada) estadoTxt = "Mesa expirada (quem abriu saiu).";
+  else if (!versaoOk) estadoTxt = "Você está com outra versão do jogo: recarregue a página (F5) para entrar.";
+  caixa.append(el("div", "mesa-tag__estado", estadoTxt));
+
+  if (souJuiz && aberta) {
+    const cancelar = el("button", "btn btn-sm btn-danger mt-2", "Cancelar mesa");
+    cancelar.type = "button";
+    cancelar.addEventListener("click", () => cancelarMesa(id));
+    caixa.append(cancelar);
+  }
+  return caixa;
+}
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest("#botao-mesa-tag")) abrirMesaTag();
+});

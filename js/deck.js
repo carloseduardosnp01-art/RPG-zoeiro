@@ -7,9 +7,9 @@
    Formato guardado: { "id-da-carta": cópias, ... }
    ========================================================================== */
 
-import { montarDeck, problemaDoDeck } from "./motor.js?v=202610010125";
-import * as conta from "./conta.js?v=202610010125";
-import { guardar } from "./util.js?v=202610010125";
+import { montarDeck, problemaDoDeck } from "./motor.js?v=202610010152";
+import * as conta from "./conta.js?v=202610010152";
+import { guardar } from "./util.js?v=202610010152";
 
 const CHAVE = "zoeira-deck";
 

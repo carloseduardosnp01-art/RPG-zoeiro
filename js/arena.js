@@ -13,12 +13,12 @@
    ========================================================================== */
 
 import {
-  carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada,
-} from "./motor.js?v=202610010125";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610010125";
-import { el, esperar, aviso } from "./util.js?v=202610010125";
-import { tocar } from "./som.js?v=202610010125";
-import { abrirDetalhes } from "./catalogo.js?v=202610010125";
+  carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo,
+} from "./motor.js?v=202610010152";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610010152";
+import { el, esperar, aviso } from "./util.js?v=202610010152";
+import { tocar } from "./som.js?v=202610010152";
+import { abrirDetalhes } from "./catalogo.js?v=202610010152";
 
 const raiz = document.querySelector("#arena");
 
@@ -169,6 +169,10 @@ function montarEsqueleto() {
           <h3 class="caixa-lateral__titulo">Carta</h3>
           <div class="previa" id="previa"><p class="previa__dica">Passe o mouse (ou toque) numa carta para ver os detalhes.</p></div>
         </section>
+        <section class="caixa-lateral ordem-tag" id="ordem-tag" hidden>
+          <h3 class="caixa-lateral__titulo">Ordem dos confrontos (Tag 2vs2)</h3>
+          <ol class="ordem-tag__lista" id="ordem-tag-lista"></ol>
+        </section>
         <section class="caixa-lateral caixa-lateral--cresce">
           <h3 class="caixa-lateral__titulo">Registro do duelo</h3>
           <ol class="log" id="log" aria-live="polite"></ol>
@@ -275,7 +279,7 @@ function depoisDeDesenhar() {
     seqDoPrazo = estado.seq;
     prazo = Date.now() + estado.tempoAcao * 1000;
   }
-  if (escolhaAberta && (!estado.pendente || quemAge(estado) !== sessao.eu)) {
+  if (escolhaAberta && (!estado.pendente || !euAjo(estado))) {
     escolhaAberta.fechar();
     escolhaAberta = null;
   }
@@ -283,7 +287,7 @@ function depoisDeDesenhar() {
     mostrarResultado(estado);
     return;
   }
-  if (estado.pendente && quemAge(estado) === sessao.eu && !escolhaAberta) abrirEscolhaPendente(estado);
+  if (estado.pendente && euAjo(estado) && !escolhaAberta) abrirEscolhaPendente(estado);
 }
 
 function agir(acao) {
@@ -311,9 +315,14 @@ function desenhar(estado) {
   desenharFases(estado);
   desenharMao(estado);
   desenharLog(estado);
+  desenharOrdemTag(estado);
 }
 
-const nomeJogador = (estado, j) => (j === sessao.eu ? "Você" : estado.jogadores[j].nick);
+// No Tag 2vs2 só joga o membro da vez de cada time (no 1vs1 é sempre "sim")
+const souDaVez = (estado) => !ehTag(estado) || membroAtivo(estado, sessao.eu) === sessao.membro;
+const euAjo = (estado) => quemAge(estado) === sessao.eu && souDaVez(estado);
+const opcoesMinhas = (estado, iid) => (euAjo(estado) ? opcoesDaCarta(estado, sessao.eu, iid) : []);
+const nomeJogador = (estado, j) => (j === sessao.eu && souDaVez(estado) ? "Você" : estado.jogadores[j].nick);
 // "Seu deck" / "Deck de Fulano"
 const deQuem = (estado, j, coisa, genero = "o") => (j === sessao.eu ? `${genero === "a" ? "Sua" : "Seu"} ${coisa.toLowerCase()}` : `${coisa} de ${estado.jogadores[j].nick}`);
 const imagemAvatar = (id) => `img/cartas/${id || "careca-feijao"}.webp`;
@@ -339,8 +348,16 @@ function infoJogador(estado, j, lado) {
 
   const meio = el("div", "jogador-info__meio");
   const nome = el("div", "jogador-info__nome");
-  if (p.tag) nome.append(el("span", "tag-cla", `[${p.tag}] `));
-  nome.append(p.nick);
+  if (p.membros) {
+    nome.append(el("span", "tag-cla", `Time ${j + 1}: `));
+    p.membros.forEach((m, k) => {
+      if (k) nome.append(" & ");
+      nome.append(el("span", k === (p.ativo || 0) ? "membro-ativo" : "membro-espera", m.nick));
+    });
+  } else {
+    if (p.tag) nome.append(el("span", "tag-cla", `[${p.tag}] `));
+    nome.append(p.nick);
+  }
   if (p.semDanoBatalha === estado.turno) {
     const asa = el("span", "protecao", " 🪽");
     asa.title = "Karecoh Alado: não sofre dano de batalha neste turno";
@@ -366,7 +383,8 @@ function criarRelogio(estado) {
   r.id = "relogio";
   r.append(el("span", "relogio__tempo", "--"), el("span", "relogio__turno", `Turno ${estado.turno}`));
   const vez = quemAge(estado);
-  const texto = vez === null ? "Fim de duelo" : vez === sessao.eu ? "Sua vez" : `Vez de ${estado.jogadores[vez].nick}`;
+  let texto = vez === null ? "Fim de duelo" : euAjo(estado) ? "Sua vez" : `Vez de ${estado.jogadores[vez].nick}`;
+  if (vez === sessao.eu && !souDaVez(estado)) texto += " (parceiro)";
   r.append(el("span", "relogio__vez", texto));
   return r;
 }
@@ -494,7 +512,7 @@ function zonaCarta(estado, j, zona, slot) {
   const visivel = obj.face || meu;
   b.setAttribute("aria-label", visivel ? `${c.nome}${zona === "monstros" ? ` (${obj.pos === "atk" ? "Ataque" : "Defesa"})` : ""}` : "Carta virada para baixo");
   if (visivel) ligarPrevia(b, obj.iid);
-  if (meu && opcoesDaCarta(estado, sessao.eu, obj.iid).length) b.dataset.acao = "true";
+  if (meu && opcoesMinhas(estado, obj.iid).length) b.dataset.acao = "true";
   b.addEventListener("click", () => clicarCarta(obj.iid, b, visivel));
   z.append(b);
   return z;
@@ -507,7 +525,7 @@ function equipamentos(estado, iid) {
 function desenharFases(estado) {
   const f = refs.fases;
   f.replaceChildren(el("span", "fases__titulo", "Fases:"));
-  const minhaVez = quemAge(estado) === sessao.eu && !estado.pendente && estado.vez === sessao.eu;
+  const minhaVez = euAjo(estado) && !estado.pendente && estado.vez === sessao.eu;
   const permitido = {
     principal1: estado.turno > 1 ? ["batalha", "final"] : ["final"],
     batalha: ["principal2", "final"],
@@ -534,7 +552,8 @@ function desenharFases(estado) {
 }
 
 function desenharMao(estado) {
-  const p = estado.jogadores[sessao.eu];
+  const lado = estado.jogadores[sessao.eu];
+  const p = ehTag(estado) && !souDaVez(estado) ? lado.reserva : lado;
   refs.mao.replaceChildren();
   for (const iid of p.mao) {
     const c = carta(estado, iid);
@@ -543,13 +562,38 @@ function desenharMao(estado) {
     b.dataset.iid = iid;
     b.setAttribute("aria-label", `${c.nome} (na mão)`);
     if (!maoAnterior.includes(iid)) b.classList.add("mao__carta--nova");
-    if (opcoesDaCarta(estado, sessao.eu, iid).length) b.dataset.acao = "true";
+    if (opcoesMinhas(estado, iid).length) b.dataset.acao = "true";
     b.append(criarCarta(c));
     ligarPrevia(b, iid);
     b.addEventListener("click", () => clicarCarta(iid, b, true));
     refs.mao.append(b);
   }
   maoAnterior = [...p.mao];
+}
+
+
+// Tag 2vs2: próximos 4 turnos, cada um "quem joga × controlador inimigo atual"
+function desenharOrdemTag(estado) {
+  const caixa = raiz.querySelector("#ordem-tag");
+  if (!caixa) return;
+  caixa.hidden = !ehTag(estado);
+  if (!ehTag(estado)) return;
+  const sequencia = [[0, 0], [1, 0], [0, 1], [1, 1]]; // P1, P2, P3, P4 = [time, membro]
+  const nick = ([t, m]) => estado.jogadores[t].membros[m].nick;
+  const atual = sequencia.findIndex(([t, m]) => t === estado.vez && m === membroAtivo(estado, estado.vez));
+  const lista = raiz.querySelector("#ordem-tag-lista");
+  lista.replaceChildren();
+  for (let n = 0; n < 4; n++) {
+    const i = (atual + n) % 4;
+    const [t, m] = sequencia[i];
+    // inimigo: no turno atual, o membro ativo do outro time; depois, quem jogou logo antes
+    const inimigo = n === 0 ? [1 - t, membroAtivo(estado, 1 - t)] : sequencia[(i + 3) % 4];
+    const li = el("li", "ordem-tag__item" + (n === 0 ? " ordem-tag__item--agora" : ""));
+    li.dataset.time = t;
+    li.append(el("span", "ordem-tag__p", `P${i + 1} ${nick([t, m])}`), el("span", "ordem-tag__x", "×"), el("span", "ordem-tag__p ordem-tag__p--inimigo", `P${sequencia.findIndex(([a, b]) => a === inimigo[0] && b === inimigo[1]) + 1} ${nick(inimigo)}`));
+    if (n === 0) li.append(el("span", "ordem-tag__agora", "agora"));
+    lista.append(li);
+  }
 }
 
 
@@ -618,10 +662,11 @@ function descreverEvento(estado, ev) {
     case "aoDeck": return { texto: `${quem(ev.j)} devolveu ${ev.j === eu ? nome(ev.iid) : "uma carta"} ao deck.`, classe: minha };
     case "ataqueDuplo": return { texto: `⚔️ ${nome(ev.iid)} pode atacar duas vezes neste turno!`, classe: minha };
     case "custo": return { texto: `${quem(ev.j)} pagou ${ev.valor} PV (${ev.pl}).`, classe: "log--dano" };
+    case "troca": return { texto: `🔄 Agora joga ${ev.nick} pelo Time ${ev.j + 1}.`, classe: "log--turno" };
     case "aoCemiterio": return { texto: `🪦 ${nome(ev.iid)} foi do deck de ${quem(ev.j)} para o Cemitério.`, classe: minha };
     case "banida": return { texto: `🚫 ${nome(ev.iid)} foi banido do jogo.`, classe: "log--armadilha" };
     case "paraMao": return { texto: `↩️ ${nome(ev.iid)} voltou para a mão de ${quem(ev.j)}.`, classe: "log--armadilha" };
-    case "ajusteDeck": return { texto: `⚠️ ${ev.j === eu ? "Seu deck tinha" : `O deck de ${quem(ev.j)} tinha`} ${ev.trocadas} carta${ev.trocadas > 1 ? "s" : ""} acima do limite: ${ev.trocadas > 1 ? "viraram" : "virou"} Careca Feijão.`, classe: "log--turno" };
+    case "ajusteDeck": return { texto: `⚠️ ${ev.nick ? `O deck de ${ev.nick} tinha` : ev.j === eu ? "Seu deck tinha" : `O deck de ${quem(ev.j)} tinha`} ${ev.trocadas} carta${ev.trocadas > 1 ? "s" : ""} acima do limite: ${ev.trocadas > 1 ? "viraram" : "virou"} Careca Feijão.`, classe: "log--turno" };
     case "protegido": return { texto: `🪽 ${ev.j === eu ? "Você não sofreu" : `${quem(ev.j)} não sofreu`} ${ev.valor} de dano de batalha (Karecoh Alado).`, classe: "log--armadilha" };
     case "posicao": return { texto: `${nome(ev.iid)} mudou para ${ev.pos === "atk" ? "Ataque" : "Defesa"}.`, classe: minha };
     case "descarte": return { texto: `${quem(ev.j)} descartou ${nome(ev.iid)}.`, classe: minha };
@@ -635,11 +680,12 @@ function descreverEvento(estado, ev) {
 
 function receberChat(msg) {
   if (!sessao) return;
-  const p = el("p", msg.j === sessao.eu ? "minha" : "");
+  const minha = msg.minha ?? msg.j === sessao.eu;
+  const p = el("p", minha ? "minha" : "");
   p.append(el("strong", "", `${msg.nick}: `), msg.texto);
   refs.chat.append(p);
   refs.chat.scrollTop = refs.chat.scrollHeight;
-  if (msg.j !== sessao.eu) tocar("mensagem");
+  if (!minha) tocar("mensagem");
   // Balão sobre o jogador
   const info = refs.placar.querySelector(`.jogador-info[data-j="${msg.j}"]`);
   if (info) {
@@ -672,7 +718,7 @@ function clicarCarta(iid, elemento, visivel) {
   if (visivel) mostrarPrevia(iid);
   fecharMenu();
   const estado = sessao.estado;
-  const opcoes = ocupado() ? [] : opcoesDaCarta(estado, sessao.eu, iid);
+  const opcoes = ocupado() ? [] : opcoesMinhas(estado, iid);
   if (!visivel && !opcoes.length) return;
 
   const menu = el("div", "menu-carta");
@@ -687,7 +733,7 @@ function clicarCarta(iid, elemento, visivel) {
     menu.append(b);
   });
   if (!opcoes.length) {
-    const minhaVez = quemAge(estado) === sessao.eu;
+    const minhaVez = euAjo(estado);
     menu.append(el("div", "menu-carta__vazio", minhaVez ? "Nenhuma ação com esta carta agora." : "Aguarde a sua vez."));
   }
   if (visivel) {
@@ -857,7 +903,7 @@ async function abrirEscolhaPendente(estado) {
   escolhaAberta = null;
   if (alvos && sessao && sessao.estado.seq === seq && !agir({ tipo: "escolher", alvos })) {
     // combinação inválida (ex.: Davi Animal): mostra o aviso e abre a escolha de novo
-    if (sessao.estado.pendente && quemAge(sessao.estado) === sessao.eu) abrirEscolhaPendente(sessao.estado);
+    if (sessao.estado.pendente && euAjo(sessao.estado)) abrirEscolhaPendente(sessao.estado);
   }
 }
 
@@ -882,7 +928,10 @@ async function tocarEventos(eventos, estadoNovo) {
         break;
       case "turno":
         tocar("turno");
-        await bannerTurno(ev.j === sessao.eu ? "SEU TURNO" : `TURNO DE ${estadoNovo.jogadores[ev.j].nick.toUpperCase()}`, ev.j === sessao.eu);
+        {
+          const meu = ev.j === sessao.eu && souDaVez(estadoNovo);
+          await bannerTurno(meu ? "SEU TURNO" : `TURNO DE ${estadoNovo.jogadores[ev.j].nick.toUpperCase()}`, ev.j === sessao.eu);
+        }
         break;
       case "invocacao": {
         const c = carta(estadoNovo, ev.iid);
@@ -996,7 +1045,7 @@ function corte(estado, iid, j, frase, tipo, duracao) {
   const conteudo = el("div", "corte__conteudo");
   const cartaEl = el("div", "corte__carta");
   cartaEl.append(criarCarta(c, { lazy: false }));
-  conteudo.append(el("div", "corte__quem", j === sessao.eu ? "Você" : sessao.estado.jogadores[j].nick), cartaEl, el("div", "corte__frase", frase));
+  conteudo.append(el("div", "corte__quem", nomeJogador(sessao.estado, j)), cartaEl, el("div", "corte__frase", frase));
   fundo.append(conteudo);
   document.body.append(fundo);
   return esperar(duracao).then(() => fundo.remove());
@@ -1085,7 +1134,7 @@ function atualizarRelogio() {
   r.textContent = `${restante}s`;
   r.parentElement.dataset.alerta = String(restante <= 10);
   // Só quem está na vez manda o "tempo esgotado" (uma vez por estado)
-  if (restante === 0 && !ocupado() && quemAge(estado) === sessao.eu && pediuTempo !== estado.seq && seqDoPrazo === estado.seq) {
+  if (restante === 0 && !ocupado() && euAjo(estado) && pediuTempo !== estado.seq && seqDoPrazo === estado.seq) {
     pediuTempo = estado.seq;
     if (escolhaAberta) {
       escolhaAberta.fechar();
@@ -1102,10 +1151,15 @@ function mostrarStatusConexao(info) {
     caixa.hidden = true;
     return;
   }
-  const op = sessao.estado.jogadores[oponente(sessao.eu)].nick;
+  const op = info.nick || sessao.estado.jogadores[oponente(sessao.eu)].nick;
   caixa.hidden = false;
   caixa.replaceChildren(`⚠️ ${op} está sem sinal há ${info.semSinal}s. `);
-  if (info.podeWO) {
+  if (info.podePassar && sessao.passarPeloParceiro) {
+    const b = el("button", "btn btn-sm btn-ouro ms-2", "Passar a vez do parceiro");
+    b.type = "button";
+    b.addEventListener("click", () => sessao.passarPeloParceiro());
+    caixa.append(b);
+  } else if (info.podeWO) {
     const b = el("button", "btn btn-sm btn-ouro ms-2", "Reivindicar vitória (W.O.)");
     b.type = "button";
     b.addEventListener("click", () => sessao.pedirWO && sessao.pedirWO());

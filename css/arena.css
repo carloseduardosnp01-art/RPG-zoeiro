@@ -1559,3 +1559,66 @@ button.fase:not(:disabled):hover {
   border-color: #ffd0d0;
   box-shadow: 0 0 8px rgba(255, 60, 60, .8);
 }
+
+/* ---------- Tag 2vs2 ---------- */
+.membro-ativo {
+  color: #fff;
+  text-decoration: underline;
+  text-decoration-color: var(--ouro);
+  text-underline-offset: 3px;
+}
+
+.membro-espera {
+  color: #aab2bd;
+  font-weight: 600;
+}
+
+.ordem-tag__lista {
+  display: grid;
+  gap: .3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ordem-tag__item {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .35rem .5rem;
+  font-size: .78rem;
+  background: rgba(58, 123, 213, .12);
+  border: 1px solid rgba(58, 123, 213, .35);
+  border-radius: .4rem;
+}
+
+.ordem-tag__item[data-time="1"] {
+  background: rgba(224, 49, 59, .12);
+  border-color: rgba(224, 49, 59, .35);
+}
+
+.ordem-tag__item--agora {
+  box-shadow: 0 0 0 2px var(--ouro);
+}
+
+.ordem-tag__p {
+  overflow: hidden;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ordem-tag__x {
+  color: var(--texto-suave);
+}
+
+.ordem-tag__agora {
+  margin-left: auto;
+  padding: 0 .4rem;
+  color: #1b1208;
+  font-size: .65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: var(--ouro);
+  border-radius: 1rem;
+}

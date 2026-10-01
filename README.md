@@ -57,6 +57,12 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
   - registro do duelo, chat do duelo com provocações rápidas e balão sobre o jogador;
   - resultado com XP ganho e **Revanche**;
   - se a página recarregar no meio do duelo, ela volta para a partida.
+- **Tag da Zoeira 2vs2** (duelo em dupla):
+  - no Salão, o botão **👥 Tag 2vs2** abre uma **mesa** no chat global, no estilo Clash Royale: duas vagas para o Time 1 (azul, P1 e P3) e duas para o Time 2 (vermelho, P2 e P4). Cada um toca numa vaga livre e o nick aparece lá; tocar na própria vaga sai dela. Quando as 4 vagas enchem, o duelo começa sozinho;
+  - quem abriu a mesa é o "juiz": os cliques viram pedidos para ele, que decide na ordem de chegada (duas pessoas nunca ficam na mesma vaga). A mesa expira se o juiz sumir por 1 minuto ou se não lotar em 10 minutos;
+  - regras do Tag Duel: cada **time** tem um campo, um cemitério e **8000 PV compartilhados**; cada jogador tem **o próprio deck e a própria mão**. Ordem dos turnos **P1 → P2 → P3 → P4**; o "controlador inimigo atual" (alvo de efeitos como o Midasmon e quem recebe o dano) é o membro do outro time que jogou por último. A arena mostra a **ordem dos confrontos** dos próximos 4 turnos;
+  - só o membro da vez joga; o parceiro vê a própria mão esperando. Cartas que voltam para a mão vão para a mão do **dono**. Se o membro da vez sumir, o parceiro pode passar a vez por ele, e o outro time pode pedir W.O. depois de 1 minuto;
+  - vitória/derrota contam como online (+100 / +40 XP) e aparecem no histórico como "Tag 2vs2";
 - **Treino contra o Bot Careca**, sem precisar de conta. O bot joga limpo (não olha cartas viradas nem a sua mão) e ainda zoa no chat.
 - Responsivo (celular, tablet e computador) e com foco visível, rótulos e `aria-live`.
 

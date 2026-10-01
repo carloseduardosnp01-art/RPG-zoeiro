@@ -345,6 +345,7 @@
 .zona[data-zona="deck"],
 .zona[data-zona="cemiterio"] { --cor-zona: rgba(100, 60, 30, .35); }
 .zona[data-zona="extra"] { --cor-zona: rgba(110, 70, 170, .22); }
+.zona[data-zona="campo"] { --cor-zona: rgba(214, 140, 40, .32); }
 
 .zona__rotulo {
   position: absolute;

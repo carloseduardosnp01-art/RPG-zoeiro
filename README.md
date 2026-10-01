@@ -48,7 +48,7 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
 - **Arena**:
   - no PC, a arena ocupa a tela toda: os jogadores e o relógio ficam numa coluna à esquerda, as fases na vertical ao lado do campo, e o menu do site some durante o duelo (botões **⛶ Tela cheia** e **🏠 Ir ao site** na coluna dos jogadores);
   - placar com nível, cartas na mão, barra de LP e relógio da ação (60 s);
-  - campo com zonas de monstro, magia/armadilha, deck e cemitério;
+  - campo com zonas de monstro, magia/armadilha, **Zona de Campo** (1 por jogador, os dois podem ter campo ativo ao mesmo tempo; ativar outro campo manda o antigo para o Cemitério), deck e cemitério;
   - barra de fases (DRAW, STBY, MP1, BP, MP2, END);
   - clique numa carta → menu só com as ações válidas naquele momento (a carta brilha em verde quando tem ação);
   - janelas para escolher tributos, alvos, alvo do ataque e descarte;
@@ -190,7 +190,7 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT041 | Emanoel Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1600/1600 | – | Destruído em batalha: busca 1 "Animal" sorteado do deck |
 | ZOE-PT042 | Irmãos Animal | Efeito · VENTO · Besta Alada · Nv 6 · 1950/2100 | – | Só entra pela carta "Egoísmo Puro" |
 | ZOE-PT043 | Egoísmo Puro | Magia | – | Com um "Animal" no campo: Invocação-Especial de 1 "Animal" ou Irmãos Animal da mão ou do deck |
-| ZOE-PT044 | Zoológico Animal | Magia de Campo | – | Bestas Aladas +200 ATK/DEF; quem Invocar um "Animal" pode destruir 1 Magia/Armadilha |
+| ZOE-PT044 | Zoológico Animal | Magia de Campo | – | Vai para a Zona de Campo. Bestas Aladas +200 ATK/DEF; quem Invocar um "Animal" pode destruir 1 Magia/Armadilha |
 
 **Cartas "Animal":** todo monstro com "Animal" no nome conta como "Animal" para esses efeitos. Para criar uma Magia/Armadilha que o Thales Animal consiga buscar, coloque `"mencionaIrmaos": true` nela em `data/cartas.json`.
 

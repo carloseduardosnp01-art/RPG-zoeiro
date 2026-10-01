@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNecessarios, validar, alvosDeAtaque,
-} from "./motor.js?v=202610010050";
+} from "./motor.js?v=202610010101";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 
@@ -117,7 +117,7 @@ function* jogadasPrincipais(estado, j) {
 
   // 1e. Zoológico Animal (se ainda não tiver um) e Egoísmo Puro (traz o "Animal" mais forte)
   for (const { iid, c } of mao) {
-    if (c.efeito === "zoologico" && !p.magias.some((m) => m && m.face && carta(estado, m.iid).efeito === "zoologico")) {
+    if (c.efeito === "zoologico" && !(p.campo && p.campo.face && carta(estado, p.campo.iid).efeito === "zoologico")) {
       if (opcoes(iid).some((x) => x.id === "ativar")) yield { tipo: "ativar", iid };
     }
     if (c.efeito === "egoismo") {

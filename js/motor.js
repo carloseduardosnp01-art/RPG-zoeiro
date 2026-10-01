@@ -174,6 +174,7 @@ export function novoDuelo({ id, jogadores, semente = Date.now() }) {
       cemiterio: [],
       monstros: Array(ZONAS).fill(null),
       magias: Array(ZONAS).fill(null),
+      campo: null,
       invocouNormal: false,
     });
   });
@@ -217,6 +218,7 @@ export function localizar(estado, iid) {
       const slot = p[zona].findIndex((m) => m && m.iid === iid);
       if (slot >= 0) return { j, zona, slot, obj: p[zona][slot] };
     }
+    if (p.campo && p.campo.iid === iid) return { j, zona: "campo", slot: 0, obj: p.campo };
     for (const zona of ["mao", "cemiterio", "deck"]) {
       const slot = p[zona].indexOf(iid);
       if (slot >= 0) return { j, zona, slot, obj: null };
@@ -227,7 +229,7 @@ export function localizar(estado, iid) {
 
 function noCampo(estado, iid) {
   const loc = localizar(estado, iid);
-  return Boolean(loc && (loc.zona === "monstros" || loc.zona === "magias"));
+  return Boolean(loc && (loc.zona === "monstros" || loc.zona === "magias" || loc.zona === "campo"));
 }
 
 export function atkAtual(estado, iid) {
@@ -288,7 +290,7 @@ export function defAtual(estado, iid) {
 
 // Quantos "Zoológico Animal" com a face para cima existem no campo (dos dois lados)
 function zoologicosAtivos(estado) {
-  return estado.jogadores.flatMap((p) => p.magias).filter((m) => m && m.face && carta(estado, m.iid).efeito === "zoologico").length;
+  return estado.jogadores.flatMap((p) => [...p.magias, p.campo]).filter((m) => m && m.face && carta(estado, m.iid).efeito === "zoologico").length;
 }
 
 // Zoológico Animal: um "Animal" foi Invocado (Normal ou Especial) -> quem invocou pode destruir 1 Magia/Armadilha
@@ -311,7 +313,7 @@ export function monstrosEmCampo(estado, j = null) {
 // Magias/Armadilhas no campo (iids)
 export function magiasEmCampo(estado, j = null) {
   const lados = j === null ? [0, 1] : [j];
-  return lados.flatMap((q) => estado.jogadores[q].magias.filter(Boolean).map((m) => m.iid));
+  return lados.flatMap((q) => [...estado.jogadores[q].magias, estado.jogadores[q].campo].filter(Boolean).map((m) => m.iid));
 }
 
 // "Carecas da Luz Reveladora" ativa no lado do jogador j?
@@ -871,12 +873,12 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
   if (!c || c.categoria !== "magia") return "Armadilhas ativam sozinhas: é só baixar no campo.";
   const loc = localizar(estado, iid);
   const daMao = loc && loc.j === j && loc.zona === "mao";
-  const doCampo = loc && loc.j === j && loc.zona === "magias" && !loc.obj.face;
+  const doCampo = loc && loc.j === j && (loc.zona === "magias" || loc.zona === "campo") && !loc.obj.face;
   if (!daMao && !doCampo) return "Essa carta não pode ser ativada agora.";
   if (doCampo && c.subtipo === "rapida" && loc.obj.turnoBaixada >= estado.turno) {
     return "Magia Rápida baixada só pode ser ativada a partir do próximo turno.";
   }
-  if (daMao && zonaLivre(p.magias) < 0) return "Não há zona de Magia/Armadilha livre.";
+  if (daMao && c.subtipo !== "campo" && zonaLivre(p.magias) < 0) return "Não há zona de Magia/Armadilha livre.";
 
   const req = requisitosMagia(estado, j, iid);
   if (!req) return "Não há alvos válidos para essa magia agora.";
@@ -890,7 +892,12 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
 
   // Coloca a carta com a face para cima no campo
   let obj;
-  if (daMao) {
+  if (daMao && c.subtipo === "campo") {
+    p.mao.splice(p.mao.indexOf(iid), 1);
+    trocarCampo(estado, j, ev);
+    obj = { iid, face: true, turnoBaixada: estado.turno };
+    p.campo = obj;
+  } else if (daMao) {
     p.mao.splice(p.mao.indexOf(iid), 1);
     const slot = zonaLivre(p.magias);
     obj = { iid, face: true, turnoBaixada: estado.turno };
@@ -955,11 +962,7 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
       break;
     }
     case "zoologico":
-      // Magia de Campo: só um Zoológico seu por vez (o antigo vai para o Cemitério)
-      p.magias.forEach((m) => {
-        if (m && m.iid !== iid && m.face && carta(estado, m.iid).efeito === "zoologico") mandarProCemiterio(estado, m.iid, ev);
-      });
-      break;
+      break; // fica na Zona de Campo; os efeitos são contínuos
     case "pote-gelo":
       for (const alvo of alvos) {
         p.mao.splice(p.mao.indexOf(alvo), 1);
@@ -984,12 +987,28 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
   return null;
 }
 
+// Cada jogador tem 1 Zona de Campo: um campo novo manda o antigo para o Cemitério
+function trocarCampo(estado, j, ev) {
+  const atual = estado.jogadores[j].campo;
+  if (atual) {
+    removerDoCampo(estado, atual.iid, ev, "substituida");
+    ev.push({ t: "resolvida", iid: atual.iid });
+  }
+}
+
 function baixarMagia(estado, j, { iid }, ev) {
   const p = estado.jogadores[j];
   if (!ehFasePrincipal(estado)) return "Só dá para baixar cartas nas Fases Principais.";
   if (!p.mao.includes(iid)) return "Essa carta não está na sua mão.";
   const c = carta(estado, iid);
   if (c.categoria === "monstro") return "Monstros são baixados pela opção Baixar do monstro.";
+  if (c.subtipo === "campo") {
+    p.mao.splice(p.mao.indexOf(iid), 1);
+    trocarCampo(estado, j, ev);
+    p.campo = { iid, face: false, turnoBaixada: estado.turno };
+    ev.push({ t: "baixada", j, iid, zona: "campo", slot: 0 });
+    return null;
+  }
   const slot = zonaLivre(p.magias);
   if (slot < 0) return "Não há zona de Magia/Armadilha livre.";
   p.mao.splice(p.mao.indexOf(iid), 1);
@@ -1401,7 +1420,7 @@ function dano(estado, j, valor, ev) {
 
 function destruir(estado, iid, ev, causa) {
   const loc = localizar(estado, iid);
-  if (!loc || (loc.zona !== "monstros" && loc.zona !== "magias")) return;
+  if (!loc || (loc.zona !== "monstros" && loc.zona !== "magias" && loc.zona !== "campo")) return;
   ev.push({ t: "destruida", iid, j: loc.j, causa });
   const equipado = loc.zona === "magias" ? loc.obj.equipadoEm : null;
   removerDoCampo(estado, iid, ev, causa);
@@ -1446,7 +1465,8 @@ function removerDoCampo(estado, iid, ev, causa) {
   const loc = localizar(estado, iid);
   if (!loc) return;
   const p = estado.jogadores[loc.j];
-  p[loc.zona][loc.slot] = null;
+  if (loc.zona === "campo") p.campo = null;
+  else p[loc.zona][loc.slot] = null;
   p.cemiterio.push(iid);
   const vaiFicarNoCemiterio = causa !== "banida" && causa !== "mao";
   if (vaiFicarNoCemiterio && loc.zona === "monstros") {
@@ -1468,7 +1488,7 @@ function removerDoCampo(estado, iid, ev, causa) {
 // Banir: a carta sai do jogo de vez (não vai para o Cemitério e nada a traz de volta)
 function banir(estado, iid, ev) {
   const loc = localizar(estado, iid);
-  if (!loc || (loc.zona !== "monstros" && loc.zona !== "magias")) return;
+  if (!loc || (loc.zona !== "monstros" && loc.zona !== "magias" && loc.zona !== "campo")) return;
   removerDoCampo(estado, iid, ev, "banida");
   const p = estado.jogadores[loc.j];
   p.cemiterio.splice(p.cemiterio.indexOf(iid), 1);
@@ -1743,7 +1763,7 @@ export function opcoesDaCarta(estado, j, iid) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial (descartar 2 GELO)", acao: { tipo: "invocarEspecial", iid }, alvos: gelo });
       }
     } else {
-      const livre = zonaLivre(p.magias) >= 0;
+      const livre = c.subtipo === "campo" || zonaLivre(p.magias) >= 0;
       if (c.categoria === "magia" && livre) {
         const req = requisitosMagia(estado, j, iid);
         if (req) opcoes.push({ id: "ativar", rotulo: "Ativar", acao: { tipo: "ativar", iid }, alvos: req.alvos });
@@ -1773,7 +1793,7 @@ export function opcoesDaCarta(estado, j, iid) {
     }
   }
 
-  if (loc.zona === "magias" && principal && !loc.obj.face && c.categoria === "magia") {
+  if ((loc.zona === "magias" || loc.zona === "campo") && principal && !loc.obj.face && c.categoria === "magia") {
     const podeRapida = c.subtipo !== "rapida" || loc.obj.turnoBaixada < estado.turno;
     const req = requisitosMagia(estado, j, iid);
     if (podeRapida && req) opcoes.push({ id: "ativar", rotulo: "Ativar", acao: { tipo: "ativar", iid }, alvos: req.alvos });

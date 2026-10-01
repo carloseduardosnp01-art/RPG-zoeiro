@@ -14,11 +14,11 @@
 
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada,
-} from "./motor.js?v=202610010050";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610010050";
-import { el, esperar, aviso } from "./util.js?v=202610010050";
-import { tocar } from "./som.js?v=202610010050";
-import { abrirDetalhes } from "./catalogo.js?v=202610010050";
+} from "./motor.js?v=202610010101";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610010101";
+import { el, esperar, aviso } from "./util.js?v=202610010101";
+import { tocar } from "./som.js?v=202610010101";
+import { abrirDetalhes } from "./catalogo.js?v=202610010101";
 
 const raiz = document.querySelector("#arena");
 
@@ -385,11 +385,11 @@ function desenharCampo(estado) {
   // Linha 2: cemitério do oponente, monstros do oponente
   campo.append(zonaPilha(estado, op, "cemiterio"));
   invertido.forEach((s) => campo.append(zonaCarta(estado, op, "monstros", s)));
-  campo.append(zonaDecorativa(op));
+  campo.append(zonaCarta(estado, op, "campo", 0));
   // Divisa
   campo.append(el("div", "campo__divisa"));
-  // Linha 3: meus monstros e meu cemitério
-  campo.append(zonaDecorativa(eu));
+  // Linha 3: minha Zona de Campo, meus monstros e meu cemitério
+  campo.append(zonaCarta(estado, eu, "campo", 0));
   for (let s = 0; s < ZONAS; s++) campo.append(zonaCarta(estado, eu, "monstros", s));
   campo.append(zonaPilha(estado, eu, "cemiterio"));
   // Linha 4: minhas magias e meu deck
@@ -407,7 +407,7 @@ function criarZona(j, zona, slot = null) {
   return z;
 }
 
-const ROTULOS = { monstros: "Zona de Monstro", magias: "Magia & Armadilha", deck: "Deck", cemiterio: "Cemitério", extra: "Zona Careca" };
+const ROTULOS = { campo: "Zona de Campo", monstros: "Zona de Monstro", magias: "Magia & Armadilha", deck: "Deck", cemiterio: "Cemitério", extra: "Zona Careca" };
 
 function vaziaCom(z, zona) {
   z.classList.add("zona--vazia");
@@ -445,7 +445,7 @@ function zonaPilha(estado, j, zona) {
 
 function zonaCarta(estado, j, zona, slot) {
   const z = criarZona(j, zona, slot);
-  const obj = estado.jogadores[j][zona][slot];
+  const obj = zona === "campo" ? estado.jogadores[j].campo : estado.jogadores[j][zona][slot];
   if (!obj) return vaziaCom(z, zona);
 
   const c = carta(estado, obj.iid);

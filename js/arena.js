@@ -14,11 +14,11 @@
 
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo,
-} from "./motor.js?v=202610010152";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610010152";
-import { el, esperar, aviso } from "./util.js?v=202610010152";
-import { tocar } from "./som.js?v=202610010152";
-import { abrirDetalhes } from "./catalogo.js?v=202610010152";
+} from "./motor.js?v=202610010214";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610010214";
+import { el, esperar, aviso } from "./util.js?v=202610010214";
+import { tocar } from "./som.js?v=202610010214";
+import { abrirDetalhes } from "./catalogo.js?v=202610010214";
 
 const raiz = document.querySelector("#arena");
 
@@ -258,7 +258,12 @@ function enfileirar(estado, eventos) {
     .then(async () => {
       if (!sessao) return;
       fecharMenu();
-      await tocarEventos(eventos, estado);
+      try {
+        await tocarEventos(eventos, estado);
+      } catch (erro) {
+        console.error("Erro numa animação (a tela é atualizada mesmo assim):", erro);
+        document.querySelectorAll(".corte, .banner-turno").forEach((x) => x.remove());
+      }
       if (!sessao) return;
       desenhar(estado);
     })

@@ -1950,13 +1950,14 @@ a:hover {
 
 .mesa-tag__grade {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: .4rem;
   align-items: center;
 }
 
 .mesa-tag__time {
   display: grid;
+  min-width: 0;
   gap: .35rem;
 }
 
@@ -2047,4 +2048,43 @@ a:hover {
   font-size: .82rem;
   font-weight: 700;
   text-align: center;
+}
+
+.mesa-tag__vaga {
+  min-width: 0;
+}
+
+.mesa-tag__nick {
+  min-width: 0;
+}
+
+/* Celular: os times ficam um embaixo do outro */
+@media (max-width: 575.98px) {
+  .mesa-tag {
+    padding: .6rem;
+  }
+
+  .mesa-tag__grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mesa-tag__meio {
+    display: flex;
+    justify-content: center;
+    margin: -.1rem 0;
+  }
+
+  .mesa-tag__meio img {
+    width: 40px;
+    height: 40px;
+  }
+
+  .mesa-tag__titulo {
+    font-size: .9rem;
+  }
+}
+
+/* nada do chat empurra a tela para os lados */
+.mensagens {
+  overflow-x: hidden;
 }

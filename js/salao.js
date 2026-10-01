@@ -12,14 +12,14 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610010152";
-import * as conta from "./conta.js?v=202610010152";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610010152";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610010152";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610010152";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610010152";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610010152";
-import { tocar } from "./som.js?v=202610010152";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610010214";
+import * as conta from "./conta.js?v=202610010214";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610010214";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610010214";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610010214";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610010214";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610010214";
+import { tocar } from "./som.js?v=202610010214";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -1013,6 +1013,10 @@ const mesas = new Map();             // id -> mesa (como publicada)
 const hospedando = new Map();        // id -> { mesa, cancelar, batimento }
 const entrandoEmTag = new Set();
 
+// Versão completa do site (cartas + código): os 4 da mesa precisam estar na mesma
+const VERSAO_SITE = new URL(document.querySelector('script[type="module"][src*="app.js"]')?.src || location.href).searchParams.get("v") || "";
+const versaoMesa = () => `${versaoDasCartas()}/${VERSAO_SITE}`;
+
 const mesaExpirada = (m) => m.estado === "aberta" && Date.now() - (m.atualizado || 0) > MESA_EXPIRA;
 const cartaoMesa = () => ({ ...conta.cartaoPublico(), deck: deckAtual() });
 
@@ -1042,7 +1046,7 @@ function abrirMesaTag() {
   const mesa = {
     id,
     criador: conta.cartaoPublico(),
-    versao: versaoDasCartas(),
+    versao: versaoMesa(),
     assentos: [cartaoMesa(), null, null, null],
     estado: "aberta",
     criadoEm: Date.now(),
@@ -1141,7 +1145,7 @@ function pedirVaga(m, vaga) {
     aviso("Você já está em outra mesa. Saia dela primeiro.", "erro");
     return;
   }
-  const pedido = { tipo: "sentar", vaga, cartao: conta.cartaoPublico(), deck: deckAtual(), versao: versaoDasCartas() };
+  const pedido = { tipo: "sentar", vaga, cartao: conta.cartaoPublico(), deck: deckAtual(), versao: versaoMesa() };
   if (hospedando.has(m.id)) receberPedido(m.id, pedido);
   else publicar(T.pedidos(m.id), pedido);
   mudarStatusDuelo("aguardando");
@@ -1249,7 +1253,7 @@ function caixaMesa(id) {
   }
   const expirada = mesaExpirada(m);
   const aberta = m.estado === "aberta" && !expirada;
-  const versaoOk = m.versao === versaoDasCartas();
+  const versaoOk = m.versao === versaoMesa();
   const souJuiz = hospedando.has(id);
 
   caixa.append(el("div", "mesa-tag__titulo", `👥 Entrar para o Tag da Zoeira 2vs2! (mesa de ${m.criador.nick})`));

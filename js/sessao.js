@@ -17,10 +17,10 @@
    duas jogadas ao mesmo tempo.
    ========================================================================== */
 
-import { novoDuelo, aplicar, quemAge, carta, ErroJogada, membroAtivo } from "./motor.js?v=202610010152";
-import { jogadaDoBot } from "./bot.js?v=202610010152";
-import { PREFIXO, publicar, assinar } from "./rede.js?v=202610010152";
-import { esperar, gerarId } from "./util.js?v=202610010152";
+import { novoDuelo, aplicar, quemAge, carta, ErroJogada, membroAtivo } from "./motor.js?v=202610010214";
+import { jogadaDoBot } from "./bot.js?v=202610010214";
+import { PREFIXO, publicar, assinar, pedirRetido, aoStatus } from "./rede.js?v=202610010214";
+import { esperar, gerarId } from "./util.js?v=202610010214";
 
 export const SEM_SINAL_AVISO = 20;  // segundos sem sinal do oponente para avisar
 export const SEM_SINAL_WO = 60;     // segundos sem sinal para poder pedir W.O.
@@ -179,6 +179,7 @@ export function criarSessaoOnline({ estado, eventos = [], minha }) {
   let avisoAtual = null;
   const cancelamentos = [];
   const intervalos = [];
+  const ressinc = criarRessincronizacao(topicos.estado, () => quemAge(sessao.estado) === eu, () => sessao.estado);
 
   const sessao = {
     ...base,
@@ -193,11 +194,13 @@ export function criarSessaoOnline({ estado, eventos = [], minha }) {
       mandarSinal("ping");
       intervalos.push(setInterval(() => mandarSinal("ping"), 5000));
       intervalos.push(setInterval(verificarOponente, 1000));
+      cancelamentos.push(ressinc.iniciar());
     },
 
     agir(acao) {
       const r = aplicar(sessao.estado, eu, acao);
       sessao.estado = r.estado;
+      ressinc.atualizou();
       publicar(topicos.estado, { seq: r.estado.seq, estado: r.estado, eventos: r.eventos, autor: minha.sid }, { reter: true });
       base.emitir("atualizar", r.estado, r.eventos);
     },
@@ -222,6 +225,7 @@ export function criarSessaoOnline({ estado, eventos = [], minha }) {
     if (!dados || !dados.estado || dados.seq <= sessao.estado.seq) return;
     sessao.estado = dados.estado;
     ultimoSinal = Date.now();
+    ressinc.atualizou();
     base.emitir("atualizar", dados.estado, dados.autor === minha.sid ? [] : dados.eventos || []);
   }
 
@@ -255,6 +259,49 @@ export function criarSessaoOnline({ estado, eventos = [], minha }) {
 }
 
 
+/* ---------- Ressincronização (1vs1 e Tag) ---------- */
+
+// O estado do duelo fica guardado (retido) no broker. Se uma mensagem se perder (celular que
+// saiu do app, conexão que caiu por uns segundos), quem está esperando pede o estado de novo:
+//   - a cada 5 s sem novidades, enquanto não é a vez dele;
+//   - quando a página volta a ficar visível;
+//   - quando a conexão volta.
+// Só estados com "seq" maior são aplicados, então isso nunca desfaz uma jogada.
+function criarRessincronizacao(topico, euQueJogo, estadoAtual) {
+  let ultima = Date.now();
+  const pedir = () => {
+    if (estadoAtual().vencedor === null) pedirRetido(topico);
+  };
+  return {
+    atualizou() {
+      ultima = Date.now();
+    },
+    iniciar() {
+      const intervalo = setInterval(() => {
+        if (!euQueJogo() && Date.now() - ultima > 5000) {
+          ultima = Date.now();
+          pedir();
+        }
+      }, 1000);
+      const aoVoltar = () => {
+        if (!document.hidden) pedir();
+      };
+      document.addEventListener("visibilitychange", aoVoltar);
+      let statusAnterior = null;
+      const pararStatus = aoStatus((status) => {
+        if (status === "conectado" && statusAnterior && statusAnterior !== "conectado") pedir();
+        statusAnterior = status;
+      });
+      return () => {
+        clearInterval(intervalo);
+        document.removeEventListener("visibilitychange", aoVoltar);
+        pararStatus();
+      };
+    },
+  };
+}
+
+
 /* ---------- Tag da Zoeira 2vs2 (online, 4 jogadores) ---------- */
 
 // Igual à sessão online do 1vs1, mas: só o membro da vez joga pelo time, cada um dos 4
@@ -269,6 +316,11 @@ export function criarSessaoTag({ estado, eventos = [], minha }) {
   let avisoAtual = null;
   const cancelamentos = [];
   const intervalos = [];
+  const ressinc = criarRessincronizacao(
+    topicos.estado,
+    () => quemAge(sessao.estado) === eu && membroAtivo(sessao.estado, eu) === membro,
+    () => sessao.estado,
+  );
 
   const sessao = {
     ...base,
@@ -284,6 +336,7 @@ export function criarSessaoTag({ estado, eventos = [], minha }) {
       mandarSinal("ping");
       intervalos.push(setInterval(() => mandarSinal("ping"), 5000));
       intervalos.push(setInterval(verificarQuemJoga, 1000));
+      cancelamentos.push(ressinc.iniciar());
     },
 
     // Só o membro da vez joga (desistir vale para o time todo, a qualquer momento)
@@ -317,6 +370,7 @@ export function criarSessaoTag({ estado, eventos = [], minha }) {
   function aplicarEPublicar(acao) {
     const r = aplicar(sessao.estado, eu, acao);
     sessao.estado = r.estado;
+    ressinc.atualizou();
     publicar(topicos.estado, { seq: r.estado.seq, estado: r.estado, eventos: r.eventos, autor: minha.sid, autorChave: minha.chave }, { reter: true });
     base.emitir("atualizar", r.estado, r.eventos);
   }
@@ -324,6 +378,7 @@ export function criarSessaoTag({ estado, eventos = [], minha }) {
   function receberEstado(dados) {
     if (!dados || !dados.estado || dados.seq <= sessao.estado.seq) return;
     sessao.estado = dados.estado;
+    ressinc.atualizou();
     if (dados.autorChave) sinais[dados.autorChave] = Date.now();
     base.emitir("atualizar", dados.estado, dados.autor === minha.sid ? [] : dados.eventos || []);
   }

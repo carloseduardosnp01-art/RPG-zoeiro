@@ -129,6 +129,8 @@ Tópicos (todos começam com `rpgdazoeira/v1/`):
 
 **O duelo:** quem desafiou cria a partida com o próprio deck e o deck que o oponente mandou junto com o "aceito" (o motor confere se os dois valem; se não, usa o padrão), embaralha com uma semente e sorteia quem começa. Só age quem está na vez (as armadilhas são automáticas, então o oponente nunca precisa decidir nada no turno do outro). Quem joga aplica a jogada no próprio navegador e publica o **estado inteiro** no tópico do duelo; o outro só substitui o dele. Como o estado fica retido no broker, quem recarregar a página volta para a partida.
 
+**Ressincronização:** se uma mensagem se perder (celular que saiu do app, internet que caiu uns segundos), quem está esperando pede o estado guardado de novo sozinho: a cada 5 s sem novidades, quando a aba volta a ficar visível e quando a conexão volta. Só estados com `seq` maior são aplicados, então isso nunca desfaz jogada. (O MQTT.js ignora um "subscribe" repetido de um tópico já assinado, por isso `pedirRetido` em `rede.js` sai e entra de novo no tópico para o broker reenviar o valor retido.)
+
 **Ausência:** cada navegador manda um sinal a cada 5 s. Se o oponente sumir por 20 s aparece um aviso; depois de 60 s dá para **reivindicar vitória por W.O.** Se o tempo da ação (60 s) acabar, o turno passa sozinho.
 
 ### Deck e versões do site

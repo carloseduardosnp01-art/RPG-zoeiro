@@ -182,10 +182,11 @@ export function publicar(topico, dados, { reter = false } = {}) {
 export function assinar(filtro, fn) {
   const registro = { filtro, fn };
   assinaturas.push(registro);
-  const n = (contagem.get(filtro) || 0) + 1;
-  contagem.set(filtro, n);
-  // Assina de novo mesmo se já existir: assim o broker reenvia as mensagens retidas para este ouvinte
-  if (cliente) cliente.subscribe(filtro, { qos: 1 });
+  const jaAssinado = (contagem.get(filtro) || 0) > 0;
+  contagem.set(filtro, (contagem.get(filtro) || 0) + 1);
+  // Se o tópico já estava assinado, pede o valor retido de novo para este ouvinte também
+  if (jaAssinado) pedirRetido(filtro);
+  else if (cliente) cliente.subscribe(filtro, { qos: 1 });
   return () => {
     const i = assinaturas.indexOf(registro);
     if (i >= 0) assinaturas.splice(i, 1);
@@ -196,6 +197,21 @@ export function assinar(filtro, fn) {
       cliente.unsubscribe(filtro);
     }
   };
+}
+
+// Pede ao broker o último valor guardado (retido) de um tópico.
+// O MQTT.js ignora um "subscribe" repetido de um tópico que já está assinado, então aqui
+// sai e entra de novo: ao assinar, o broker sempre reenvia o valor retido. Os ouvintes do
+// jogo aguentam receber o mesmo valor de novo (o duelo, por exemplo, confere o número "seq").
+export function pedirRetido(filtro) {
+  if (!cliente) return;
+  if (modoLocal || !((contagem.get(filtro) || 0) > 0)) {
+    cliente.subscribe(filtro, { qos: 1 });
+    return;
+  }
+  cliente.unsubscribe(filtro, () => {
+    if ((contagem.get(filtro) || 0) > 0) cliente.subscribe(filtro, { qos: 1 });
+  });
 }
 
 // Lê a mensagem retida de um tópico (ou null se não houver nenhuma)

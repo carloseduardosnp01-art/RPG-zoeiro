@@ -199,8 +199,17 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT042 | Irmãos Animal | Efeito · VENTO · Besta Alada · Nv 6 · 1950/2100 | – | Só entra pela carta "Egoísmo Puro" |
 | ZOE-PT043 | Egoísmo Puro | Magia | – | Com um "Animal" no campo: Invocação-Especial de 1 "Animal" ou Irmãos Animal da mão ou do deck |
 | ZOE-PT044 | Zoológico Animal | Magia de Campo | – | Vai para a Zona de Campo. Bestas Aladas +200 ATK/DEF; quem Invocar um "Animal" pode destruir 1 Magia/Armadilha |
+| ZOE-PT045 | Irmãollow **(limitada a 1)** | Efeito · LUZ · Fada · Nv 3 · 300/500 | – | Não é destruído em batalha; atacado virado para baixo → quem atacou leva 1000 |
+| ZOE-PT046 | Controle Carecal **(limitada a 1)** | Magia | – | Paga 800 PV e toma o controle de 1 monstro com a face para cima do oponente até a Fase Final |
+| ZOE-PT047 | Menino Mentiroso | Magia | – | Sem monstros no seu campo: Invocação-Especial de 1 Monstro Normal Nv 4 ou menos do deck |
+| ZOE-PT048 | Grande Mestre do Caos | Efeito · TREVAS · Mago · Nv 8 · 2800/2600 | – | Invocado neste turno: na Fase Principal 2, botão Efeito pega 1 Magia do Cemitério; bane quem ele destrói em batalha; com a face para cima, é banido ao sair do campo |
+| ZOE-PT049 | Upstart Gordo | Magia | – | Compra 1 carta e o oponente ganha 1000 PV |
+| ZOE-PT050 | Jinreca | Efeito · TREVAS · Máquina · Nv 6 · 2400/1500 | – | Com a face para cima no campo, nenhuma Armadilha ativa (dos dois lados) |
+| ZOE-PT051 | As Mil Facas do Mestre | Magia | – | Com Grande Mestre ou Grande Mestre do Caos seu no campo: destrói todos os monstros do oponente |
 
 **Cartas "Animal":** todo monstro com "Animal" no nome conta como "Animal" para esses efeitos. Para criar uma Magia/Armadilha que o Thales Animal consiga buscar, coloque `"mencionaIrmaos": true` nela em `data/cartas.json`.
+
+**Dono e controle:** o Controle Carecal pode deixar um monstro no campo do outro jogador até a Fase Final. Tudo o que sai do campo vai sempre para o **dono** da carta (Cemitério, mão ou banidas), nunca para quem estava controlando.
 
 **Cartas limitadas:** algumas cartas fortes só podem ter 1 (ou 2) cópias por deck (o campo `"limite"` em `data/cartas.json`; `0` = banida). O editor não deixa passar do limite e não salva um deck acima dele. Se um jogador entrar num duelo com cópias acima do limite (um deck salvo antes da carta ser limitada, por exemplo), as sobras viram **Careca Feijão** na hora, mesmo passando de 3 Feijões, e o registro do duelo avisa.
 
@@ -253,7 +262,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
-├── data/cartas.json      # As 44 cartas (texto, stats, cópias no deck padrão, efeito)
+├── data/cartas.json      # As 51 cartas (texto, stats, cópias no deck padrão, efeito)
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```

@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNecessarios, validar, alvosDeAtaque,
-} from "./motor.js?v=202610010214";
+} from "./motor.js?v=202610011351";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 
@@ -109,6 +109,9 @@ function* jogadasPrincipais(estado, j) {
       const alvo = melhorMagiaDoOponente(estado, j, op.alvos.candidatos);
       if (alvo) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [alvo] };
     }
+    if (ef === "mestre-caos") {
+      yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [[...op.alvos.candidatos].sort((a, b) => valorNaMao(estado, j, b) - valorNaMao(estado, j, a))[0]] };
+    }
     if (ef === "mestre-laminas" && primeira && estado.turno > 1 && p.mao.length >= 3) {
       const pior = [...op.alvos.candidatos].sort((a, b) => valorNaMao(estado, j, a) - valorNaMao(estado, j, b))[0];
       yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [pior] };
@@ -123,6 +126,27 @@ function* jogadasPrincipais(estado, j) {
     if (c.efeito === "egoismo") {
       const op = opcoes(iid).find((x) => x.id === "ativar");
       if (op) yield { tipo: "ativar", iid, alvos: [[...op.alvos.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0]] };
+    }
+  }
+
+  // 1f. Mil Facas (com Grande Mestre em campo), Menino Mentiroso (campo vazio), Upstart Gordo
+  for (const { iid, c } of mao) {
+    if (c.efeito === "mil-facas" && deles.length && opcoes(iid).some((x) => x.id === "ativar")) yield { tipo: "ativar", iid };
+    if (c.efeito === "menino") {
+      const op = opcoes(iid).find((x) => x.id === "ativar");
+      if (op) yield { tipo: "ativar", iid, alvos: [[...op.alvos.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0]] };
+    }
+    if (c.efeito === "upstart" && p.deck.length > 5 && opcoes(iid).some((x) => x.id === "ativar")) yield { tipo: "ativar", iid };
+  }
+
+  // 1g. Controle Carecal: pega o monstro mais forte do oponente para atacar com ele
+  if (primeira && estado.turno > 1 && p.pl > 2500 && !luzAtiva(estado, o)) {
+    for (const { iid, c } of mao) {
+      if (c.efeito !== "controle") continue;
+      const op = opcoes(iid).find((x) => x.id === "ativar");
+      if (!op) continue;
+      const forte = [...op.alvos.candidatos].sort((a, b) => atkAtual(estado, b) - atkAtual(estado, a))[0];
+      if (atkAtual(estado, forte) >= 1700) yield { tipo: "ativar", iid, alvos: [forte] };
     }
   }
 
@@ -315,6 +339,10 @@ function escolherAtaque(estado, j) {
       if (!m.face) {
         vence = atk >= 1800;
         valor = 500;
+      } else if (carta(estado, m.iid).efeito === "irmaollow") {
+        // não é destruído em batalha: só vale atacar se estiver em Ataque (dano)
+        vence = m.pos === "atk" && atk > atkAtual(estado, m.iid);
+        valor = 100;
       } else if (m.pos === "atk") {
         const atkD = atkAtual(estado, m.iid);
         vence = atk > atkD;
@@ -341,6 +369,7 @@ const VALOR_NA_MAO = {
   vapo: 9, "forca-careca": 8, "tributo-destruir-monstro": 7, soco: 6, "tributo-destruir-magias": 6,
   "armadilha-big": 6, luz: 6, penetra: 5, saideira: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
   "flip-descartar": 5, "flip-comprar": 4, karecoh: 4, egoismo: 6, zoologico: 5,
+  controle: 7, menino: 4, "mestre-caos": 6, upstart: 3, jinreca: 6, "mil-facas": 6, irmaollow: 5,
   wellington: 5, "mestre-laminas": 6, lamento: 5, gole: 5, "sai-daqui": 6, "adm-ditador": 7, "manoel-gelo": 4, "gelo-careca": 5, "pote-gelo": 4, "flip-buscar-magia": 4,
 };
 

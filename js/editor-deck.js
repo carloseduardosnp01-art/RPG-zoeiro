@@ -4,13 +4,13 @@
    deck para tirar. Regras: de 40 a 60 cartas e até 3 cópias de cada.
    ========================================================================== */
 
-import { montarDeck, DECK_MIN, DECK_MAX, limiteDaCarta, excessoDeLimite } from "./motor.js?v=202610010214";
-import { criarCarta } from "./cartas-ui.js?v=202610010214";
-import { deckAtual, salvarDeck, paraMapa, paraLista, totalDoMapa, ehDeckPadrao } from "./deck.js?v=202610010214";
-import { abrirDetalhes } from "./catalogo.js?v=202610010214";
-import * as conta from "./conta.js?v=202610010214";
-import { el, aviso } from "./util.js?v=202610010214";
-import { tocar } from "./som.js?v=202610010214";
+import { montarDeck, DECK_MIN, DECK_MAX, limiteDaCarta, excessoDeLimite } from "./motor.js?v=202610011351";
+import { criarCarta } from "./cartas-ui.js?v=202610011351";
+import { deckAtual, salvarDeck, paraMapa, paraLista, totalDoMapa, ehDeckPadrao } from "./deck.js?v=202610011351";
+import { abrirDetalhes } from "./catalogo.js?v=202610011351";
+import * as conta from "./conta.js?v=202610011351";
+import { el, aviso } from "./util.js?v=202610011351";
+import { tocar } from "./som.js?v=202610011351";
 
 const ORDEM_CATEGORIA = { monstro: 0, magia: 1, armadilha: 2 };
 

@@ -1085,6 +1085,10 @@ button.fase:not(:disabled):hover {
   color: #9fe7ff;
 }
 
+.numero-dano--cura {
+  color: #5dff8a;
+}
+
 .protecao {
   filter: drop-shadow(0 0 4px #9fe7ff);
 }
@@ -1550,6 +1554,14 @@ button.fase:not(:disabled):hover {
   border-radius: 1rem;
   box-shadow: 0 0 8px rgba(160, 100, 255, .8);
   pointer-events: none;
+}
+
+.selo-marcador--controle {
+  right: calc(var(--cw) * -.08);
+  left: auto;
+  background: linear-gradient(180deg, #3fae5a, #1d6b30);
+  border-color: #d4ffd9;
+  box-shadow: 0 0 8px rgba(80, 220, 120, .8);
 }
 
 .selo-marcador--duplo {

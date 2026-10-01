@@ -403,6 +403,14 @@ export function luzAtiva(estado, j) {
 
 const zonaLivre = (lista) => lista.findIndex((m) => !m);
 
+// Dono da carta (quem trouxe ela no deck): "a"/"c" = lado 0, "b"/"d" = lado 1.
+// O controle de um monstro pode mudar (Controle Carecal), mas Cemitério, mão e banidas são sempre do dono.
+export const donoDe = (iid) => ("ac".includes(iid[0]) ? 0 : 1);
+
+// Jinreca com a face para cima no campo (de qualquer lado): nenhuma Armadilha pode ser ativada
+export const jinrecaEmCampo = (estado) =>
+  estado.jogadores.some((p) => p.monstros.some((m) => m && m.face && carta(estado, m.iid).efeito === "jinreca"));
+
 
 /* ---------- 4. Aplicar uma ação ---------- */
 
@@ -935,6 +943,30 @@ export function requisitosMagia(estado, j, iid) {
     }
     case "zoologico":
       return { alvos: null };
+    case "controle": {
+      const candidatos = estado.jogadores[oponente(j)].monstros.filter((m) => m && m.face).map((m) => m.iid);
+      if (!candidatos.length || zonaLivre(p.monstros) < 0 || p.pl <= 800) return null;
+      return { alvos: { candidatos, min: 1, max: 1, titulo: "Controle Carecal (paga 800 PV): escolha o monstro do oponente que vem para o seu lado até a Fase Final" } };
+    }
+    case "menino": {
+      if (monstrosEmCampo(estado, j).length || zonaLivre(p.monstros) < 0) return null;
+      const vistos = new Set();
+      const candidatos = p.deck.filter((x) => {
+        const m = carta(estado, x);
+        if (m.categoria !== "monstro" || m.subtipo !== "normal" || m.nivel > 4 || vistos.has(m.id)) return false;
+        vistos.add(m.id);
+        return true;
+      });
+      return candidatos.length
+        ? { alvos: { candidatos, min: 1, max: 1, titulo: "Menino Mentiroso: escolha o Monstro Normal de Nível 4 ou menos do deck que entra" } }
+        : null;
+    }
+    case "upstart":
+      return p.deck.length ? { alvos: null } : null;
+    case "mil-facas": {
+      const temMestre = p.monstros.some((m) => m && m.face && ["grande-mestre", "grande-mestre-do-caos"].includes(estado.cartas[m.iid]));
+      return temMestre && monstrosEmCampo(estado, oponente(j)).length ? { alvos: null } : null;
+    }
     case "pote-gelo": {
       const candidatos = p.mao.filter((x) => x !== iid && ehCartaGelo(carta(estado, x)));
       return candidatos.length >= 2
@@ -1043,6 +1075,35 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
     }
     case "zoologico":
       break; // fica na Zona de Campo; os efeitos são contínuos
+    case "controle":
+      p.pl = Math.max(0, p.pl - 800);
+      ev.push({ t: "custo", j, valor: 800, pl: p.pl });
+      tomarControle(estado, j, alvos[0], ev);
+      mandarProCemiterio(estado, iid, ev);
+      break;
+    case "menino": {
+      const alvo = alvos[0];
+      p.deck.splice(p.deck.indexOf(alvo), 1);
+      embaralhar(p.deck, sorteioDoEstado(estado));
+      const slot = zonaLivre(p.monstros);
+      p.monstros[slot] = { iid: alvo, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+      ev.push({ t: "invocacao", j, iid: alvo, modo: "especial", slot });
+      mandarProCemiterio(estado, iid, ev);
+      aposEspecial(estado, j, alvo, ev);
+      break;
+    }
+    case "upstart": {
+      comprar(estado, j, 1, ev);
+      const o = estado.jogadores[oponente(j)];
+      o.pl += 1000;
+      ev.push({ t: "ganhoPV", j: oponente(j), valor: 1000, pl: o.pl });
+      mandarProCemiterio(estado, iid, ev);
+      break;
+    }
+    case "mil-facas":
+      for (const alvo of monstrosEmCampo(estado, oponente(j))) destruir(estado, alvo, ev, "efeito");
+      mandarProCemiterio(estado, iid, ev);
+      break;
     case "pote-gelo":
       for (const alvo of alvos) {
         p.mao.splice(p.mao.indexOf(alvo), 1);
@@ -1065,6 +1126,34 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
       break;
   }
   return null;
+}
+
+// Controle Carecal: o monstro do oponente vem para o lado de j até a Fase Final
+function tomarControle(estado, j, iid, ev) {
+  const loc = localizar(estado, iid);
+  const p = estado.jogadores[j];
+  const slot = zonaLivre(p.monstros);
+  if (!loc || loc.zona !== "monstros" || loc.j === j || slot < 0) return;
+  estado.jogadores[loc.j].monstros[loc.slot] = null;
+  loc.obj.emprestado = { de: loc.j, turno: estado.turno };
+  p.monstros[slot] = loc.obj;
+  ev.push({ t: "controle", j, iid, slot });
+}
+
+// Fase Final: o monstro emprestado volta para quem o controlava (sem zona livre, vai para o Cemitério do dono)
+function devolverControle(estado, q, s, ev) {
+  const m = estado.jogadores[q].monstros[s];
+  const volta = m.emprestado.de;
+  delete m.emprestado;
+  const slot = zonaLivre(estado.jogadores[volta].monstros);
+  if (slot < 0) {
+    ev.push({ t: "controleVolta", j: volta, iid: m.iid, semZona: true });
+    removerDoCampo(estado, m.iid, ev, "regra");
+    return;
+  }
+  estado.jogadores[q].monstros[s] = null;
+  estado.jogadores[volta].monstros[slot] = m;
+  ev.push({ t: "controleVolta", j: volta, iid: m.iid, slot });
 }
 
 // Cada jogador tem 1 Zona de Campo: um campo novo manda o antigo para o Cemitério
@@ -1102,6 +1191,7 @@ function baixarMagia(estado, j, { iid }, ev) {
 
 // Procura uma armadilha virada do defensor que responda ao gatilho. Ativa no máximo uma por gatilho.
 function verificarArmadilhas(estado, gatilho, dados, ev) {
+  if (jinrecaEmCampo(estado)) return false;
   const defensor = oponente(dados.j);
   const p = estado.jogadores[defensor];
   for (let s = 0; s < ZONAS; s++) {
@@ -1278,6 +1368,17 @@ export function efeitoAtivavel(estado, j, iid) {
         alvos: { candidatos, min: 1, max: 1, titulo: `${c.nome}: escolha 1 monstro de VENTO seu para voltar para a mão` },
       };
     }
+    case "mestre-caos": {
+      // Invocado por Invocação-Normal/Especial neste turno (Invocação-Flip não conta: o monstro entrou antes)
+      if (estado.fase !== "principal2" || m.turnoEntrou !== estado.turno || usou(estado, j, "mestre-caos")) return null;
+      const vistos = new Set();
+      const candidatos = p.cemiterio.filter((x) => carta(estado, x).categoria === "magia" && !vistos.has(estado.cartas[x]) && vistos.add(estado.cartas[x]));
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: adicionar 1 Magia do Cemitério à mão",
+        alvos: { candidatos, min: 1, max: 1, titulo: `${c.nome}: escolha 1 Magia do seu Cemitério para a sua mão` },
+      };
+    }
     case "gelo-careca": {
       if (!antesDoAtaque || m.ataqueDuplo === estado.turno || m.pos !== "atk") return null;
       const candidatos = p.monstros.filter((x) => x && x.iid !== iid && x.face && x.pos === "atk" && ehMonstroGelo(carta(estado, x.iid))).map((x) => x.iid);
@@ -1335,6 +1436,11 @@ function efeitoMonstro(estado, j, { iid, alvos = [] }, ev) {
           titulo: `${c.nome}: você pode Invocar por Invocação-Normal 1 monstro de VENTO (Nível 4 ou menos) da mão`,
         };
       }
+      break;
+    }
+    case "mestre-caos": {
+      marcarUso(estado, j, "mestre-caos");
+      recuperarDoCemiterio(estado, j, alvos[0], ev);
       break;
     }
     case "gelo-careca":
@@ -1459,6 +1565,21 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
     else if (atk < defD) danoBatalha(estado, j, defD - atk, ev);
   }
 
+  // Grande Mestre do Caos: o monstro do oponente que ele destruiu em batalha é banido (atacando ou defendendo)
+  const caiu = (x) => estado.jogadores[donoDe(x)].cemiterio.includes(x);
+  for (const [mestre, outro] of [[atacante, defensor], [defensor, atacante]]) {
+    if (carta(estado, mestre).efeito === "mestre-caos" && caiu(outro)) {
+      ev.push({ t: "efeito", j: localizar(estado, mestre)?.j ?? donoDe(mestre), iid: mestre });
+      banirDoCemiterio(estado, outro, ev);
+    }
+  }
+
+  // Irmãollow atacado virado para baixo: depois do cálculo de dano, quem atacou sofre 1000
+  if (virou && estado.vencedor === null && carta(estado, defensor).efeito === "irmaollow") {
+    ev.push({ t: "efeito", j: oponente(j), iid: defensor });
+    dano(estado, j, 1000, ev);
+  }
+
   // Miro Animal (saideira): destruiu um monstro do oponente em batalha e continua em campo
   if (estado.vencedor === null && !noCampo(estado, defensor) && noCampo(estado, atacante) && carta(estado, atacante).efeito === "saideira") {
     ev.push({ t: "efeito", j, iid: atacante });
@@ -1501,6 +1622,10 @@ function dano(estado, j, valor, ev) {
 function destruir(estado, iid, ev, causa) {
   const loc = localizar(estado, iid);
   if (!loc || (loc.zona !== "monstros" && loc.zona !== "magias" && loc.zona !== "campo")) return;
+  if (causa === "batalha" && loc.zona === "monstros" && carta(estado, iid).efeito === "irmaollow") {
+    ev.push({ t: "indestrutivel", j: loc.j, iid });
+    return;
+  }
   ev.push({ t: "destruida", iid, j: loc.j, causa });
   const equipado = loc.zona === "magias" ? loc.obj.equipadoEm : null;
   removerDoCampo(estado, iid, ev, causa);
@@ -1540,29 +1665,45 @@ function chamarOutroManoel(estado, j, iid, ev) {
   aposEspecial(estado, j, escolhido, ev);
 }
 
-// Tira a carta do campo e manda para o Cemitério do dono (equipamentos presos a ela vão junto)
+// Tira a carta do campo e manda para o dono: Cemitério, mão (causa "mao") ou banidas (causa "banida").
+// O "Grande Mestre do Caos" com a face para cima é banido em vez de ir para qualquer outro lugar.
+// Equipamentos presos a um monstro que sai vão para o Cemitério. Devolve para onde a carta foi.
 function removerDoCampo(estado, iid, ev, causa) {
   const loc = localizar(estado, iid);
-  if (!loc) return;
+  if (!loc) return null;
   const p = estado.jogadores[loc.j];
   if (loc.zona === "campo") p.campo = null;
   else p[loc.zona][loc.slot] = null;
-  p.cemiterio.push(iid);
-  const vaiFicarNoCemiterio = causa !== "banida" && causa !== "mao";
-  if (vaiFicarNoCemiterio && loc.zona === "monstros") {
-    chegouAoCemiterio(estado, loc.j, iid, ev);
-    if (carta(estado, iid).efeito === "george") georgeNoCemiterio(estado, loc.j, iid, ev);
+  const dono = donoDe(iid);
+  const q = estado.jogadores[dono];
+  const caos = causa !== "banida" && loc.zona === "monstros" && loc.obj.face && carta(estado, iid).efeito === "mestre-caos";
+  let destino;
+  if (causa === "banida" || caos) {
+    (q.banidas ||= []).push(iid);
+    destino = "banida";
+    if (caos) ev.push({ t: "banida", j: dono, iid });
+  } else if (causa === "mao") {
+    maoDoDono(estado, iid).push(iid);
+    destino = "mao";
+  } else {
+    q.cemiterio.push(iid);
+    destino = "cemiterio";
+    if (loc.zona === "monstros") {
+      chegouAoCemiterio(estado, dono, iid, ev);
+      if (carta(estado, iid).efeito === "george") georgeNoCemiterio(estado, dono, iid, ev);
+    }
   }
   if (loc.zona === "monstros") {
-    for (let q = 0; q < 2; q++) {
-      estado.jogadores[q].magias.forEach((m) => {
+    for (let k = 0; k < 2; k++) {
+      estado.jogadores[k].magias.forEach((m) => {
         if (m && m.equipadoEm === iid) {
-          ev.push({ t: "destruida", iid: m.iid, j: q, causa: "equipamento" });
-          removerDoCampo(estado, m.iid, ev, causa);
+          ev.push({ t: "destruida", iid: m.iid, j: k, causa: "equipamento" });
+          removerDoCampo(estado, m.iid, ev, "equipamento");
         }
       });
     }
   }
+  return destino;
 }
 
 // Banir: a carta sai do jogo de vez (não vai para o Cemitério e nada a traz de volta)
@@ -1570,30 +1711,43 @@ function banir(estado, iid, ev) {
   const loc = localizar(estado, iid);
   if (!loc || (loc.zona !== "monstros" && loc.zona !== "magias" && loc.zona !== "campo")) return;
   removerDoCampo(estado, iid, ev, "banida");
-  const p = estado.jogadores[loc.j];
-  p.cemiterio.splice(p.cemiterio.indexOf(iid), 1);
-  (p.banidas ||= []).push(iid);
-  ev.push({ t: "banida", j: loc.j, iid });
+  ev.push({ t: "banida", j: donoDe(iid), iid });
+}
+
+// Carta que já está no Cemitério é banida (Grande Mestre do Caos)
+function banirDoCemiterio(estado, iid, ev) {
+  const q = estado.jogadores[donoDe(iid)];
+  const i = q.cemiterio.indexOf(iid);
+  if (i < 0) return;
+  q.cemiterio.splice(i, 1);
+  (q.banidas ||= []).push(iid);
+  ev.push({ t: "banida", j: donoDe(iid), iid });
+}
+
+// Mão do dono da carta. No Tag 2vs2 a carta volta para a mão do membro que é dono dela
+// (as cartas do 2º membro de cada time têm o prefixo "c" ou "d"), mesmo que seja o parceiro.
+function maoDoDono(estado, iid) {
+  const p = estado.jogadores[donoDe(iid)];
+  if (!ehTag(estado)) return p.mao;
+  const membro = iid[0] === "c" || iid[0] === "d" ? 1 : 0;
+  return membro === (p.ativo || 0) ? p.mao : p.reserva.mao;
 }
 
 // Monstro do campo volta para a mão do dono (equipamentos presos a ele vão para o Cemitério)
-// Mão do dono da carta. No Tag 2vs2 a carta volta para a mão do membro que é dono dela
-// (as cartas do 2º membro de cada time têm o prefixo "c" ou "d"), mesmo que seja o parceiro.
-function maoDoDono(estado, j, iid) {
-  const p = estado.jogadores[j];
-  if (!ehTag(estado)) return p.mao;
-  const membro = iid[0] === "c" || iid[0] === "d" ? 1 : 0;
-  return membro === p.ativo ? p.mao : p.reserva.mao;
-}
-
 function devolverParaMao(estado, iid, ev) {
   const loc = localizar(estado, iid);
   if (!loc || loc.zona !== "monstros") return;
-  removerDoCampo(estado, iid, ev, "mao");
-  const p = estado.jogadores[loc.j];
-  p.cemiterio.splice(p.cemiterio.indexOf(iid), 1);
-  maoDoDono(estado, loc.j, iid).push(iid);
-  ev.push({ t: "paraMao", j: loc.j, iid });
+  if (removerDoCampo(estado, iid, ev, "mao") === "mao") ev.push({ t: "paraMao", j: donoDe(iid), iid });
+}
+
+// Carta do Cemitério de j volta para a mão do dono (Big Animal, Grande Mestre do Caos)
+function recuperarDoCemiterio(estado, j, iid, ev) {
+  const p = estado.jogadores[j];
+  const i = p.cemiterio.indexOf(iid);
+  if (i < 0) return;
+  p.cemiterio.splice(i, 1);
+  maoDoDono(estado, iid).push(iid);
+  ev.push({ t: "recuperada", j, iid });
 }
 
 // Magia/Armadilha que terminou de resolver
@@ -1680,6 +1834,12 @@ function passarTurno(estado, ev) {
     }
   }
   if (estado.vencedor !== null) return;
+  // Controle Carecal: os monstros emprestados voltam para quem os controlava
+  estado.jogadores.forEach((q, k) => {
+    q.monstros.forEach((m, s) => {
+      if (m && m.emprestado) devolverControle(estado, k, s, ev);
+    });
+  });
   // Carecas da Luz Reveladora do outro jogador: conta um turno do oponente
   const donoLuz = oponente(terminou);
   estado.jogadores[donoLuz].magias.forEach((m) => {
@@ -1781,10 +1941,7 @@ function resolverEscolha(estado, j, alvos, ev) {
     return null;
   }
   if (pend.efeito === "big") {
-    const p = estado.jogadores[j];
-    p.cemiterio.splice(p.cemiterio.indexOf(alvos[0]), 1);
-    maoDoDono(estado, j, alvos[0]).push(alvos[0]);
-    ev.push({ t: "busca", j, iid: alvos[0] });
+    recuperarDoCemiterio(estado, j, alvos[0], ev);
     return null;
   }
   if (pend.efeito === "davi") {

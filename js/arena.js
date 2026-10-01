@@ -14,11 +14,11 @@
 
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo,
-} from "./motor.js?v=202610010214";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610010214";
-import { el, esperar, aviso } from "./util.js?v=202610010214";
-import { tocar } from "./som.js?v=202610010214";
-import { abrirDetalhes } from "./catalogo.js?v=202610010214";
+} from "./motor.js?v=202610011351";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610011351";
+import { el, esperar, aviso } from "./util.js?v=202610011351";
+import { tocar } from "./som.js?v=202610011351";
+import { abrirDetalhes } from "./catalogo.js?v=202610011351";
 
 const raiz = document.querySelector("#arena");
 
@@ -73,6 +73,13 @@ const FRASES = {
   egoismo: "EGOÍSMO PURO!",
   zoologico: "BEM-VINDO AO ZOOLÓGICO!",
   gole: "O ÚLTIMO GOLE!",
+  irmaollow: "FOFINHO E INDESTRUTÍVEL!",
+  controle: "ESSE CARECA AGORA É MEU!",
+  menino: "O MENINO MENTIU!",
+  "mestre-caos": "O CAOS CHEGOU!",
+  upstart: "MOEDINHA PRO OPONENTE!",
+  jinreca: "ARMADILHA AQUI NÃO!",
+  "mil-facas": "MIL FACAS!",
 };
 
 const PROVOCACOES = ["😂 Chora não!", "🧑‍🦲 Careca demais!", "💨 Vapo!", "🤡 Tá com medo?", "🔥 Joga logo!", "👋 GG"];
@@ -369,7 +376,7 @@ function infoJogador(estado, j, lado) {
     nome.append(asa);
   }
   const barra = el("div", "barra-pl");
-  barra.style.setProperty("--pct", `${Math.max(0, (p.pl / PL_INICIAL) * 100)}%`);
+  barra.style.setProperty("--pct", `${Math.min(100, Math.max(0, (p.pl / PL_INICIAL) * 100))}%`);
   barra.dataset.perigo = String(p.pl <= 2000);
   barra.append(el("span", "barra-pl__cheio"), el("span", "barra-pl__valor", `${p.pl} LP`));
   barra.setAttribute("role", "img");
@@ -507,6 +514,11 @@ function zonaCarta(estado, j, zona, slot) {
     const dup = el("span", "selo-marcador selo-marcador--duplo", "⚔×2");
     dup.title = "Pode atacar duas vezes neste turno";
     z.append(dup);
+  }
+  if (zona === "monstros" && obj.emprestado) {
+    const ct = el("span", "selo-marcador selo-marcador--controle", "🧠");
+    ct.title = "Controle Carecal: volta para o dono na Fase Final";
+    z.append(ct);
   }
   if (zona === "monstros" && equipamentos(estado, obj.iid)) {
     const eq = el("span", "selo-equip", "✚");
@@ -672,6 +684,13 @@ function descreverEvento(estado, ev) {
     case "banida": return { texto: `🚫 ${nome(ev.iid)} foi banido do jogo.`, classe: "log--armadilha" };
     case "paraMao": return { texto: `↩️ ${nome(ev.iid)} voltou para a mão de ${quem(ev.j)}.`, classe: "log--armadilha" };
     case "ajusteDeck": return { texto: `⚠️ ${ev.nick ? `O deck de ${ev.nick} tinha` : ev.j === eu ? "Seu deck tinha" : `O deck de ${quem(ev.j)} tinha`} ${ev.trocadas} carta${ev.trocadas > 1 ? "s" : ""} acima do limite: ${ev.trocadas > 1 ? "viraram" : "virou"} Careca Feijão.`, classe: "log--turno" };
+    case "indestrutivel": return { texto: `🛡️ ${nome(ev.iid)} não pode ser destruído em batalha.`, classe: "log--armadilha" };
+    case "controle": return { texto: `🧠 ${quem(ev.j)} tomou o controle de ${nome(ev.iid)} até a Fase Final!`, classe: "log--armadilha" };
+    case "controleVolta": return ev.semZona
+      ? { texto: `${nome(ev.iid)} não tinha zona livre para voltar e foi para o Cemitério.`, classe: "log--destruida" }
+      : { texto: `↩️ ${nome(ev.iid)} voltou para o campo de ${quem(ev.j)}.`, classe: minha };
+    case "ganhoPV": return { texto: `💚 ${quem(ev.j)} ganhou ${ev.valor} LP (${ev.pl}).`, classe: minha };
+    case "recuperada": return { texto: `${quem(ev.j)} adicionou ${nome(ev.iid)} do Cemitério à mão.`, classe: minha };
     case "protegido": return { texto: `🪽 ${ev.j === eu ? "Você não sofreu" : `${quem(ev.j)} não sofreu`} ${ev.valor} de dano de batalha (Karecoh Alado).`, classe: "log--armadilha" };
     case "posicao": return { texto: `${nome(ev.iid)} mudou para ${ev.pos === "atk" ? "Ataque" : "Defesa"}.`, classe: minha };
     case "descarte": return { texto: `${quem(ev.j)} descartou ${nome(ev.iid)}.`, classe: minha };
@@ -1027,6 +1046,25 @@ async function tocarEventos(eventos, estadoNovo) {
         mostrarDano(ev.j, 0, null, "🪽 0");
         await esperar(500);
         break;
+      case "indestrutivel": {
+        const alvo = raiz.querySelector(`.campo [data-iid="${ev.iid}"]`);
+        tocar("magia");
+        if (alvo) {
+          alvo.classList.add("protecao");
+          await esperar(450);
+        }
+        break;
+      }
+      case "ganhoPV":
+        tocar("magia");
+        mostrarDano(ev.j, ev.valor, ev.pl, `+${ev.valor}`, "numero-dano--cura");
+        await esperar(550);
+        break;
+      case "controle":
+      case "controleVolta":
+        tocar("magia");
+        await esperar(300);
+        break;
       case "dano":
         tocar("dano");
         mostrarDano(ev.j, ev.valor, ev.pl);
@@ -1104,23 +1142,23 @@ async function animarAtaque(ev) {
 }
 
 // pl = null: não mexe na barra (ex.: dano evitado pelo Karecoh Alado)
-function mostrarDano(j, valor, pl, texto = `-${valor}`) {
+function mostrarDano(j, valor, pl, texto = `-${valor}`, classeExtra = "") {
   const info = refs.placar.querySelector(`.jogador-info[data-j="${j}"]`);
   if (!info) return;
   const barra = info.querySelector(".barra-pl");
   if (pl !== null) {
-    barra.style.setProperty("--pct", `${Math.max(0, (pl / PL_INICIAL) * 100)}%`);
+    barra.style.setProperty("--pct", `${Math.min(100, Math.max(0, (pl / PL_INICIAL) * 100))}%`);
     barra.dataset.perigo = String(pl <= 2000);
     barra.querySelector(".barra-pl__valor").textContent = `${pl} LP`;
   }
-  const numero = el("div", "numero-dano" + (pl === null ? " numero-dano--protegido" : ""), texto);
+  const numero = el("div", "numero-dano" + (pl === null ? " numero-dano--protegido" : "") + (classeExtra ? ` ${classeExtra}` : ""), texto);
   const r = barra.getBoundingClientRect();
   const base = raiz.getBoundingClientRect();
   numero.style.left = `${r.left - base.left + r.width / 2 - 30}px`;
   numero.style.top = `${r.bottom - base.top + 4}px`;
   raiz.append(numero);
   setTimeout(() => numero.remove(), 1200);
-  tremerTela();
+  if (!classeExtra) tremerTela();
 }
 
 

@@ -92,7 +92,13 @@ function tamanhoTexto(texto) {
   if (n < 80) return "3.7cqw";
   if (n < 130) return "3.4cqw";
   if (n < 175) return "3.15cqw";
-  return "2.9cqw";
+  if (n < 280) return "2.9cqw";
+  // textos enormes (Davi, George, Big Animal, Grande Mestre do Caos...): letra menor para caber na caixa
+  if (n < 295) return "2.75cqw";
+  if (n < 330) return "2.45cqw";
+  if (n < 440) return "2.2cqw";
+  if (n < 500) return "2.05cqw";
+  return "1.95cqw";
 }
 
 function el(tag, classe, texto) {

@@ -322,7 +322,7 @@ const VALOR_NA_MAO = {
   vapo: 9, "forca-careca": 8, "tributo-destruir-monstro": 7, soco: 6, "tributo-destruir-magias": 6,
   "armadilha-big": 6, luz: 6, penetra: 5, saideira: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
   "flip-descartar": 5, "flip-comprar": 4, karecoh: 4,
-  wellington: 5, "mestre-laminas": 6, lamento: 5, gole: 5, "sai-daqui": 6, "manoel-gelo": 4, "gelo-careca": 5, "pote-gelo": 4, "flip-buscar-magia": 4,
+  wellington: 5, "mestre-laminas": 6, lamento: 5, gole: 5, "sai-daqui": 6, "adm-ditador": 7, "manoel-gelo": 4, "gelo-careca": 5, "pote-gelo": 4, "flip-buscar-magia": 4,
 };
 
 function valorNaMao(estado, j, iid) {

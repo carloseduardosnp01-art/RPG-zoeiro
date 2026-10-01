@@ -59,6 +59,7 @@ const FRASES = {
   "pote-gelo": "POTE DO GELO!",
   lamento: "VOLTOU DO ALÉM!",
   "sai-daqui": "SAI DAQUI, OBESO!",
+  "adm-ditador": "BANIDO PELO ADM!",
   gole: "O ÚLTIMO GOLE!",
 };
 
@@ -605,6 +606,7 @@ function descreverEvento(estado, ev) {
     case "aoDeck": return { texto: `${quem(ev.j)} devolveu ${ev.j === eu ? nome(ev.iid) : "uma carta"} ao deck.`, classe: minha };
     case "ataqueDuplo": return { texto: `⚔️ ${nome(ev.iid)} pode atacar duas vezes neste turno!`, classe: minha };
     case "custo": return { texto: `${quem(ev.j)} pagou ${ev.valor} PV (${ev.pl}).`, classe: "log--dano" };
+    case "banida": return { texto: `🚫 ${nome(ev.iid)} foi banido do jogo.`, classe: "log--armadilha" };
     case "paraMao": return { texto: `↩️ ${nome(ev.iid)} voltou para a mão de ${quem(ev.j)}.`, classe: "log--armadilha" };
     case "ajusteDeck": return { texto: `⚠️ ${ev.j === eu ? "Seu deck tinha" : `O deck de ${quem(ev.j)} tinha`} ${ev.trocadas} carta${ev.trocadas > 1 ? "s" : ""} acima do limite: ${ev.trocadas > 1 ? "viraram" : "virou"} Careca Feijão.`, classe: "log--turno" };
     case "protegido": return { texto: `🪽 ${ev.j === eu ? "Você não sofreu" : `${quem(ev.j)} não sofreu`} ${ev.valor} de dano de batalha (Karecoh Alado).`, classe: "log--armadilha" };
@@ -928,6 +930,18 @@ async function tocarEventos(eventos, estadoNovo) {
         mostrarDano(ev.j, ev.valor, ev.pl);
         await esperar(450);
         break;
+      case "banida": {
+        const alvo = raiz.querySelector(`.campo [data-iid="${ev.iid}"]`);
+        tocar("destruida");
+        if (alvo) {
+          alvo.style.transition = "transform .45s ease, opacity .45s ease, filter .45s ease";
+          alvo.style.filter = "grayscale(1) brightness(2)";
+          alvo.style.transform = "scale(.2) rotate(25deg)";
+          alvo.style.opacity = "0";
+          await esperar(480);
+        }
+        break;
+      }
       case "paraMao": {
         const alvo = raiz.querySelector(`.campo [data-iid="${ev.iid}"]`);
         if (alvo) {

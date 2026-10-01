@@ -168,6 +168,7 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT028 | Sai Daqui Obeso | Armadilha | – | Oponente atacou → o atacante volta para a mão dele |
 | ZOE-PT029 | O Último Gole **(limitada a 1)** | Magia de Equipamento | – | Dobra o ATK de 1 monstro; no fim do turno ele é destruído |
 | ZOE-PT030 | O Herói do Lamento | Monstro Normal · LUZ · Nv 7 · 2500/2000 | – | Guerreiro das estrelas |
+| ZOE-PT031 | ADM Ditador **(limitada a 2)** | Armadilha | – | Oponente Invocou (qualquer tipo, inclusive Especial) um monstro com 1500+ de ATK → esse monstro é banido (sai do jogo) |
 
 **Cartas limitadas:** algumas cartas fortes só podem ter 1 (ou 2) cópias por deck (o campo `"limite"` em `data/cartas.json`; `0` = banida). O editor não deixa passar do limite e não salva um deck acima dele. Se um jogador entrar num duelo com cópias acima do limite (um deck salvo antes da carta ser limitada, por exemplo), as sobras viram **Careca Feijão** na hora, mesmo passando de 3 Feijões, e o registro do duelo avisa.
 
@@ -220,7 +221,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
-├── data/cartas.json      # As 30 cartas (texto, stats, cópias no deck padrão, efeito)
+├── data/cartas.json      # As 31 cartas (texto, stats, cópias no deck padrão, efeito)
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```

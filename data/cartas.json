@@ -519,5 +519,20 @@
     "raridade": "Super Rara",
     "copias": 0,
     "imagem": "img/cartas/o-heroi-do-lamento.webp"
+  },
+  {
+    "id": "adm-ditador",
+    "codigo": "ZOE-PT031",
+    "nome": "ADM Ditador",
+    "categoria": "armadilha",
+    "subtipo": "normal",
+    "efeito": "adm-ditador",
+    "limite": 2,
+    "texto": "Quando seu oponente Invocar um monstro com 1500 ou mais de ATK: bana esse monstro.",
+    "comoFunciona": "Automática e limitada a 2 por deck. A partir do turno seguinte ao que foi baixada, pega o primeiro monstro com 1500+ de ATK que o oponente Invocar de qualquer jeito (Normal, Tributo, Flip ou Especial: Carecalla, Invocador, Lamento Prematuro...). O monstro é banido: sai do jogo de vez, não vai para o Cemitério e não ativa efeitos de \"destruído\" (como o do Manoel do Gelo).",
+    "frase": "Aqui quem manda sou eu. Banido do grupo, e do jogo.",
+    "raridade": "Ultra Rara",
+    "copias": 0,
+    "imagem": "img/cartas/adm-ditador.webp"
   }
 ]

@@ -415,6 +415,7 @@ function invocarPenetra(estado, j, { iid, pos = "atk" }, ev) {
   const slot = zonaLivre(p.monstros);
   p.monstros[slot] = { iid, pos: pos === "def" ? "def" : "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
   ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
+  verificarArmadilhas(estado, "invocacao", { j, iid, modo: "especial" }, ev);
   return null;
 }
 
@@ -437,6 +438,7 @@ function invocarGeloCareca(estado, j, { iid, alvos = [] }, ev) {
   const slot = zonaLivre(p.monstros);
   p.monstros[slot] = { iid, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
   ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
+  verificarArmadilhas(estado, "invocacao", { j, iid, modo: "especial" }, ev);
   return null;
 }
 
@@ -714,6 +716,7 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
       p.monstros[slot] = { iid: alvo, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
       ev.push({ t: "invocacao", j, iid: alvo, modo: "especial", slot });
       mandarProCemiterio(estado, iid, ev);
+      verificarArmadilhas(estado, "invocacao", { j, iid: alvo, modo: "especial" }, ev);
       break;
     }
     case "lamento": {
@@ -726,6 +729,7 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
       ev.push({ t: "invocacao", j, iid: alvo, modo: "especial", slot });
       obj.equipadoEm = alvo;
       ev.push({ t: "equipada", j, iid, alvo });
+      verificarArmadilhas(estado, "invocacao", { j, iid: alvo, modo: "especial" }, ev);
       break;
     }
     case "gole":
@@ -782,6 +786,17 @@ function verificarArmadilhas(estado, gatilho, dados, ev) {
     if (!m || m.face || m.turnoBaixada >= estado.turno) continue; // só a partir do turno seguinte
     const c = carta(estado, m.iid);
     if (c.categoria !== "armadilha") continue;
+
+    if (gatilho === "invocacao" && c.efeito === "adm-ditador") {
+      const loc = localizar(estado, dados.iid);
+      if (!loc || loc.zona !== "monstros") continue;
+      if (atkAtual(estado, dados.iid) < 1500) continue;
+      m.face = true;
+      ev.push({ t: "armadilha", j: defensor, iid: m.iid, alvo: dados.iid });
+      banir(estado, dados.iid, ev);
+      mandarProCemiterio(estado, m.iid, ev);
+      return true;
+    }
 
     if (gatilho === "invocacao" && c.efeito === "armadilha-big") {
       if (!["normal", "tributo", "flip"].includes(dados.modo)) continue;
@@ -1034,6 +1049,7 @@ function chamarOutroManoel(estado, j, iid, ev) {
   ev.push({ t: "efeito", j, iid });
   ev.push({ t: "invocacao", j, iid: escolhido, modo: "especial", slot });
   embaralhar(p.deck, sorteioDoEstado(estado));
+  verificarArmadilhas(estado, "invocacao", { j, iid: escolhido, modo: "especial" }, ev);
 }
 
 // Tira a carta do campo e manda para o Cemitério do dono (equipamentos presos a ela vão junto)
@@ -1053,6 +1069,17 @@ function removerDoCampo(estado, iid, ev, causa) {
       });
     }
   }
+}
+
+// Banir: a carta sai do jogo de vez (não vai para o Cemitério e nada a traz de volta)
+function banir(estado, iid, ev) {
+  const loc = localizar(estado, iid);
+  if (!loc || (loc.zona !== "monstros" && loc.zona !== "magias")) return;
+  removerDoCampo(estado, iid, ev, "banida");
+  const p = estado.jogadores[loc.j];
+  p.cemiterio.splice(p.cemiterio.indexOf(iid), 1);
+  (p.banidas ||= []).push(iid);
+  ev.push({ t: "banida", j: loc.j, iid });
 }
 
 // Monstro do campo volta para a mão do dono (equipamentos presos a ele vão para o Cemitério)

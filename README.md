@@ -186,7 +186,7 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT037 | Wellington Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1000/900 | – | +500 ATK por VENTO seu com a face para cima; não pode ser atacado se você tiver outro VENTO |
 | ZOE-PT038 | Miqueas Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1900/1200 | – | Descarta da mão para buscar o "Zoológico Animal" |
 | ZOE-PT039 | Midas Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1200/1000 | – | Botão Efeito: devolve 1 VENTO seu para a mão e faz uma Invocação-Normal extra de VENTO |
-| ZOE-PT040 | Big Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1300/1400 | – | Invocação-Especial com "Animal" Nv 5+; ao ser Invocado, na Fase Principal 2 recupera do Cemitério uma carta que mencione "Irmãos Animal" |
+| ZOE-PT040 | Big Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1300/1400 | – | Invocação-Especial com "Animal" Nv 5+; ao ser Invocado, na Fase Principal 2 recupera do Cemitério Egoísmo Puro ou Zoológico Animal |
 | ZOE-PT041 | Emanoel Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1600/1600 | – | Destruído em batalha: busca 1 "Animal" sorteado do deck |
 | ZOE-PT042 | Irmãos Animal | Efeito · VENTO · Besta Alada · Nv 6 · 1950/2100 | – | Só entra pela carta "Egoísmo Puro" |
 | ZOE-PT043 | Egoísmo Puro | Magia | – | Com um "Animal" no campo: Invocação-Especial de 1 "Animal" ou Irmãos Animal da mão ou do deck |

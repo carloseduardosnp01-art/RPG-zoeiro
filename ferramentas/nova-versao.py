@@ -32,4 +32,7 @@ for js in (RAIZ / "js").glob("*.js"):
 # versão usada no fetch das cartas
 trocar(RAIZ / "js" / "app.js", r'const VERSAO = "\w*";', f'const VERSAO = "{versao}";')
 
-print("Versão", versao)
+# versao.json: o site compara com a própria versão e se atualiza sozinho
+(RAIZ / "versao.json").write_text(f'{{ "versao": "{versao}" }}\n', encoding="utf-8")
+
+print("Versao", versao)

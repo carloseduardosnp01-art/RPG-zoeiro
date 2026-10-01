@@ -4,23 +4,46 @@
    pelo endereço (#inicio, #catalogo, #deck, #regras, #salao, #arena).
    ========================================================================== */
 
-import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610010043";
-import { iniciarCatalogo } from "./catalogo.js?v=202610010043";
-import { iniciarEditorDeck } from "./editor-deck.js?v=202610010043";
-import { deckAtual } from "./deck.js?v=202610010043";
-import { iniciarSalao, ativarSalao } from "./salao.js?v=202610010043";
-import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610010043";
-import { criarSessaoBot } from "./sessao.js?v=202610010043";
-import * as conta from "./conta.js?v=202610010043";
-import { alternarSom, somLigado } from "./som.js?v=202610010043";
-import { aviso } from "./util.js?v=202610010043";
+import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610010050";
+import { iniciarCatalogo } from "./catalogo.js?v=202610010050";
+import { iniciarEditorDeck } from "./editor-deck.js?v=202610010050";
+import { deckAtual } from "./deck.js?v=202610010050";
+import { iniciarSalao, ativarSalao } from "./salao.js?v=202610010050";
+import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610010050";
+import { criarSessaoBot } from "./sessao.js?v=202610010050";
+import * as conta from "./conta.js?v=202610010050";
+import { alternarSom, somLigado } from "./som.js?v=202610010050";
+import { aviso } from "./util.js?v=202610010050";
 
 // Número da versão (atualizado por ferramentas/nova-versao.py a cada envio)
-const VERSAO = "202610010043";
+const VERSAO = "202610010050";
 
 const TELAS = ["inicio", "catalogo", "deck", "regras", "salao", "arena"];
 
+// Versão publicada agora (versao.json nunca vem do cache)
+async function versaoPublicada() {
+  try {
+    const resposta = await fetch(`versao.json?t=${Date.now()}`, { cache: "no-store" });
+    return (await resposta.json()).versao || null;
+  } catch {
+    return null; // sem internet ou rodando sem o arquivo: segue com o que tem
+  }
+}
+
+// Se esta página é de uma versão antiga (o navegador guardou em cache), recarrega a nova.
+// Usa um endereço com ?v=... para o navegador não reaproveitar a página guardada.
+async function garantirVersaoAtual() {
+  const publicada = await versaoPublicada();
+  if (!publicada || publicada === VERSAO) return true;
+  const url = new URL(location.href);
+  if (url.searchParams.get("v") === publicada) return true; // já tentou: segue para não ficar em loop
+  url.searchParams.set("v", publicada);
+  location.replace(url.toString());
+  return false;
+}
+
 async function iniciar() {
+  if (!(await garantirVersaoAtual())) return;
   document.querySelectorAll("[data-emblema]").forEach((e) => (e.innerHTML = '<img src="img/emblema.webp" alt="" width="256" height="256">'));
 
   let cartas;
@@ -43,21 +66,23 @@ async function iniciar() {
   addEventListener("hashchange", mostrarTela);
   document.addEventListener("arena-mudou", atualizarFaixa);
   mostrarTela();
-  setInterval(verificarVersaoNova, 3 * 60 * 1000);
+  setInterval(verificarVersaoNova, 60 * 1000);
 }
 
 // Se o GitHub Pages já tem cartas novas e esta página ainda está com as antigas, avisa
 let avisouVersao = false;
 async function verificarVersaoNova() {
   if (avisouVersao) return;
-  try {
-    const resposta = await fetch(`data/cartas.json?v=${Date.now()}`, { cache: "no-store" });
-    const novas = await resposta.json();
-    if (versaoDasCartas(novas) !== versaoDasCartas()) {
-      avisouVersao = true;
-      aviso("Saiu uma versão nova do jogo! Recarregue a página (F5) quando terminar o duelo.", "info", 30000);
-    }
-  } catch { /* sem internet: tenta de novo depois */ }
+  const publicada = await versaoPublicada();
+  if (!publicada || publicada === VERSAO) return;
+  // fora de um duelo, atualiza sozinho; no meio de um duelo, só avisa
+  const sessao = sessaoAtual();
+  if (!(arenaAtiva() && sessao && sessao.estado.vencedor === null)) {
+    garantirVersaoAtual();
+    return;
+  }
+  avisouVersao = true;
+  aviso("Saiu uma versão nova do jogo! Ela entra sozinha quando o duelo acabar (ou aperte F5).", "info", 30000);
 }
 
 function mostrarTela() {

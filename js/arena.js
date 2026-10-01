@@ -14,11 +14,11 @@
 
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada,
-} from "./motor.js?v=202610010043";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610010043";
-import { el, esperar, aviso } from "./util.js?v=202610010043";
-import { tocar } from "./som.js?v=202610010043";
-import { abrirDetalhes } from "./catalogo.js?v=202610010043";
+} from "./motor.js?v=202610010050";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610010050";
+import { el, esperar, aviso } from "./util.js?v=202610010050";
+import { tocar } from "./som.js?v=202610010050";
+import { abrirDetalhes } from "./catalogo.js?v=202610010050";
 
 const raiz = document.querySelector("#arena");
 

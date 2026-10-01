@@ -663,8 +663,8 @@
     "nome": "Miqueas Animal",
     "atk": 1900,
     "efeito": "miqueas-animal",
-    "texto": "O nome desta carta se torna \"Animal\" enquanto estiver no campo ou no Cemitério. Você pode descartar esta carta; adicione 1 \"Animal Zoológico\" do seu deck à sua mão.",
-    "comoFunciona": "Na mão, na sua Fase Principal: opção \"Efeito: descartar para buscar Animal Zoológico\". Ainda não existe a carta \"Animal Zoológico\" no jogo: até ela chegar, a opção não aparece. Enquanto isso, ele é um bom atacante de 1900. O nome desta carta é tratado como \"Animal\" (conta para os efeitos que falam de monstros \"Animal\").",
+    "texto": "O nome desta carta se torna \"Animal\" enquanto estiver no campo ou no Cemitério. Você pode descartar esta carta; adicione 1 \"Zoológico Animal\" do seu deck à sua mão.",
+    "comoFunciona": "Na mão, na sua Fase Principal: opção \"Efeito: descartar para buscar Zoológico Animal\" (aparece quando houver um Zoológico Animal no seu deck). Também é um bom atacante de 1900. O nome desta carta é tratado como \"Animal\" (conta para os efeitos que falam de monstros \"Animal\").",
     "frase": "Pato de academia: peito estufado, pescoço de cisne.",
     "raridade": "Rara",
     "def": 1200,
@@ -746,5 +746,35 @@
     "raridade": "Lendária da Zoeira",
     "def": 2100,
     "imagem": "img/cartas/irmaos-animal.webp"
+  },
+  {
+    "id": "egoismo-puro",
+    "codigo": "ZOE-PT043",
+    "nome": "Egoísmo Puro",
+    "categoria": "magia",
+    "subtipo": "normal",
+    "efeito": "egoismo",
+    "mencionaIrmaos": true,
+    "texto": "Se um \"Animal\" estiver no campo: Invoque por Invocação-Especial 1 \"Animal\" ou \"Irmãos Animal\" da sua mão ou deck.",
+    "comoFunciona": "Precisa de um monstro \"Animal\" com a face para cima no campo (de qualquer lado). Você escolhe 1 monstro com \"Animal\" no nome da mão ou do deck e ele entra em Posição de Ataque. É o único jeito de colocar o Irmãos Animal em campo: depois de entrar assim, ele também pode voltar pelo Lamento Prematuro. Conta como carta que menciona \"Irmãos Animal\" (o Thales busca e o Big recupera).",
+    "frase": "Um careca bom é um careca multiplicado.",
+    "raridade": "Ultra Rara",
+    "copias": 0,
+    "imagem": "img/cartas/egoismo-puro.webp"
+  },
+  {
+    "id": "zoologico-animal",
+    "codigo": "ZOE-PT044",
+    "nome": "Zoológico Animal",
+    "categoria": "magia",
+    "subtipo": "campo",
+    "efeito": "zoologico",
+    "mencionaIrmaos": true,
+    "texto": "Todos os monstros do Tipo Besta Alada ganham 200 de ATK/DEF. Se qualquer \"Animal\" ou \"Irmãos Animal\" for Invocado por Invocação-Normal ou Especial: o duelista que conduziu a Invocação pode escolher 1 Magia/Armadilha no campo; esse duelista destrói o alvo.",
+    "comoFunciona": "Magia de Campo: fica no campo. Todas as Bestas Aladas (dos dois lados) ganham +200 de ATK e DEF. Cada vez que alguém Invoca (Normal ou Especial) um monstro \"Animal\", quem invocou pode destruir 1 Magia/Armadilha do campo (no turno do outro jogador é automático: destrói uma do oponente, sorteada). Só um Zoológico seu por vez: ativar outro manda o antigo para o Cemitério. O Miqueas Animal busca esta carta; o Thales busca e o Big recupera.",
+    "frase": "Bem-vindo ao zoológico: os animais é que olham para você.",
+    "raridade": "Super Rara",
+    "copias": 0,
+    "imagem": "img/cartas/zoologico-animal.webp"
   }
 ]

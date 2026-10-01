@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNecessarios, validar, alvosDeAtaque,
-} from "./motor.js?v=202610010020";
+} from "./motor.js?v=202610010043";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 
@@ -112,6 +112,17 @@ function* jogadasPrincipais(estado, j) {
     if (ef === "mestre-laminas" && primeira && estado.turno > 1 && p.mao.length >= 3) {
       const pior = [...op.alvos.candidatos].sort((a, b) => valorNaMao(estado, j, a) - valorNaMao(estado, j, b))[0];
       yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [pior] };
+    }
+  }
+
+  // 1e. Zoológico Animal (se ainda não tiver um) e Egoísmo Puro (traz o "Animal" mais forte)
+  for (const { iid, c } of mao) {
+    if (c.efeito === "zoologico" && !p.magias.some((m) => m && m.face && carta(estado, m.iid).efeito === "zoologico")) {
+      if (opcoes(iid).some((x) => x.id === "ativar")) yield { tipo: "ativar", iid };
+    }
+    if (c.efeito === "egoismo") {
+      const op = opcoes(iid).find((x) => x.id === "ativar");
+      if (op) yield { tipo: "ativar", iid, alvos: [[...op.alvos.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0]] };
     }
   }
 
@@ -329,7 +340,7 @@ function escolherAtaque(estado, j) {
 const VALOR_NA_MAO = {
   vapo: 9, "forca-careca": 8, "tributo-destruir-monstro": 7, soco: 6, "tributo-destruir-magias": 6,
   "armadilha-big": 6, luz: 6, penetra: 5, saideira: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
-  "flip-descartar": 5, "flip-comprar": 4, karecoh: 4,
+  "flip-descartar": 5, "flip-comprar": 4, karecoh: 4, egoismo: 6, zoologico: 5,
   wellington: 5, "mestre-laminas": 6, lamento: 5, gole: 5, "sai-daqui": 6, "adm-ditador": 7, "manoel-gelo": 4, "gelo-careca": 5, "pote-gelo": 4, "flip-buscar-magia": 4,
 };
 
@@ -368,6 +379,11 @@ function escolherAlvos(estado, j, pend) {
     return atkAtual(estado, deles[0]) >= 1500 ? [meus[0], deles[0]] : [];
   }
   if (pend.efeito === "midas-invocar") return [];
+  // Zoológico: destrói a melhor Magia/Armadilha do oponente (nunca a minha)
+  if (pend.efeito === "zoologico") {
+    const alvo = melhorMagiaDoOponente(estado, j, pend.candidatos);
+    return alvo ? [alvo] : [];
+  }
   // buscas no deck: a de maior ATK (ou a primeira)
   if (pend.efeito === "davi-cemiterio" || pend.efeito === "thales" || pend.efeito === "big" || pend.efeito === "john-invocar") {
     return [[...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0]];

@@ -43,6 +43,7 @@ const SUBTIPOS_MAGIA = {
   rapida: { nome: "Rápida", icone: "⚡" },
   equipamento: { nome: "Equipamento", icone: "✚" },
   continua: { nome: "Contínua", icone: "∞" },
+  campo: { nome: "Campo", icone: "🏟" },
 };
 
 // Monstros com efeito VIRE (flip)

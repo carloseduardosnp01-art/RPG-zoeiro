@@ -180,15 +180,17 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT031 | ADM Ditador **(limitada a 2)** | Armadilha | – | Oponente Invocou (qualquer tipo, inclusive Especial) um monstro com 1500+ de ATK → esse monstro é banido (sai do jogo) |
 | ZOE-PT032 | David Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1300/1400 | – | Todos os monstros de VENTO ganham 300 de ATK |
 | ZOE-PT033 | Davi Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1700/600 | – | Invocação-Normal: devolve 1 Besta Alada sua + 1 monstro do oponente para a mão. No Cemitério: busca 1 Besta Alada Nv 4 de até 1500 ATK |
-| ZOE-PT034 | Thales Animal **(limitada a 2)** | Efeito · VENTO · Besta Alada · Nv 4 · 1400/1300 | – | Ao ser Invocado: busca Magias/Armadilhas que mencionam "Irmãos Animal" (ainda não existe nenhuma) |
+| ZOE-PT034 | Thales Animal **(limitada a 2)** | Efeito · VENTO · Besta Alada · Nv 4 · 1400/1300 | – | Ao ser Invocado: busca Egoísmo Puro / Zoológico Animal (2 com um "Animal" Nv 5+) |
 | ZOE-PT035 | George Animal | Efeito · VENTO · Dragão · Nv 7 · 2000/2500 | – | "Animal" de Nv 6 ou menos não podem ser atacados; Invocação-Especial em defesa com VENTO Nv ≤ 6; ao ir pro Cemitério manda 1 VENTO Besta Alada do deck pro Cemitério |
 | ZOE-PT036 | John Animal **(limitada a 2)** | Efeito · VENTO · Besta Alada · Nv 4 · 1400/1300 | – | Botão Efeito: descarta 1 "Animal" e chama 1 "Animal" do deck em Defesa |
 | ZOE-PT037 | Wellington Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1000/900 | – | +500 ATK por VENTO seu com a face para cima; não pode ser atacado se você tiver outro VENTO |
-| ZOE-PT038 | Miqueas Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1900/1200 | – | Descarta da mão para buscar "Animal Zoológico" (ainda não existe) |
+| ZOE-PT038 | Miqueas Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1900/1200 | – | Descarta da mão para buscar o "Zoológico Animal" |
 | ZOE-PT039 | Midas Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1200/1000 | – | Botão Efeito: devolve 1 VENTO seu para a mão e faz uma Invocação-Normal extra de VENTO |
 | ZOE-PT040 | Big Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1300/1400 | – | Invocação-Especial com "Animal" Nv 5+; ao ser Invocado, na Fase Principal 2 recupera do Cemitério uma carta que mencione "Irmãos Animal" |
 | ZOE-PT041 | Emanoel Animal | Efeito · VENTO · Besta Alada · Nv 4 · 1600/1600 | – | Destruído em batalha: busca 1 "Animal" sorteado do deck |
-| ZOE-PT042 | Irmãos Animal | Efeito · VENTO · Besta Alada · Nv 6 · 1950/2100 | – | Só entra pela carta "Egoísmo Puro" (ainda não existe) |
+| ZOE-PT042 | Irmãos Animal | Efeito · VENTO · Besta Alada · Nv 6 · 1950/2100 | – | Só entra pela carta "Egoísmo Puro" |
+| ZOE-PT043 | Egoísmo Puro | Magia | – | Com um "Animal" no campo: Invocação-Especial de 1 "Animal" ou Irmãos Animal da mão ou do deck |
+| ZOE-PT044 | Zoológico Animal | Magia de Campo | – | Bestas Aladas +200 ATK/DEF; quem Invocar um "Animal" pode destruir 1 Magia/Armadilha |
 
 **Cartas "Animal":** todo monstro com "Animal" no nome conta como "Animal" para esses efeitos. Para criar uma Magia/Armadilha que o Thales Animal consiga buscar, coloque `"mencionaIrmaos": true` nela em `data/cartas.json`.
 
@@ -243,7 +245,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
-├── data/cartas.json      # As 42 cartas (texto, stats, cópias no deck padrão, efeito)
+├── data/cartas.json      # As 44 cartas (texto, stats, cópias no deck padrão, efeito)
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```

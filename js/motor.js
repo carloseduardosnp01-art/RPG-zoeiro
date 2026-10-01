@@ -247,6 +247,7 @@ export function atkAtual(estado, iid) {
   }
   const loc = localizar(estado, iid);
   if (loc && loc.zona === "monstros" && loc.obj.marcadores) atk += 300 * loc.obj.marcadores;
+  if (c.tipo === "Besta Alada" && loc && loc.zona === "monstros") atk += 200 * zoologicosAtivos(estado);
   if (c.efeito === "wellington-animal" && loc && loc.zona === "monstros") {
     const ventos = estado.jogadores[loc.j].monstros.filter((m) => m && m.face && carta(estado, m.iid).atributo === "VENTO").length;
     atk += 500 * ventos;
@@ -278,8 +279,28 @@ const ehMonstroGelo = (c) => c.categoria === "monstro" && c.atributo === "GELO";
 const ehCartaGelo = (c) => c.atributo === "GELO" || c.nome.toLowerCase().includes("gelo");
 
 export function defAtual(estado, iid) {
-  return carta(estado, iid).def;
+  const c = carta(estado, iid);
+  const loc = localizar(estado, iid);
+  let def = c.def;
+  if (c.tipo === "Besta Alada" && loc && loc.zona === "monstros") def += 200 * zoologicosAtivos(estado);
+  return def;
 }
+
+// Quantos "Zoológico Animal" com a face para cima existem no campo (dos dois lados)
+function zoologicosAtivos(estado) {
+  return estado.jogadores.flatMap((p) => p.magias).filter((m) => m && m.face && carta(estado, m.iid).efeito === "zoologico").length;
+}
+
+// Zoológico Animal: um "Animal" foi Invocado (Normal ou Especial) -> quem invocou pode destruir 1 Magia/Armadilha
+function gatilhoZoologico(estado, j, iid) {
+  if (!ehAnimal(carta(estado, iid)) || localizar(estado, iid)?.zona !== "monstros") return;
+  for (let k = 0; k < zoologicosAtivos(estado); k++) {
+    (estado.gatilhos ||= []).push({ tipo: "zoologico", j, iid, turno: estado.turno });
+  }
+}
+
+// Irmãos Animal que já entraram direito (pela Egoísmo Puro) podem voltar por outros efeitos
+const liberado = (estado, iid) => (estado.liberadas || []).includes(iid);
 
 // Monstros no campo (iids), de um jogador ou dos dois
 export function monstrosEmCampo(estado, j = null) {
@@ -478,6 +499,7 @@ function aposEspecial(estado, j, iid, ev) {
   if (estado.vencedor !== null) return;
   if (carta(estado, iid).efeito === "thales") gatilhoThales(estado, j, iid);
   if (carta(estado, iid).efeito === "big-animal") marcarBigMP2(estado, j, iid);
+  gatilhoZoologico(estado, j, iid);
 }
 
 // Big Animal: ao ser Invocado, na Fase Principal 2 deste turno pode recuperar do Cemitério
@@ -548,8 +570,8 @@ const alvosDoJohn = (estado, j) => {
   });
 };
 
-// "Animal Zoológico" no deck (busca do Miqueas Animal)
-const ehAnimalZoologico = (c) => c.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === "animal zoologico";
+// "Zoológico Animal" no deck (busca do Miqueas Animal)
+const ehAnimalZoologico = (c) => c.id === "zoologico-animal";
 
 // George Animal: Invocação-Especial da mão em defesa se você controla um monstro de VENTO de Nível 6 ou menos
 export function podeInvocarGeorge(estado, j, iid) {
@@ -625,6 +647,7 @@ function aposInvocar(estado, j, iid, modo, ev) {
   }
   if ((modo === "normal" || modo === "tributo") && c.efeito === "thales") gatilhoThales(estado, j, iid);
   if ((modo === "normal" || modo === "tributo") && c.efeito === "big-animal") marcarBigMP2(estado, j, iid);
+  if ((modo === "normal" || modo === "tributo") && localizar(estado, iid)?.zona === "monstros") gatilhoZoologico(estado, j, iid);
 
   if ((modo === "normal" || modo === "tributo") && c.efeito === "wellington") {
     const loc = localizar(estado, iid);
@@ -802,7 +825,7 @@ export function requisitosMagia(estado, j, iid) {
         : null;
     }
     case "lamento": {
-      const candidatos = p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && !carta(estado, x).somenteEspecial);
+      const candidatos = p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && (!carta(estado, x).somenteEspecial || liberado(estado, x)));
       if (!candidatos.length || zonaLivre(p.monstros) < 0 || p.pl <= 800) return null;
       return { alvos: { candidatos, min: 1, max: 1, titulo: "Lamento Prematuro (paga 800 PV): escolha o monstro do seu Cemitério que volta" } };
     }
@@ -812,6 +835,24 @@ export function requisitosMagia(estado, j, iid) {
         ? { alvos: { candidatos, min: 1, max: 1, titulo: "O Último Gole: o monstro escolhido dobra o ATK e é destruído no fim do turno" } }
         : null;
     }
+    case "egoismo": {
+      const temAnimal = estado.jogadores.some((q) => q.monstros.some((m) => m && m.face && ehAnimal(carta(estado, m.iid))));
+      if (!temAnimal || zonaLivre(p.monstros) < 0) return null;
+      const vistos = new Set();
+      const candidatos = [...p.mao, ...p.deck].filter((x) => {
+        const m = carta(estado, x);
+        if (!ehAnimal(m)) return false;
+        const chave = (p.mao.includes(x) ? "mao:" : "deck:") + m.id;
+        if (vistos.has(chave)) return false;
+        vistos.add(chave);
+        return true;
+      });
+      return candidatos.length
+        ? { alvos: { candidatos, min: 1, max: 1, titulo: "Egoísmo Puro: escolha o \"Animal\" (ou Irmãos Animal) da mão ou do deck que entra" } }
+        : null;
+    }
+    case "zoologico":
+      return { alvos: null };
     case "pote-gelo": {
       const candidatos = p.mao.filter((x) => x !== iid && ehCartaGelo(carta(estado, x)));
       return candidatos.length >= 2
@@ -899,6 +940,25 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
     case "gole":
       obj.equipadoEm = alvos[0];
       ev.push({ t: "equipada", j, iid, alvo: alvos[0] });
+      break;
+    case "egoismo": {
+      const alvo = alvos[0];
+      const doDeck = p.deck.includes(alvo);
+      (doDeck ? p.deck : p.mao).splice((doDeck ? p.deck : p.mao).indexOf(alvo), 1);
+      if (doDeck) embaralhar(p.deck, sorteioDoEstado(estado));
+      const slot = zonaLivre(p.monstros);
+      p.monstros[slot] = { iid: alvo, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+      if (carta(estado, alvo).somenteEspecial) (estado.liberadas ||= []).push(alvo);
+      ev.push({ t: "invocacao", j, iid: alvo, modo: "especial", slot });
+      mandarProCemiterio(estado, iid, ev);
+      aposEspecial(estado, j, alvo, ev);
+      break;
+    }
+    case "zoologico":
+      // Magia de Campo: só um Zoológico seu por vez (o antigo vai para o Cemitério)
+      p.magias.forEach((m) => {
+        if (m && m.iid !== iid && m.face && carta(estado, m.iid).efeito === "zoologico") mandarProCemiterio(estado, m.iid, ev);
+      });
       break;
     case "pote-gelo":
       for (const alvo of alvos) {
@@ -1034,6 +1094,23 @@ function processarGatilhos(estado, ev) {
         return m.categoria === "monstro" && m.tipo === "Besta Alada" && m.nivel === 4 && m.atk <= 1500;
       });
       titulo = `${c.nome} (no Cemitério): você pode adicionar 1 Besta Alada de Nível 4 com até 1500 de ATK do deck à mão`;
+    } else if (g.tipo === "zoologico") {
+      const alvos = magiasEmCampo(estado);
+      if (!alvos.length) continue;
+      if (!meuTurno) {
+        // fora do próprio turno: destrói uma do oponente, se houver
+        const deles = alvos.filter((x) => localizar(estado, x).j !== dono);
+        if (deles.length) {
+          ev.push({ t: "efeito", j: dono, iid: g.iid });
+          destruir(estado, deles[Math.floor(sorteioDoEstado(estado)() * deles.length)], ev, "efeito");
+        }
+        continue;
+      }
+      estado.pendente = {
+        tipo: "alvo", efeito: "zoologico", jogador: dono, origem: g.iid, candidatos: alvos, min: 0, max: 1,
+        titulo: "Zoológico Animal: você pode destruir 1 Magia/Armadilha do campo",
+      };
+      continue;
     } else if (g.tipo === "big") {
       candidatos = estado.jogadores[dono].cemiterio.filter((x) => carta(estado, x).mencionaIrmaos);
       titulo = `${c.nome}: você pode recuperar do Cemitério 1 Magia/Armadilha que mencione "Irmãos Animal"`;
@@ -1172,7 +1249,7 @@ function efeitoMonstro(estado, j, { iid, alvos = [] }, ev) {
 }
 
 
-// Miqueas Animal: descarta da mão e busca 1 "Animal Zoológico" do deck
+// Miqueas Animal: descarta da mão e busca 1 "Zoológico Animal" do deck
 export function podeUsarMiqueas(estado, j, iid) {
   const p = estado.jogadores[j];
   return ehFasePrincipal(estado) && estado.vez === j && p.mao.includes(iid) && carta(estado, iid).efeito === "miqueas-animal" &&
@@ -1180,7 +1257,7 @@ export function podeUsarMiqueas(estado, j, iid) {
 }
 
 function efeitoMao(estado, j, { iid }, ev) {
-  if (!podeUsarMiqueas(estado, j, iid)) return "Não há \"Animal Zoológico\" no seu deck para buscar.";
+  if (!podeUsarMiqueas(estado, j, iid)) return "Não há \"Zoológico Animal\" no seu deck para buscar.";
   ev.push({ t: "efeito", j, iid });
   descartar(estado, j, iid, ev);
   const alvo = estado.jogadores[j].deck.find((x) => ehAnimalZoologico(carta(estado, x)));
@@ -1589,6 +1666,10 @@ function resolverEscolha(estado, j, alvos, ev) {
     invocacaoNormalExtra(estado, j, alvos[0], ev);
     return null;
   }
+  if (pend.efeito === "zoologico") {
+    destruir(estado, alvos[0], ev, "efeito");
+    return null;
+  }
   if (pend.efeito === "big") {
     const p = estado.jogadores[j];
     p.cemiterio.splice(p.cemiterio.indexOf(alvos[0]), 1);
@@ -1611,6 +1692,7 @@ export function escolhaAutomatica(estado, pend) {
   if (pend.tipo === "descarte") return pend.candidatos.slice(0, pend.min);
   if (pend.efeito === "flip-descartar" || pend.efeito === "flip-buscar-magia") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "davi-cemiterio" || pend.efeito === "thales" || pend.efeito === "big" || pend.efeito === "john-invocar") return pend.candidatos.slice(0, 1);
+  if (pend.efeito === "zoologico") return pend.candidatos.filter((x) => localizar(estado, x).j !== pend.jogador).slice(0, 1);
   if (pend.efeito === "midas-invocar") return [];
   if (pend.efeito === "davi") return [];
   const doOponente = pend.candidatos.filter((x) => localizar(estado, x).j !== j);
@@ -1651,7 +1733,7 @@ export function opcoesDaCarta(estado, j, iid) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial (tem \"Animal\" de Nível 5+)", acao: { tipo: "invocarEspecial", iid } });
       }
       if (podeUsarMiqueas(estado, j, iid)) {
-        opcoes.push({ id: "efeito", rotulo: "Efeito: descartar para buscar \"Animal Zoológico\"", acao: { tipo: "efeitoMao", iid } });
+        opcoes.push({ id: "efeito", rotulo: "Efeito: descartar para buscar \"Zoológico Animal\"", acao: { tipo: "efeitoMao", iid } });
       }
       if (podeInvocarGeorge(estado, j, iid)) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial em Defesa (tem monstro de VENTO)", acao: { tipo: "invocarEspecial", iid } });

@@ -12,15 +12,15 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610020317";
-import * as conta from "./conta.js?v=202610020317";
-import * as adm from "./admin.js?v=202610020317";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610020317";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610020317";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610020317";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610020317";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610020317";
-import { tocar } from "./som.js?v=202610020317";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610020328";
+import * as conta from "./conta.js?v=202610020328";
+import * as adm from "./admin.js?v=202610020328";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610020328";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610020328";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610020328";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610020328";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610020328";
+import { tocar } from "./som.js?v=202610020328";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -461,7 +461,10 @@ async function receberPresente(dados) {
 
 function receberPerfil(perfil, topico) {
   const chave = topico.split("/").pop();
-  if (perfil && chave === conta.usuarioAtual()?.chave) conta.sincronizarComRemoto(perfil);
+  if (chave === conta.usuarioAtual()?.chave) {
+    if (perfil) conta.sincronizarComRemoto(perfil);
+    else conta.republicarPerfil(); // alguém apagou o meu perfil do servidor
+  }
   if (perfil) s.perfis.set(chave, perfil);
   else s.perfis.delete(chave);
   desenharRanking();

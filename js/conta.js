@@ -9,8 +9,9 @@
    Uma cópia fica no navegador; se o broker "esquecer", o login republica.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610020317";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610020317";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610020328";
+import { verificarPresente } from "./admin.js?v=202610020328";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610020328";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -116,7 +117,7 @@ export async function entrar({ nick, senha, lembrar = true }) {
 
   // Junta o perfil do broker com o do navegador (o deck mais recente e as estatísticas maiores)
   const remoto = await lerRetido(topicoPerfil(chave));
-  let perfil = mesclarPerfis(local?.perfil, remoto);
+  let perfil = juntarComRemoto(local?.perfil, await limparRemoto(remoto, Boolean(local?.perfil)));
   if (!perfil) perfil = { chave, nick: nick.trim(), tag: "", avatar: "careca-feijao", vitorias: 0, derrotas: 0, xp: 0, atualizado: Date.now() };
   if (!perfil.id) perfil = { ...perfil, id: novoIdJogador() }; // contas antigas ganham o ID no próximo login
   if (JSON.stringify(perfil) !== JSON.stringify(remoto)) publicar(topicoPerfil(chave), perfil, { reter: true });
@@ -180,8 +181,49 @@ export function mesclarPerfis(a, b) {
   perfil.historico = juntarHistoricos(a.historico, b.historico);
   // o ID nunca muda; se dois aparelhos sortearem ao mesmo tempo, os dois escolhem o mesmo
   perfil.id = a.id && b.id ? (a.id < b.id ? a.id : b.id) : a.id || b.id;
-  perfil.presentes = [...new Set([...(a.presentes || []), ...(b.presentes || [])])].slice(-300);
+  const porId = new Map();
+  for (const x of [...presentesDe(a), ...presentesDe(b)]) porId.set(x.id, x);
+  perfil.presentes = [...porId.values()].sort((x, y) => (x.t || 0) - (y.t || 0)).slice(-200);
+  perfil.presentesContados = [...new Set([...contadosDe(a), ...contadosDe(b)])].slice(-300);
   return perfil;
+}
+
+// Presentes guardados no perfil: o presente inteiro, com a assinatura do ADM
+const presentesDe = (p) => (p?.presentes || []).filter((x) => x && typeof x === "object" && x.id && Number.isInteger(x.coins) && x.coins > 0 && x.coins <= 100000);
+// Presentes da versão anterior (só o id, e as moedas já estão em coinsGanhas)
+const contadosDe = (p) => [...(p?.presentesContados || []), ...(p?.presentes || []).filter((x) => typeof x === "string")];
+
+/* ---------- Proteção contra quem mexe no perfil dos outros ----------
+   O servidor de mensagens é público: qualquer um consegue publicar no perfil de outra pessoa.
+   Por isso, ao juntar a cópia do servidor com a do próprio dono, nada que DIMINUA o saldo
+   é aceito de lá:
+     - coinsGastas vale só o do aparelho do dono (o servidor não consegue "gastar" por ele);
+     - presentes só entram com a assinatura do ADM conferida (não dá para inventar);
+     - a lista de presentes "já contados" vale só a do dono (não dá para bloquear um presente);
+     - coinsGanhas vale o maior (do servidor só pode subir) e os presentes nunca saem.
+   O dono, quando está online, republica o perfil certo por cima do que foi mexido. */
+async function limparRemoto(remoto, temLocal) {
+  if (!remoto) return null;
+  const validos = [];
+  for (const x of presentesDe(remoto)) {
+    if (x.para === remoto.chave && (await verificarPresente(x))) validos.push(x);
+  }
+  return {
+    ...remoto,
+    coinsGastas: 0,
+    presentes: validos,
+    // sem cópia local (primeiro login neste aparelho) não há outra fonte para os presentes antigos
+    presentesContados: temLocal ? [] : contadosDe(remoto),
+  };
+}
+
+function juntarComRemoto(local, remotoLimpo) {
+  const junto = mesclarPerfis(local, remotoLimpo);
+  if (junto && local) {
+    junto.coinsGastas = local.coinsGastas || 0;
+    junto.presentesContados = contadosDe(local);
+  }
+  return junto;
 }
 
 export const HISTORICO_MAX = 10;
@@ -194,15 +236,22 @@ function juntarHistoricos(a = [], b = []) {
 }
 
 // O salão recebe o perfil do broker (outra aba ou aparelho pode ter mudado): junta com o daqui
-export function sincronizarComRemoto(remoto) {
+export async function sincronizarComRemoto(remoto) {
   if (!usuario || !remoto || remoto.chave !== usuario.chave) return;
-  const junto = mesclarPerfis(usuario, remoto);
+  const limpo = await limparRemoto(remoto, true);
+  if (!usuario || remoto.chave !== usuario.chave) return; // saiu da conta enquanto conferia
+  const junto = juntarComRemoto(usuario, limpo);
   if (JSON.stringify(junto) === JSON.stringify(usuario)) return;
   usuario = junto;
   guardarLocalmente();
   // se o daqui tinha algo mais novo, devolve para o broker
   if (JSON.stringify(junto) !== JSON.stringify(remoto)) publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
   avisar();
+}
+
+// Alguém apagou o meu perfil do servidor: publica de novo
+export function republicarPerfil() {
+  if (usuario) publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
 }
 
 function guardarLocalmente() {
@@ -220,11 +269,12 @@ export const XP_DERROTA = 40;
 export const FATOR_BOT = 0.3; // contra o bot: 30% do XP de uma partida online
 
 // Careca Coins: vitória contra gente de verdade (1vs1 ou Tag 2vs2) vale 5; contra o Bot, 1.
-// O saldo é "ganhas - gastas": os dois totais só aumentam, então juntar cópias do perfil
-// (outra aba, outro aparelho) pelo maior valor nunca perde nem duplica moeda.
+// Saldo = ganhas nos duelos + presentes de ADM - gastas. Os totais só aumentam, então juntar
+// cópias do perfil (outra aba, outro aparelho) pelo maior valor nunca perde nem duplica moeda.
 export const COINS_VITORIA = 5;
 export const COINS_VITORIA_BOT = 1;
-export const saldoCoins = (p) => Math.max(0, (p?.coinsGanhas || 0) - (p?.coinsGastas || 0));
+export const saldoCoins = (p) =>
+  Math.max(0, (p?.coinsGanhas || 0) + presentesDe(p).reduce((t, x) => t + x.coins, 0) - (p?.coinsGastas || 0));
 
 // Soma o resultado de um duelo (uma vez por duelo). Devolve { xp, coins } ganhos.
 // contraBot: vale só 30% do XP e não conta vitória/derrota (o ranking de vitórias é só online)
@@ -263,13 +313,14 @@ export function registrarResultado({ dueloId, venceu, contraBot = false, oponent
   return { xp: ganho, coins };
 }
 
-// Presente de um ADM (já conferido pela assinatura): soma as Careca Coins uma vez só
+// Presente de um ADM (já conferido pela assinatura): guarda o presente inteiro, uma vez só
 export function aplicarPresente(p) {
-  if (!usuario || p.para !== usuario.chave || (usuario.presentes || []).includes(p.id)) return false;
+  if (!usuario || p.para !== usuario.chave) return false;
+  if (presentesDe(usuario).some((x) => x.id === p.id) || contadosDe(usuario).includes(p.id)) return false;
   usuario = {
     ...usuario,
-    coinsGanhas: (usuario.coinsGanhas || 0) + p.coins,
-    presentes: [...(usuario.presentes || []), p.id].slice(-300),
+    presentes: [...presentesDe(usuario), p].slice(-200),
+    presentesContados: contadosDe(usuario),
     atualizado: Date.now(),
   };
   publicar(topicoPerfil(usuario.chave), usuario, { reter: true });

@@ -206,8 +206,8 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT049 | Upstart Gordo | Magia | – | Compra 1 carta e o oponente ganha 1000 PV |
 | ZOE-PT050 | Jinreca | Efeito · TREVAS · Máquina · Nv 6 · 2400/1500 | – | Com a face para cima no campo, nenhuma Armadilha ativa (dos dois lados) |
 | ZOE-PT051 | As Mil Facas do Mestre | Magia | – | Com Grande Mestre ou Grande Mestre do Caos seu no campo: destrói todos os monstros do oponente |
-| ZOE-PT052 | Berinjela do Imenso **(limitada a 2)** | Magia de Equipamento | – | +900 ATK por carta com o mesmo nome do monstro nos dois Cemitérios (todo "Animal" se chama "Animal") |
-| ZOE-PT053 | Revolução Animal **(limitada a 1)** | Armadilha Contínua | – | A única que você ativa (no seu turno, a partir do seguinte ao que baixou): descarta 1 carta e Invoca os "Animal" do Cemitério; se ela sair do campo, eles são destruídos |
+| ZOE-PT052 | Berinjela do Imenso **(limitada a 1)** | Magia de Equipamento | – | +900 ATK por carta com o mesmo nome do monstro nos dois Cemitérios (todo "Animal" se chama "Animal") |
+| ZOE-PT053 | Revolução Animal **(limitada a 2)** | Armadilha Contínua | – | A única que você ativa (no seu turno, a partir do seguinte ao que baixou): descarta 1 carta e Invoca os "Animal" do Cemitério; se ela sair do campo, eles são destruídos |
 | ZOE-PT054 | Rafaza the Careca **(limitada a 2)** | Efeito · TREVAS · Guerreiro · Nv 3 · 1300/800 | – | Ataca 2 vezes em toda Batalha; o Controle Carecal não pega ele |
 | ZOE-PT055 | Os Negão Pegaram Ele | Efeito · TERRA · Guerreiro · Nv 4 · 1000/1000 | – | Botão Efeito: vai como Tributo e destrói 1 monstro do campo |
 | ZOE-PT056 | Mirasita | Efeito/Virar · TERRA · Inseto · Nv 2 · 500/300 | – | VIRE: vai para o deck do oponente; quando ele comprar, entra em Defesa do lado dele, ele leva 1000 e os monstros dele viram Insetos |

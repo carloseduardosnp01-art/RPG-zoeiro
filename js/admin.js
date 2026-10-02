@@ -6,7 +6,7 @@
    e presentes de ADM vão assinados; sem assinatura válida, não vale.
    ========================================================================== */
 
-import { guardar } from "./util.js?v=202610020328";
+import { guardar } from "./util.js?v=202610022032";
 
 // Chaves públicas dos ADMs (as secretas ficam só com eles). Para trocar uma chave,
 // gere um par novo e troque aqui: a antiga deixa de valer na hora.
@@ -134,4 +134,38 @@ export async function verificarPresenca(p) {
 
 export async function verificarPresente(p) {
   return Boolean(p) && ehAdmin(p.de) && Number.isInteger(p.coins) && p.coins > 0 && p.coins <= 100000 && conferir(p.de, textoPresente(p), p.assinatura);
+}
+
+
+/* ---------- Troféus, relíquias e torneio ---------- */
+
+// Prêmio: { id, item ("ouro", "prata", "bronze", "careca-do-milenio"), torneio, para, de, deNick, t, assinatura }
+const textoPremio = (p) => `premio|${p.id}|${p.item}|${p.torneio}|${p.para}|${p.de}|${p.t}`;
+// Torneio: o estado inteiro, assinado pelo ADM que organiza
+const textoTorneio = (t) => {
+  const { assinatura, ...resto } = t;
+  return `torneio|${JSON.stringify(resto)}`;
+};
+
+export async function assinarPremio(p) {
+  if (!souAdm(p.de)) throw new Error("Só ADM pode dar troféus e relíquias.");
+  return { ...p, assinatura: await assinarTexto(textoPremio(p)) };
+}
+
+// As telas conferem os mesmos prêmios muitas vezes: guarda a resposta por assinatura
+const premiosConferidos = new Map();
+export function verificarPremio(p) {
+  if (!p || !ehAdmin(p.de) || typeof p.item !== "string" || !p.assinatura) return Promise.resolve(false);
+  const chave = `${p.id}|${p.assinatura}`;
+  if (!premiosConferidos.has(chave)) premiosConferidos.set(chave, conferir(p.de, textoPremio(p), p.assinatura));
+  return premiosConferidos.get(chave);
+}
+
+export async function assinarTorneio(t) {
+  if (!souAdm(t.organizador)) throw new Error("Só o ADM que criou o torneio pode mexer nele.");
+  return { ...t, assinatura: await assinarTexto(textoTorneio(t)) };
+}
+
+export async function verificarTorneio(t) {
+  return Boolean(t) && ehAdmin(t.organizador) && conferir(t.organizador, textoTorneio(t), t.assinatura);
 }

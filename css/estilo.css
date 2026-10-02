@@ -1585,6 +1585,313 @@ a:hover {
   color: var(--ouro-claro);
 }
 
+/* Troféus e relíquias no perfil */
+.premios__titulo {
+  margin: .7rem 0 .4rem;
+  color: var(--ouro-claro);
+  font-size: .9rem;
+  font-weight: 800;
+}
+
+.premios__trofeus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.premios__trofeu {
+  width: 74px;
+  margin: 0;
+  text-align: center;
+}
+
+.premios__trofeu img {
+  width: 100%;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .6));
+}
+
+.premios__trofeu figcaption {
+  color: var(--texto-suave);
+  font-size: .62rem;
+  line-height: 1.15;
+}
+
+.reliquia {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: .3rem .6rem;
+  align-items: center;
+  margin-bottom: .5rem;
+  padding: .5rem;
+  background: linear-gradient(180deg, rgba(255, 200, 60, .12), rgba(255, 200, 60, .03));
+  border: 1px solid rgba(255, 200, 80, .4);
+  border-radius: .6rem;
+}
+
+.reliquia--equipada {
+  border-color: #ffd75a;
+  box-shadow: 0 0 12px rgba(255, 210, 80, .35);
+}
+
+.reliquia__img {
+  width: 56px;
+  height: 56px;
+  border-radius: .45rem;
+}
+
+.reliquia__texto strong {
+  display: block;
+  color: #ffe9a6;
+}
+
+.reliquia__de {
+  color: var(--texto-suave);
+  font-size: .72rem;
+}
+
+.reliquia__texto p {
+  margin: .15rem 0 0;
+  font-size: .78rem;
+}
+
+.reliquia .btn {
+  grid-column: 1 / -1;
+}
+
+/* Torneio */
+.btn-torneio {
+  position: relative;
+  color: #1b1208;
+  font-weight: 800;
+  background: linear-gradient(180deg, #ffe08a, #d9a21b);
+  border: 1px solid #ffe9a6;
+}
+
+.btn-torneio:hover {
+  color: #1b1208;
+  filter: brightness(1.08);
+}
+
+.btn-torneio[data-ativo="true"]::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 11px;
+  height: 11px;
+  background: #ff4d4d;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  animation: pulsar-torneio 1.4s ease-in-out infinite;
+}
+
+@keyframes pulsar-torneio {
+  50% { transform: scale(1.35); }
+}
+
+.torneio__topo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+}
+
+.torneio__nome {
+  margin: 0;
+  color: var(--ouro-claro);
+  font-size: 1.3rem;
+}
+
+.torneio__status {
+  padding: .1rem .55rem;
+  font-size: .78rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, .08);
+  border-radius: 1rem;
+}
+
+.torneio__status--inscricoes { color: #9fe7ff; }
+.torneio__status--andamento { color: #6dff9a; }
+.torneio__status--encerrado { color: #ffd75a; }
+
+.torneio__sub,
+.torneio__vazio {
+  color: var(--texto-suave);
+  font-size: .85rem;
+}
+
+.torneio__titulo {
+  margin: .6rem 0 .4rem;
+  color: var(--ouro-claro);
+  font-size: .95rem;
+  font-weight: 800;
+}
+
+.torneio__linha {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .4rem;
+}
+
+.torneio__inscritos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-bottom: .7rem;
+}
+
+.torneio__jogador {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-width: 0;
+  padding: .15rem .5rem .15rem .2rem;
+  font-size: .85rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 1rem;
+}
+
+.torneio__jogador img {
+  width: 24px;
+  height: 24px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.torneio__jogador--eu {
+  color: #6dffb0;
+  border-color: rgba(109, 255, 176, .5);
+}
+
+.torneio__remover {
+  margin-left: .2rem;
+  padding: 0 .3rem;
+  color: #ff8a7a;
+  font-weight: 900;
+  line-height: 1;
+  background: none;
+  border: 0;
+}
+
+.torneio__chave {
+  display: flex;
+  gap: .8rem;
+  overflow-x: auto;
+  padding-bottom: .4rem;
+}
+
+.torneio__rodada {
+  display: flex;
+  flex: 0 0 230px;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.torneio__partida {
+  padding: .45rem .5rem;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: .6rem;
+}
+
+.torneio__partida--minha {
+  border-color: rgba(109, 255, 176, .6);
+}
+
+.torneio__partida--jogando {
+  box-shadow: 0 0 0 2px rgba(255, 210, 80, .6);
+}
+
+.torneio__lado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .3rem;
+  padding: .12rem 0;
+}
+
+.torneio__lado--venceu .torneio__jogador {
+  color: #ffd75a;
+  border-color: #ffd75a;
+}
+
+.torneio__placar {
+  min-width: 1.2rem;
+  font-size: 1rem;
+  text-align: right;
+}
+
+.torneio__a-definir {
+  color: var(--texto-suave);
+  font-size: .8rem;
+  font-style: italic;
+}
+
+.torneio__estado {
+  margin-top: .25rem;
+  color: var(--texto-suave);
+  font-size: .75rem;
+}
+
+.torneio__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+  margin-top: .4rem;
+}
+
+.torneio__acoes .btn {
+  padding: .1rem .4rem;
+  font-size: .72rem;
+}
+
+.torneio__lugares {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.torneio__lugar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .2rem;
+  width: 150px;
+  text-align: center;
+}
+
+.torneio__lugar img {
+  width: 100%;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .7));
+}
+
+.torneio__lugar--ouro img {
+  width: 120%;
+}
+
+.torneio__lugar span {
+  color: var(--texto-suave);
+  font-size: .78rem;
+}
+
+@media (max-width: 575.98px) {
+  .torneio__chave {
+    flex-direction: column;
+  }
+
+  .torneio__rodada {
+    flex-basis: auto;
+  }
+
+  .torneio__lugar {
+    width: 92px;
+  }
+}
+
 /* Careca Coins */
 .selo-coins {
   display: inline-flex;

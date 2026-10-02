@@ -20,16 +20,16 @@
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
         crossorigin="anonymous">
 
-  <link rel="stylesheet" href="css/estilo.css?v=202610020328">
-  <link rel="stylesheet" href="css/carta.css?v=202610020328">
-  <link rel="stylesheet" href="css/arena.css?v=202610020328">
+  <link rel="stylesheet" href="css/estilo.css?v=202610022032">
+  <link rel="stylesheet" href="css/carta.css?v=202610022032">
+  <link rel="stylesheet" href="css/arena.css?v=202610022032">
 
   <!-- Bootstrap (JS) e MQTT.js (conexão em tempo real para o modo online) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
           integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
           crossorigin="anonymous" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js" defer></script>
-  <script type="module" src="js/app.js?v=202610020328"></script>
+  <script type="module" src="js/app.js?v=202610022032"></script>
 </head>
 <body>
   <a class="visually-hidden-focusable pular-link" href="#conteudo">Pular para o conteúdo</a>
@@ -465,6 +465,7 @@
                 <span class="pilula-online"><span aria-hidden="true">👥</span> Online <strong id="contagem-online">0</strong></span>
                 <span class="status-conexao" id="status-conexao" data-status="desconectado">desconectado</span>
                 <div class="ms-auto d-flex gap-2 align-items-center">
+                  <button type="button" class="btn btn-sm btn-torneio" id="botao-torneio" title="Torneio">🏆 Torneio</button>
                   <button type="button" class="btn btn-sm btn-tag" id="botao-mesa-tag" title="Abrir uma mesa de Tag da Zoeira 2vs2">👥 Tag 2vs2</button>
                   <a class="btn-redondo" href="#regras" title="Regras" aria-label="Regras">📖</a>
                   <button type="button" class="btn-redondo" data-treino title="Treinar contra o Bot" aria-label="Treinar contra o Bot">🤖</button>
@@ -587,6 +588,19 @@
           <button type="button" class="btn btn-duelo btn-sm" id="perfil-jogador-desafiar">⚔️ Desafiar para duelo</button>
           <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Torneio -->
+  <div class="modal fade" id="modal-torneio" tabindex="-1" aria-labelledby="titulo-torneio" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="titulo-torneio">🏆 Torneio</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body" id="torneio-corpo"></div>
       </div>
     </div>
   </div>

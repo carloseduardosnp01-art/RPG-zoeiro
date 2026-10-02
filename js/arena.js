@@ -14,13 +14,15 @@
 
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
-} from "./motor.js?v=202610020328";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610020328";
-import { el, esperar, aviso } from "./util.js?v=202610020328";
-import { tocar } from "./som.js?v=202610020328";
-import { abrirDetalhes } from "./catalogo.js?v=202610020328";
-import * as adm from "./admin.js?v=202610020328";
-import { usuarioAtual } from "./conta.js?v=202610020328";
+  podeUsarReliquia,
+} from "./motor.js?v=202610022032";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610022032";
+import { el, esperar, aviso } from "./util.js?v=202610022032";
+import { tocar } from "./som.js?v=202610022032";
+import { abrirDetalhes } from "./catalogo.js?v=202610022032";
+import * as adm from "./admin.js?v=202610022032";
+import { PREMIOS } from "./premios.js?v=202610022032";
+import { usuarioAtual } from "./conta.js?v=202610022032";
 
 const raiz = document.querySelector("#arena");
 
@@ -407,6 +409,7 @@ function infoJogador(estado, j, lado) {
       nome.append(p.nick);
     }
   }
+  if (p.reliquia && PREMIOS[p.reliquia.item]) nome.append(iconeReliquia(p.reliquia));
   if (p.semDanoBatalha === estado.turno) {
     const asa = el("span", "protecao", " 🪽");
     asa.title = "Karecoh Alado: não sofre dano de batalha neste turno";
@@ -425,6 +428,32 @@ function infoJogador(estado, j, lado) {
   avatar.alt = "";
   info.append(nivel, cartas, meio, avatar);
   return info;
+}
+
+// Relíquia no placar: aparece se a assinatura do ADM conferir (a conferência é guardada)
+const reliquiasConferidas = new Map();
+function iconeReliquia(r) {
+  const chave = `${r.id}|${r.assinatura}`;
+  if (!reliquiasConferidas.has(chave)) {
+    reliquiasConferidas.set(chave, null);
+    adm.verificarPremio(r).then((ok) => {
+      reliquiasConferidas.set(chave, ok);
+      if (sessao) desenharPlacar(sessao.estado);
+    });
+  }
+  const ok = reliquiasConferidas.get(chave);
+  const info = PREMIOS[r.item];
+  if (ok === false) {
+    const alerta = el("span", "msg__falso", " ⚠");
+    alerta.title = "Relíquia sem a assinatura de um ADM";
+    return alerta;
+  }
+  const img = el("img", "icone-reliquia");
+  img.src = info.icone;
+  img.alt = info.nome;
+  img.title = `${info.nome}: ${info.texto}`;
+  if (ok === null) img.style.opacity = ".4";
+  return img;
 }
 
 function criarRelogio(estado) {
@@ -652,6 +681,17 @@ function desenharFases(estado) {
     }
     f.append(item);
   });
+  if (euAjo(estado) && podeUsarReliquia(estado, sessao.eu)) {
+    const b = el("button", "fase fase--reliquia", "🔺 Compra do Destino");
+    b.type = "button";
+    b.title = PREMIOS["careca-do-milenio"].texto;
+    b.addEventListener("click", () => {
+      if (ocupado()) return;
+      tocar("clique");
+      agir({ tipo: "reliquia" });
+    });
+    f.append(b);
+  }
 }
 
 function desenharMao(estado) {
@@ -789,6 +829,8 @@ function descreverEvento(estado, ev) {
     case "ajusteDeck": return { texto: `⚠️ ${ev.nick ? `O deck de ${ev.nick} tinha` : ev.j === eu ? "Seu deck tinha" : `O deck de ${quem(ev.j)} tinha`} ${ev.trocadas} carta${ev.trocadas > 1 ? "s" : ""} acima do limite: ${ev.trocadas > 1 ? "viraram" : "virou"} Careca Feijão.`, classe: "log--turno" };
     case "material": return { texto: `${nome(ev.iid)} foi usado como Matéria de Fusão.`, classe: minha };
     case "aoExtra": return { texto: `↩️ ${nome(ev.iid)} voltou para o Deck Adicional de ${quem(ev.j)}.`, classe: "log--armadilha" };
+    case "reliquia": return { texto: `🔺 ${quem(ev.j)} usou a relíquia ${PREMIOS[ev.item]?.nome || ""}: Compra do Destino!`, classe: "log--armadilha" };
+    case "destino": return { texto: ev.j === eu ? `🔺 ${nome(ev.iid)} foi para o topo do seu deck.` : `🔺 ${quem(ev.j)} colocou uma carta no topo do deck.`, classe: minha };
     case "negada": return { texto: `⛔ ${nome(ev.iid)} foi negada e destruída!`, classe: "log--armadilha" };
     case "parasita": return { texto: `🐛 ${nome(ev.iid)} foi embaralhado com a face para cima no deck de ${quem(ev.j)}!`, classe: "log--armadilha" };
     case "indestrutivel": return { texto: `🛡️ ${nome(ev.iid)} não pode ser destruído em batalha.`, classe: "log--armadilha" };
@@ -1247,6 +1289,10 @@ async function tocarEventos(eventos, estadoNovo) {
         }
         break;
       }
+      case "reliquia":
+        tocar("magia");
+        await corteReliquia(ev);
+        break;
       case "parasita":
       case "aoExtra":
       case "paraMao": {
@@ -1310,6 +1356,22 @@ function corte(estado, iid, j, frase, tipo, duracao) {
   fundo.append(conteudo);
   document.body.append(fundo);
   return esperar(duracao).then(() => fundo.remove());
+}
+
+function corteReliquia(ev) {
+  const info = PREMIOS[ev.item];
+  if (!info) return Promise.resolve();
+  const fundo = el("div", "corte");
+  fundo.dataset.tipo = "magia";
+  fundo.style.setProperty("--dur", "1500ms");
+  const conteudo = el("div", "corte__conteudo");
+  const img = el("img", "corte__reliquia");
+  img.src = info.imagem;
+  img.alt = info.nome;
+  conteudo.append(el("div", "corte__quem", nomeJogador(sessao.estado, ev.j)), img, el("div", "corte__frase", "COMPRA DO DESTINO!"));
+  fundo.append(conteudo);
+  document.body.append(fundo);
+  return esperar(1500).then(() => fundo.remove());
 }
 
 function bannerTurno(texto, meu) {

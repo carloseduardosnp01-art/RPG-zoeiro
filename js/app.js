@@ -4,19 +4,19 @@
    pelo endereço (#inicio, #catalogo, #deck, #regras, #salao, #arena).
    ========================================================================== */
 
-import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610020328";
-import { iniciarCatalogo } from "./catalogo.js?v=202610020328";
-import { iniciarEditorDeck } from "./editor-deck.js?v=202610020328";
-import { deckAtual } from "./deck.js?v=202610020328";
-import { iniciarSalao, ativarSalao } from "./salao.js?v=202610020328";
-import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610020328";
-import { criarSessaoBot } from "./sessao.js?v=202610020328";
-import * as conta from "./conta.js?v=202610020328";
-import { alternarSom, somLigado } from "./som.js?v=202610020328";
-import { aviso } from "./util.js?v=202610020328";
+import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610022032";
+import { iniciarCatalogo } from "./catalogo.js?v=202610022032";
+import { iniciarEditorDeck } from "./editor-deck.js?v=202610022032";
+import { deckAtual } from "./deck.js?v=202610022032";
+import { iniciarSalao, ativarSalao } from "./salao.js?v=202610022032";
+import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610022032";
+import { criarSessaoBot } from "./sessao.js?v=202610022032";
+import * as conta from "./conta.js?v=202610022032";
+import { alternarSom, somLigado } from "./som.js?v=202610022032";
+import { aviso } from "./util.js?v=202610022032";
 
 // Número da versão (atualizado por ferramentas/nova-versao.py a cada envio)
-const VERSAO = "202610020328";
+const VERSAO = "202610022032";
 
 const TELAS = ["inicio", "catalogo", "deck", "regras", "salao", "arena"];
 
@@ -122,7 +122,7 @@ function iniciarTreino() {
     return;
   }
   const u = conta.usuarioAtual();
-  const perfil = u ? conta.cartaoPublico(u) : null;
+  const perfil = u ? { ...conta.cartaoPublico(u), reliquia: conta.reliquiaEquipada(u) } : null;
   const treino = () => {
     abrirArena(criarSessaoBot(perfil, deckAtual()), {
       aoTerminar: (estado, eu) => xpDoTreino(estado, eu),

@@ -9,9 +9,10 @@
    Uma cópia fica no navegador; se o broker "esquecer", o login republica.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610020328";
-import { verificarPresente } from "./admin.js?v=202610020328";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610020328";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610022032";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610022032";
+import { ehReliquia } from "./premios.js?v=202610022032";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610022032";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -185,8 +186,14 @@ export function mesclarPerfis(a, b) {
   for (const x of [...presentesDe(a), ...presentesDe(b)]) porId.set(x.id, x);
   perfil.presentes = [...porId.values()].sort((x, y) => (x.t || 0) - (y.t || 0)).slice(-200);
   perfil.presentesContados = [...new Set([...contadosDe(a), ...contadosDe(b)])].slice(-300);
+  const premios = new Map();
+  for (const x of [...premiosDe(a), ...premiosDe(b)]) premios.set(x.id, x);
+  perfil.premios = [...premios.values()].sort((x, y) => (x.t || 0) - (y.t || 0)).slice(-60);
   return perfil;
 }
+
+// Troféus e relíquias: o prêmio inteiro, com a assinatura do ADM
+export const premiosDe = (p) => (p?.premios || []).filter((x) => x && typeof x === "object" && x.id && typeof x.item === "string" && x.assinatura);
 
 // Presentes guardados no perfil: o presente inteiro, com a assinatura do ADM
 const presentesDe = (p) => (p?.presentes || []).filter((x) => x && typeof x === "object" && x.id && Number.isInteger(x.coins) && x.coins > 0 && x.coins <= 100000);
@@ -208,10 +215,15 @@ async function limparRemoto(remoto, temLocal) {
   for (const x of presentesDe(remoto)) {
     if (x.para === remoto.chave && (await verificarPresente(x))) validos.push(x);
   }
+  const premios = [];
+  for (const x of premiosDe(remoto)) {
+    if (x.para === remoto.chave && (await verificarPremio(x))) premios.push(x);
+  }
   return {
     ...remoto,
     coinsGastas: 0,
     presentes: validos,
+    premios,
     // sem cópia local (primeiro login neste aparelho) não há outra fonte para os presentes antigos
     presentesContados: temLocal ? [] : contadosDe(remoto),
   };
@@ -327,6 +339,26 @@ export function aplicarPresente(p) {
   guardarLocalmente();
   avisar();
   return true;
+}
+
+// Troféu ou relíquia de um ADM (já conferido pela assinatura): guarda uma vez só
+export function aplicarPremio(p) {
+  if (!usuario || p.para !== usuario.chave || premiosDe(usuario).some((x) => x.id === p.id)) return false;
+  usuario = { ...usuario, premios: [...premiosDe(usuario), p].slice(-60), atualizado: Date.now() };
+  publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
+  guardarLocalmente();
+  avisar();
+  return true;
+}
+
+// Relíquia equipada (o prêmio assinado), ou null
+export function reliquiaEquipada(p = usuario) {
+  if (!p || !p.reliquia) return null;
+  return premiosDe(p).find((x) => x.id === p.reliquia && ehReliquia(x.item)) || null;
+}
+
+export function equiparReliquia(id) {
+  atualizarPerfil({ reliquia: id || null });
 }
 
 export function atualizarPerfil(mudancas) {

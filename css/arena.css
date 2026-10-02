@@ -1236,6 +1236,31 @@ button.fase:not(:disabled):hover {
   font-weight: 800;
 }
 
+/* Relíquia no placar e o botão da Compra do Destino */
+.icone-reliquia {
+  width: 1.35em;
+  height: 1.35em;
+  margin-left: .3em;
+  vertical-align: -.3em;
+  border-radius: .25em;
+  box-shadow: 0 0 8px rgba(255, 210, 80, .8);
+}
+
+.fase--reliquia {
+  color: #1b1208 !important;
+  font-weight: 900;
+  background: linear-gradient(180deg, #ffe08a, #d9a21b) !important;
+  border-color: #fff3c4 !important;
+  box-shadow: 0 0 12px rgba(255, 210, 80, .8);
+  animation: pulsar-torneio 1.4s ease-in-out infinite;
+}
+
+.corte__reliquia {
+  width: min(60vw, 280px);
+  border-radius: .8rem;
+  box-shadow: 0 0 40px rgba(255, 210, 80, .8);
+}
+
 .resultado__coins {
   display: flex;
   align-items: center;

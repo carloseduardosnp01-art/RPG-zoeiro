@@ -176,6 +176,7 @@ export function novoDuelo({ id, jogadores, semente = Date.now() }) {
       avatar: info.avatar || "",
       nivel: info.nivel || 1,
       bot: Boolean(info.bot),
+      reliquia: info.reliquia || null, // prêmio assinado pelo ADM (ex.: Careca do Milênio)
       pl: PL_INICIAL,
       deck: embaralhar(deck, sorteio),
       extra,
@@ -234,7 +235,7 @@ export function novoDueloTag({ id, jogadores, semente = Date.now() }) {
       const extra = todas.filter((x) => ehFusao(CARTAS[estado.cartas[x]]));
       return { extra, deck: embaralhar(todas.filter((x) => !extra.includes(x)), sorteio) };
     });
-    const cartoes = membros.map((info) => ({ chave: info.chave, nick: info.nick, tag: info.tag || "", avatar: info.avatar || "", nivel: info.nivel || 1 }));
+    const cartoes = membros.map((info) => ({ chave: info.chave, nick: info.nick, tag: info.tag || "", avatar: info.avatar || "", nivel: info.nivel || 1, reliquia: info.reliquia || null }));
     // mão inicial do membro que espera
     const maoReserva = decks[1].deck.splice(-MAO_INICIAL).reverse();
     estado.jogadores.push({
@@ -275,7 +276,8 @@ function proximoMembro(estado, j, ev) {
     [p.mao, p.reserva.mao] = [p.reserva.mao, p.mao];
     [p.extra, p.reserva.extra] = [p.reserva.extra || [], p.extra || []];
     p.ativo = 1 - p.ativo;
-    Object.assign(p, { nick: p.membros[p.ativo].nick, tag: p.membros[p.ativo].tag, avatar: p.membros[p.ativo].avatar, nivel: p.membros[p.ativo].nivel });
+    const m = p.membros[p.ativo];
+    Object.assign(p, { nick: m.nick, tag: m.tag, avatar: m.avatar, nivel: m.nivel, reliquia: m.reliquia || null });
     ev.push({ t: "troca", j, nick: p.nick });
   }
   p.turnosJogados++;
@@ -545,8 +547,38 @@ function executarAcao(estado, j, acao, ev) {
     case "atacar": return atacar(estado, j, acao, ev);
     case "fase": return mudarFase(estado, j, acao, ev);
     case "escolher": return resolverEscolha(estado, j, acao.alvos || [], ev);
+    case "reliquia": return usarReliquia(estado, j, ev);
     default: return "Ação desconhecida.";
   }
+}
+
+
+/* ---------- 4b. Relíquias ---------- */
+
+// Careca do Milênio (Compra do Destino): 1 vez por duelo (no Tag, 1 vez por membro), na sua
+// Fase Principal, com 4000 PV ou menos: escolhe qualquer carta do deck e coloca no topo.
+export const PV_COMPRA_DO_DESTINO = 4000;
+
+export function podeUsarReliquia(estado, j) {
+  const p = estado.jogadores[j];
+  return p.reliquia?.item === "careca-do-milenio" && quemAge(estado) === j && estado.vez === j && !estado.pendente &&
+    ehFasePrincipal(estado) && p.pl <= PV_COMPRA_DO_DESTINO && p.deck.length > 0 && !(p.reliquiasUsadas || []).includes(p.ativo || 0);
+}
+
+function usarReliquia(estado, j, ev) {
+  if (!podeUsarReliquia(estado, j)) {
+    return `A Compra do Destino só pode ser usada 1 vez por duelo, na sua Fase Principal, com ${PV_COMPRA_DO_DESTINO} PV ou menos.`;
+  }
+  const p = estado.jogadores[j];
+  (p.reliquiasUsadas ||= []).push(p.ativo || 0);
+  ev.push({ t: "reliquia", j, item: p.reliquia.item });
+  const vistos = new Set();
+  const candidatos = p.deck.filter((x) => !vistos.has(estado.cartas[x]) && vistos.add(estado.cartas[x]));
+  estado.pendente = {
+    tipo: "alvo", efeito: "destino", jogador: j, origem: null, candidatos, min: 1, max: 1,
+    titulo: "Compra do Destino: escolha a carta que vai para o topo do seu deck",
+  };
+  return null;
 }
 
 
@@ -2417,6 +2449,17 @@ function resolverEscolha(estado, j, alvos, ev) {
     return null;
   }
 
+  if (pend.efeito === "destino") {
+    // a carta escolhida vai para o topo (a próxima compra é ela)
+    const p = estado.jogadores[j];
+    const i = p.deck.indexOf(alvos[0]);
+    if (i >= 0) {
+      p.deck.splice(i, 1);
+      p.deck.push(alvos[0]);
+    }
+    ev.push({ t: "destino", j, iid: alvos[0] });
+    return null;
+  }
   if (!alvos.length) return null; // escolheu não fazer nada
   ev.push({ t: "efeito", j, iid: pend.origem, alvos });
   if (pend.efeito === "flip-descartar") {
@@ -2470,6 +2513,7 @@ export function escolhaAutomatica(estado, pend) {
   if (pend.efeito === "zoologico") return pend.candidatos.filter((x) => localizar(estado, x).j !== pend.jogador).slice(0, 1);
   if (pend.efeito === "midas-invocar") return [];
   if (pend.efeito === "revolucao") return pend.candidatos.slice(0, pend.max);
+  if (pend.efeito === "destino") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "fusao") return paresDeFusao(estado, j, pend.fusao)[0] || [];
   if (pend.efeito === "davi") return [];
   const doOponente = pend.candidatos.filter((x) => localizar(estado, x).j !== j);

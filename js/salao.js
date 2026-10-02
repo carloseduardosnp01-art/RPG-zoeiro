@@ -12,15 +12,17 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610020328";
-import * as conta from "./conta.js?v=202610020328";
-import * as adm from "./admin.js?v=202610020328";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610020328";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610020328";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610020328";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610020328";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610020328";
-import { tocar } from "./som.js?v=202610020328";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610022032";
+import * as conta from "./conta.js?v=202610022032";
+import * as adm from "./admin.js?v=202610022032";
+import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610022032";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610022032";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610022032";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610022032";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610022032";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610022032";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610022032";
+import { tocar } from "./som.js?v=202610022032";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -35,6 +37,8 @@ const T = {
   pedidos: (id) => `${PREFIXO}/mesas/${id}/pedidos`,
   presentes: (chave) => `${PREFIXO}/presentes/${chave}/+`,
   presente: (chave, id) => `${PREFIXO}/presentes/${chave}/${id}`,
+  premios: (chave) => `${PREFIXO}/premios/${chave}/+`,
+  premio: (chave, id) => `${PREFIXO}/premios/${chave}/${id}`,
 };
 const EMOJIS = ["😂", "😎", "😡", "😱", "💀", "🤡", "🏆", "⚔️", "🔥", "👀", "👍", "👎", "👋", "🧑‍🦲", "💨", "🪤", "🍺", "🤝"];
 const PRESENCA_VALIDA = 80 * 1000;
@@ -102,6 +106,7 @@ async function garantirConexao() {
   assinar(T.chat, receberChatGlobal);
   assinar(T.perfis, receberPerfil);
   assinar(T.mesas, receberMesa);
+  iniciarTorneio({ SID, entrarNoDuelo, avisarChat, perfis: () => s.perfis, entregarPremio });
   lerRetido(T.historico).then((lista) => {
     if (Array.isArray(lista)) lista.forEach((m) => adicionarMensagemGlobal(m, false));
   });
@@ -121,6 +126,7 @@ async function atualizarUsuario(usuario) {
   if (usuario && s.chaveAtual === usuario.chave && s.cancelarUsuario.length) {
     desenharPerfil();
     publicarPresenca();
+    atualizarTorneio();
     return;
   }
   s.chaveAtual = usuario ? usuario.chave : null;
@@ -128,13 +134,18 @@ async function atualizarUsuario(usuario) {
   s.cancelarUsuario = [];
   clearInterval(s.batimento);
 
-  if (!usuario) return;
+  if (!usuario) {
+    atualizarTorneio();
+    return;
+  }
   await adm.carregarAdm(usuario.chave);
   desenharPerfil();
   if (!(await garantirConexao()) || !conta.usuarioAtual()) return;
 
   s.cancelarUsuario.push(assinar(T.dm(usuario.chave), receberDM));
   s.cancelarUsuario.push(assinar(T.presentes(usuario.chave), receberPresente));
+  s.cancelarUsuario.push(assinar(T.premios(usuario.chave), receberPremio));
+  atualizarTorneio();
   publicarPresenca();
   s.batimento = setInterval(publicarPresenca, 25000);
   desenharAbas();
@@ -372,7 +383,7 @@ function desenharPerfil() {
   });
   botoes.prepend(trocar);
 
-  area.append(topo, barra, stats, deck, botoes, grade);
+  area.append(topo, barra, stats, secaoPremios(u, true), deck, botoes, grade);
   if (adm.ehAdmin(u.chave)) area.append(painelAdm(u));
 }
 
@@ -449,6 +460,118 @@ function linhaId(p) {
     navigator.clipboard?.writeText(p.id).then(() => aviso(`ID ${p.id} copiado!`, "ok"), () => {});
   });
   return b;
+}
+
+/* ---------- Troféus e relíquias ---------- */
+
+// Mostra os troféus e as relíquias do jogador (só os que têm a assinatura do ADM conferida).
+// No meu perfil, dá para equipar a relíquia.
+function secaoPremios(p, meu) {
+  const sec = el("section", "premios");
+  const lista = conta.premiosDe(p).filter((x) => x.para === p.chave && PREMIOS[x.item]);
+  if (!lista.length) return sec;
+  Promise.all(lista.map((x) => adm.verificarPremio(x))).then((oks) => {
+    const validos = lista.filter((_, i) => oks[i]);
+    if (!validos.length) return;
+    const trofeus = validos.filter((x) => ehTrofeu(x.item)).sort((a, b) => PREMIOS[a.item].ordem - PREMIOS[b.item].ordem || b.t - a.t);
+    const reliquias = validos.filter((x) => ehReliquia(x.item));
+    if (trofeus.length) {
+      sec.append(el("h4", "premios__titulo", "🏆 Troféus"));
+      const linha = el("div", "premios__trofeus");
+      for (const x of trofeus) {
+        const d = el("figure", "premios__trofeu");
+        const img = el("img");
+        img.src = PREMIOS[x.item].imagem;
+        img.alt = PREMIOS[x.item].nome;
+        d.title = `${PREMIOS[x.item].nome} · ${PREMIOS[x.item].posicao} · ${x.torneio}`;
+        d.append(img, el("figcaption", "", x.torneio));
+        linha.append(d);
+      }
+      sec.append(linha);
+    }
+    const mostrar = meu ? reliquias : reliquias.filter((x) => x.id === p.reliquia);
+    if (mostrar.length) {
+      sec.append(el("h4", "premios__titulo", meu ? "🔺 Relíquias" : "🔺 Relíquia equipada"));
+      for (const x of mostrar) {
+        const info = PREMIOS[x.item];
+        const d = el("div", "reliquia" + (p.reliquia === x.id ? " reliquia--equipada" : ""));
+        const img = el("img", "reliquia__img");
+        img.src = info.icone;
+        img.alt = "";
+        const txt = el("div", "reliquia__texto");
+        txt.append(el("strong", "", info.nome), el("span", "reliquia__de", `Prêmio: ${x.torneio}`), el("p", "", info.texto));
+        d.append(img, txt);
+        if (meu) {
+          const equipada = p.reliquia === x.id;
+          const b = el("button", equipada ? "btn btn-sm btn-outline-light" : "btn btn-sm btn-ouro", equipada ? "Equipada ✔ (tirar)" : "Equipar");
+          b.type = "button";
+          b.addEventListener("click", () => {
+            conta.equiparReliquia(equipada ? null : x.id);
+            aviso(equipada ? `${info.nome} guardada.` : `${info.nome} equipada! Ela vai com você para os duelos.`, "ok");
+            tocar("magia");
+          });
+          d.append(b);
+        }
+        sec.append(d);
+      }
+    }
+  });
+  return sec;
+}
+
+// ADM: entregar troféu ou relíquia (prêmio assinado; o jogo do jogador confere e guarda)
+async function entregarPremio(chave, item, torneioNome) {
+  const u = conta.usuarioAtual();
+  if (!u || !adm.souAdm(u.chave)) return;
+  const premio = await adm.assinarPremio({ id: gerarId(12), item, torneio: torneioNome, para: chave, de: u.chave, deNick: u.nick, t: Date.now() });
+  publicar(T.premio(chave, premio.id), premio, { reter: true });
+  const nick = s.perfis.get(chave)?.nick || chave;
+  avisarChat(`${PREMIOS[item].emoji} ${nick} recebeu ${PREMIOS[item].tipo === "reliquia" ? "a relíquia" : "o"} ${PREMIOS[item].nome} (${torneioNome})!`);
+  aviso(`${PREMIOS[item].nome} entregue para ${nick}! Chega assim que ele estiver online.`, "ok");
+}
+
+function formPremio(p) {
+  const form = el("form", "painel-adm painel-adm--presente");
+  form.append(el("h4", "painel-adm__titulo", `🏆 Entregar prêmio para ${p.nick}`));
+  const linha = el("div", "painel-adm__linha");
+  const item = el("select", "form-select form-select-sm");
+  item.setAttribute("aria-label", "Prêmio");
+  for (const [id, info] of Object.entries(PREMIOS)) {
+    const o = el("option", "", `${info.emoji} ${info.nome}`);
+    o.value = id;
+    item.append(o);
+  }
+  const nome = el("input", "form-control form-control-sm");
+  nome.maxLength = 40;
+  nome.required = true;
+  nome.placeholder = "Torneio (ex.: Copa Careca #1)";
+  nome.setAttribute("aria-label", "Nome do torneio");
+  const botao = el("button", "btn btn-sm btn-ouro", "Entregar");
+  botao.type = "submit";
+  linha.append(item, nome, botao);
+  form.append(linha);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!nome.value.trim()) return;
+    await entregarPremio(p.chave, item.value, nome.value.trim());
+  });
+  return form;
+}
+
+async function receberPremio(dados) {
+  const u = conta.usuarioAtual();
+  if (!dados || !u || dados.para !== u.chave || !PREMIOS[dados.item] || !(await adm.verificarPremio(dados))) return;
+  if (!conta.aplicarPremio(dados)) return;
+  const info = PREMIOS[dados.item];
+  aviso(`${info.emoji} Você recebeu ${info.tipo === "reliquia" ? "a relíquia" : "o"} ${info.nome} (${dados.torneio})!${info.tipo === "reliquia" ? " Equipe no seu perfil." : ""}`, "ok", 9000);
+  tocar("vitoria");
+}
+
+// Aviso de ADM no chat (assinado)
+async function avisarChat(texto) {
+  const u = conta.usuarioAtual();
+  if (!u || !adm.souAdm(u.chave)) return;
+  enviarGlobal(await adm.assinarMsg({ id: gerarId(), tipo: "aviso", de: conta.cartaoPublico(), texto, t: Date.now() }));
 }
 
 // Presente de ADM chegou: confere a assinatura e soma as moedas (uma vez só)
@@ -636,7 +759,7 @@ function abrirPerfil(cartao) {
     const quando = new Date(d.t);
     li.append(el("span", "historico__data", `${quando.toLocaleDateString("pt-BR")} às ${quando.toLocaleTimeString("pt-BR")} - `));
     li.append(el("span", d.venceu ? "historico__venceu" : "historico__perdeu", d.venceu ? "Venceu" : "Perdeu"));
-    li.append(d.tipo === "bot" ? " um treino contra " : d.tipo === "tag" ? " um Tag 2vs2 contra " : " um duelo contra ");
+    li.append(d.tipo === "bot" ? " um treino contra " : d.tipo === "tag" ? " um Tag 2vs2 contra " : d.tipo === "torneio" ? " uma partida de torneio contra " : " um duelo contra ");
     const contra = d.contra ? `${d.contra.tag ? `[${d.contra.tag}] ` : ""}${d.contra.nick}` : "alguém";
     if (d.tipo !== "bot" && d.contra && d.contra.chave) {
       li.append(botaoPerfil({ chave: d.contra.chave, nick: d.contra.nick, tag: d.contra.tag }, contra, "historico__oponente"));
@@ -650,8 +773,8 @@ function abrirPerfil(cartao) {
   if (!(p.historico || []).length) lista.append(el("li", "historico__vazio", "Nenhum duelo registrado ainda."));
   historico.append(lista);
 
-  corpo.append(topo, stats, historico);
-  if (u && adm.souAdm(u.chave)) corpo.append(formPresente(p));
+  corpo.append(topo, stats, secaoPremios(p, false), historico);
+  if (u && adm.souAdm(u.chave)) corpo.append(formPremio(p), formPresente(p));
 
   const botaoDesafiar = $("#perfil-jogador-desafiar");
   const souEu = u && p.chave === u.chave;
@@ -973,7 +1096,7 @@ function receberDM(dados) {
       const d = s.desafios.get(dados.duelo);
       if (!d || !d.meu || d.estado !== "pendente") return;
       mudarDesafio(d, "aceito");
-      comecarComoAnfitriao(d, dados.de, dados.deck);
+      comecarComoAnfitriao(d, dados.de, dados.deck, dados.reliquia);
       break;
     }
     case "recusa":
@@ -1093,7 +1216,7 @@ function aceitarDesafio(d) {
   }
   mudarDesafio(d, "aceito");
   mudarStatusDuelo("aguardando");
-  enviarDM(d.com.chave, { tipo: "aceite", duelo: d.id, deck: deckAtual() });
+  enviarDM(d.com.chave, { tipo: "aceite", duelo: d.id, deck: deckAtual(), reliquia: conta.reliquiaEquipada() });
 
   // O desafiante cria o duelo e publica o estado inicial
   let cancelar = () => {};
@@ -1111,13 +1234,18 @@ function aceitarDesafio(d) {
 }
 
 // Quem desafiou cria o duelo: cada um joga com o próprio deck (o motor confere se vale)
-function comecarComoAnfitriao(d, oponente, deckOponente) {
+async function comecarComoAnfitriao(d, oponente, deckOponente, reliquia) {
+  // a relíquia do oponente só vale com a assinatura do ADM (e tem que ser dele)
+  const reliquiaOponente = reliquia && reliquia.para === oponente.chave && ehReliquia(reliquia.item) && (await adm.verificarPremio(reliquia)) ? reliquia : null;
   if (!Array.isArray(deckOponente) || problemaDoDeck(deckOponente, { comLimite: false })) {
     aviso(`O deck de ${oponente.nick} não veio certo; ele vai jogar com o deck padrão. Se continuar, recarreguem a página.`, "erro", 9000);
   }
   const { estado, eventos } = novoDuelo({
     id: d.id,
-    jogadores: [{ ...conta.cartaoPublico(), deck: deckAtual() }, { ...oponente, deck: Array.isArray(deckOponente) ? deckOponente : undefined }],
+    jogadores: [
+      { ...conta.cartaoPublico(), deck: deckAtual(), reliquia: conta.reliquiaEquipada() },
+      { ...oponente, deck: Array.isArray(deckOponente) ? deckOponente : undefined, reliquia: reliquiaOponente },
+    ],
     semente: crypto.getRandomValues(new Uint32Array(1))[0],
   });
   publicar(topicosDuelo(d.id).estado, { seq: estado.seq, estado, eventos, autor: SID }, { reter: true });
@@ -1142,10 +1270,10 @@ function entrarNoDuelo(estado, eventos) {
       mudarStatusDuelo("livre");
       guardar.apagar(DUELO_ATIVO);
       // o anfitrião limpa o estado retido do broker
-      if (eu === 0) publicar(topicosDuelo(estado.id).estado, null, { reter: true });
+      if (eu === 0 && !estado.torneio) publicar(topicosDuelo(estado.id).estado, null, { reter: true });
       location.hash = "#salao";
     },
-    revanche: () => {
+    revanche: estado.torneio ? undefined : () => {
       mudarStatusDuelo("livre");
       guardar.apagar(DUELO_ATIVO);
       fecharArena();
@@ -1159,7 +1287,7 @@ function entrarNoDuelo(estado, eventos) {
 function terminarDuelo(estado, eu) {
   if (ehTag(estado)) return terminarTag(estado, eu);
   const venceu = estado.vencedor === eu;
-  const { xp, coins } = conta.registrarResultado({ dueloId: estado.id, venceu, oponente: estado.jogadores[1 - eu], motivo: estado.motivo });
+  const { xp, coins } = conta.registrarResultado({ dueloId: estado.id, venceu, oponente: estado.jogadores[1 - eu], motivo: estado.motivo, tipo: estado.torneio ? "torneio" : null });
   mudarStatusDuelo("livre");
   guardar.apagar(DUELO_ATIVO);
   desenharPerfil();
@@ -1218,7 +1346,7 @@ const VERSAO_SITE = new URL(document.querySelector('script[type="module"][src*="
 const versaoMesa = () => `${versaoDasCartas()}/${VERSAO_SITE}`;
 
 const mesaExpirada = (m) => m.estado === "aberta" && Date.now() - (m.atualizado || 0) > MESA_EXPIRA;
-const cartaoMesa = () => ({ ...conta.cartaoPublico(), deck: deckAtual() });
+const cartaoMesa = () => ({ ...conta.cartaoPublico(), deck: deckAtual(), reliquia: conta.reliquiaEquipada() });
 
 // Mesa aberta em que eu estou sentado (se houver)
 function minhaMesa() {

@@ -14,11 +14,11 @@
 
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
-} from "./motor.js?v=202610020204";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610020204";
-import { el, esperar, aviso } from "./util.js?v=202610020204";
-import { tocar } from "./som.js?v=202610020204";
-import { abrirDetalhes } from "./catalogo.js?v=202610020204";
+} from "./motor.js?v=202610020240";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610020240";
+import { el, esperar, aviso } from "./util.js?v=202610020240";
+import { tocar } from "./som.js?v=202610020240";
+import { abrirDetalhes } from "./catalogo.js?v=202610020240";
 
 const raiz = document.querySelector("#arena");
 
@@ -175,10 +175,12 @@ function montarEsqueleto() {
         <div class="ferramentas-arena">
           <button type="button" class="btn btn-sm btn-outline-light" id="botao-tela-cheia">⛶ Tela cheia</button>
           <a class="btn btn-sm btn-outline-light" href="#inicio" title="O duelo continua: a faixa verde traz você de volta">🏠 Ir ao site</a>
+          <button type="button" class="btn btn-sm btn-outline-light botao-chat-celular" id="botao-chat-celular">💬 Chat</button>
         </div>
       </div>
       <div class="tabuleiro">
         <div class="aviso-arena" id="aviso-arena" hidden></div>
+        <div class="mao-op" id="mao-op"></div>
         <div class="campo-e-fases">
           <div class="campo" id="campo" aria-label="Campo de duelo"></div>
           <div class="fases" id="fases" role="group" aria-label="Fases do turno"></div>
@@ -221,6 +223,8 @@ function montarEsqueleto() {
     campo: raiz.querySelector("#campo"),
     fases: raiz.querySelector("#fases"),
     mao: raiz.querySelector("#mao"),
+    maoOp: raiz.querySelector("#mao-op"),
+    botaoChat: raiz.querySelector("#botao-chat-celular"),
     previa: raiz.querySelector("#previa"),
     log: raiz.querySelector("#log"),
     chat: raiz.querySelector("#chat-duelo"),
@@ -248,6 +252,15 @@ function montarEsqueleto() {
   });
 
   raiz.querySelector("#botao-sair-arena").addEventListener("click", sairDaArena);
+
+  // Celular: o chat fica embaixo do tabuleiro; o botão leva até ele e mostra as mensagens novas
+  refs.botaoChat.addEventListener("click", () => {
+    raiz.querySelector(".chat-duelo").scrollIntoView({ behavior: "smooth", block: "center" });
+    chatNaoLido = 0;
+    atualizarBotaoChat();
+  });
+  chatNaoLido = 0;
+  atualizarBotaoChat();
 
   const telaCheia = raiz.querySelector("#botao-tela-cheia");
   if (!document.documentElement.requestFullscreen) telaCheia.hidden = true;
@@ -443,7 +456,7 @@ function desenharCampo(estado) {
 }
 
 function criarZona(j, zona, slot = null) {
-  const z = el("div", "zona");
+  const z = el("div", "zona" + (["deck", "cemiterio", "extra", "campo"].includes(zona) ? " zona--lado" : ""));
   z.dataset.zona = zona;
   z.dataset.j = j;
   if (slot !== null) z.dataset.slot = slot;
@@ -635,6 +648,8 @@ function desenharMao(estado) {
   const lado = estado.jogadores[sessao.eu];
   const p = ehTag(estado) && !souDaVez(estado) ? lado.reserva : lado;
   refs.mao.replaceChildren();
+  refs.mao.style.setProperty("--n", p.mao.length);
+  desenharMaoOponente(estado);
   for (const iid of p.mao) {
     const c = carta(estado, iid);
     const b = el("button", "mao__carta");
@@ -649,6 +664,21 @@ function desenharMao(estado) {
     refs.mao.append(b);
   }
   maoAnterior = [...p.mao];
+}
+
+
+// Mão do oponente: só o verso das cartas (no celular aparece em cima do campo)
+function desenharMaoOponente(estado) {
+  const n = estado.jogadores[oponente(sessao.eu)].mao.length;
+  refs.maoOp.replaceChildren();
+  refs.maoOp.style.setProperty("--n", n);
+  refs.maoOp.setAttribute("aria-label", `Mão do oponente: ${n} carta${n === 1 ? "" : "s"}`);
+  for (let k = 0; k < n; k++) {
+    const c = el("div", "mao-op__carta");
+    c.append(criarVerso());
+    refs.maoOp.append(c);
+  }
+  refs.maoOp.append(el("span", "mao-op__qtd", String(n)));
 }
 
 
@@ -769,9 +799,20 @@ function descreverEvento(estado, ev) {
   }
 }
 
+let chatNaoLido = 0;
+function atualizarBotaoChat() {
+  if (!refs.botaoChat) return;
+  refs.botaoChat.textContent = chatNaoLido ? `💬 Chat (${chatNaoLido})` : "💬 Chat";
+  refs.botaoChat.dataset.novas = String(chatNaoLido > 0);
+}
+
 function receberChat(msg) {
   if (!sessao) return;
   const minha = msg.minha ?? msg.j === sessao.eu;
+  if (!minha) {
+    chatNaoLido++;
+    atualizarBotaoChat();
+  }
   const p = el("p", minha ? "minha" : "");
   p.append(el("strong", "", `${msg.nick}: `), msg.texto);
   refs.chat.append(p);

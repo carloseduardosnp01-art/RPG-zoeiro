@@ -22,20 +22,24 @@
   padding: 0 .8rem;
 }
 
-/* Durante o duelo (PC e tablet) o menu e o rodapé do site somem */
-@media (min-width: 992px) {
-  body.em-duelo {
-    --altura-nav: 0px;
-  }
+/* Durante o duelo o menu e o rodapé do site somem (no celular também: o botão "Ir ao site" volta) */
+body.em-duelo {
+  --altura-nav: 0px;
+}
 
-  body.em-duelo > header,
-  body.em-duelo .rodape {
-    display: none;
-  }
+body.em-duelo > header,
+body.em-duelo .rodape {
+  display: none;
+}
 
-  body.em-duelo .tela-arena {
-    padding: .6rem 0;
-  }
+body.em-duelo .tela-arena {
+  padding: .6rem 0;
+}
+
+/* Mão do oponente (só no celular) e botão do chat (só quando o chat fica embaixo) */
+.mao-op,
+.botao-chat-celular {
+  display: none;
 }
 
 /* ---------- Placar ---------- */
@@ -1567,6 +1571,176 @@ button.fase:not(:disabled):hover {
   .caixa-lateral--cresce .chat-duelo__mensagens {
     flex: none;
     height: 150px;
+  }
+}
+
+/* ---------- Celular e tablet: tabuleiro maior ---------- */
+@media (max-width: 991.98px) {
+  body.em-duelo .tela-arena {
+    padding: .25rem 0 1rem;
+  }
+
+  /* As laterais (deck, cemitério, Deck Adicional e Zona de Campo) ficam mais estreitas
+     e as 5 colunas do meio ganham o espaço: as cartas do campo ficam bem maiores */
+  .arena {
+    --cw: min(calc((100vw - 14px) / 6.95), calc((100vh - 395px) / 7.3), 96px);
+    --cs: calc(var(--cw) * .66);
+    --gap: calc(var(--cw) * .07);
+    padding: 0 .25rem;
+  }
+
+  .campo {
+    grid-template-columns: var(--cs) repeat(5, var(--cw)) var(--cs);
+    border-radius: .7rem;
+  }
+
+  .zona--lado {
+    --cw: var(--cs);
+    --ch: calc(var(--cs) * 1.4576);
+    align-self: center;
+  }
+
+  /* Placar em duas linhas: o oponente em cima, você embaixo, e o relógio do lado.
+     Assim o nome inteiro cabe */
+  .placar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "op relogio" "eu relogio";
+    gap: .3rem .45rem;
+    padding: .35rem .5rem .4rem;
+    border-radius: 0 0 .9rem .9rem;
+  }
+
+  .jogador-info--op { grid-area: op; }
+  .jogador-info--eu { grid-area: eu; }
+
+  .jogador-info,
+  .jogador-info--op {
+    flex-direction: row-reverse;
+    gap: .45rem;
+    text-align: left;
+  }
+
+  .jogador-info__avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .jogador-info__nome {
+    font-size: .84rem;
+    line-height: 1.15;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .jogador-info--op .barra-pl__cheio {
+    inset: 0 auto 0 0;
+  }
+
+  .barra-pl {
+    height: 1rem;
+    margin-top: .15rem;
+  }
+
+  .barra-pl__valor {
+    font-size: .7rem;
+    line-height: 1rem;
+  }
+
+  .relogio {
+    grid-area: relogio;
+    align-self: stretch;
+    justify-content: center;
+    min-width: 76px;
+  }
+
+  .relogio__tempo {
+    font-size: 1.45rem;
+  }
+
+  .balao {
+    max-width: 200px;
+    font-size: .78rem;
+  }
+
+  /* Botões pequenos embaixo do placar (o menu do site some durante o duelo) */
+  .ferramentas-arena {
+    display: flex;
+    justify-content: flex-end;
+    gap: .3rem;
+    margin-top: .3rem;
+  }
+
+  .ferramentas-arena .btn {
+    flex: 0 0 auto;
+    padding: .12rem .5rem;
+    font-size: .74rem;
+  }
+
+  .botao-chat-celular {
+    display: inline-block;
+  }
+
+  .botao-chat-celular[data-novas="true"] {
+    color: #1b1208;
+    background: var(--ouro);
+    border-color: var(--ouro);
+  }
+
+  /* Mão do oponente: o verso das cartas em cima do campo */
+  .mao-op {
+    --wo: calc(var(--cw) * .62);
+    --sobra-op: max(0px, calc((var(--n, 1) * var(--wo) - (100vw - 60px)) / max(1, var(--n, 1) - 1)));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: calc(var(--wo) * 1.4576);
+    margin: .1rem 0 .35rem;
+  }
+
+  .mao-op__carta {
+    flex: 0 0 var(--wo);
+    width: var(--wo);
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .6));
+  }
+
+  .mao-op__carta + .mao-op__carta {
+    margin-left: calc(-1 * var(--sobra-op) + 2px);
+  }
+
+  .mao-op__qtd {
+    margin-left: .4rem;
+    padding: .05rem .45rem;
+    color: #fff;
+    font-size: .8rem;
+    font-weight: 800;
+    background: rgba(0, 0, 0, .55);
+    border: 1px solid rgba(255, 255, 255, .25);
+    border-radius: 1rem;
+  }
+
+  /* Sua mão: cartas grandes; se não couberem, ficam uma sobre a outra */
+  .mao {
+    --wm: min(23vw, 110px);
+    --sobra: max(0px, calc((var(--n, 1) * var(--wm) - (100vw - 16px)) / max(1, var(--n, 1) - 1)));
+    min-height: calc(var(--wm) * 1.4576 + .8rem);
+    padding-top: .7rem;
+  }
+
+  .mao__carta {
+    flex: 0 0 var(--wm);
+    width: var(--wm);
+    max-width: none;
+    margin: 0;
+  }
+
+  .mao__carta + .mao__carta {
+    margin-left: calc(-1 * var(--sobra));
+  }
+
+  .fase {
+    padding: .3rem .55rem;
+    font-size: .78rem;
   }
 }
 

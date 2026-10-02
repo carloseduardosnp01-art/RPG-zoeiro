@@ -9,8 +9,8 @@
    Uma cópia fica no navegador; se o broker "esquecer", o login republica.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610020204";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610020204";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610020240";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610020240";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";

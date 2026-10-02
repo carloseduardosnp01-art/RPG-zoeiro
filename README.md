@@ -224,11 +224,11 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT067 | Dragão Sulista Safado Olhos Nada Azuis | Monstro Normal · LUZ · Dragão · Nv 8 · 3000/2500 | – | Material do Miro, o Adestrador de Dragões |
 | ZOE-PT068 | Suruba | Magia | – | Invocação-Fusão: 1 Monstro de Fusão do Deck Adicional com materiais da mão ou do campo |
 | ZOE-PT069 | Miro, o Adestrador de Dragões **(limitada a 1)** | Fusão · LUZ · Dragão · Nv 8 · 3000/2500 | – | "Grande Mestre" + "Dragão Sulista"; no campo se chama "Grande Mestre"; o oponente não mira nem destrói com efeitos as suas Magias/Armadilhas |
-| ZOE-PT070 | Careca Lamentador | Fusão · TREVAS · Guerreiro · Nv 8 · 3000/3000 | – | 1 monstro "Careca" + 1 monstro "Lamento/Lamentador/Lamentável"; dano perfurante |
+| ZOE-PT070 | Careca Lamentador | Fusão · TREVAS · Guerreiro · Nv 8 · 3000/3000 | – | 1 monstro "Careca" + 1 monstro "Lamento/Lamentador/Lamentável" ou "Thales"; dano perfurante |
 
 **Cartas "Animal":** todo monstro com "Animal" no nome conta como "Animal" para esses efeitos. Para criar uma Magia/Armadilha que o Thales Animal consiga buscar, coloque `"mencionaIrmaos": true` nela em `data/cartas.json`.
 
-**Fusão e Deck Adicional:** os Monstros de Fusão (moldura roxa) não contam nas 40 a 60 cartas: ficam no **Deck Adicional** (até 15), que aparece no canto do tabuleiro (a antiga "Zona Careca"; tocando no seu, dá para ver as cartas). Eles só entram pela Magia "Suruba", que manda os 2 materiais (da mão ou do campo) para o Cemitério. No `data/cartas.json`, uma Fusão tem `"subtipo": "fusao"` e `"materiais"`: `{"nome": "..."}` (nome exato) ou `{"contem": "..."}` (pedaço do nome). Se uma Fusão fosse voltar para a mão, volta para o Deck Adicional.
+**Fusão e Deck Adicional:** os Monstros de Fusão (moldura roxa) não contam nas 40 a 60 cartas: ficam no **Deck Adicional** (até 15), que aparece no canto do tabuleiro (a antiga "Zona Careca"; tocando no seu, dá para ver as cartas). Eles só entram pela Magia "Suruba", que manda os 2 materiais (da mão ou do campo) para o Cemitério. No `data/cartas.json`, uma Fusão tem `"subtipo": "fusao"` e `"materiais"`: `{"nome": "..."}` (nome exato) ou `{"contem": "..."}` (pedaço do nome; pode ser uma lista, como `["lament", "thales"]`). Se uma Fusão fosse voltar para a mão, volta para o Deck Adicional.
 
 **Cemitério e banidas:** toque no Cemitério (de qualquer jogador, mesmo vazio) para ver as cartas dele; a janela tem uma aba **Banidas** com as cartas que saíram do jogo. Quando alguém tem cartas banidas, aparece um selo 🚫 com o número ao lado do Cemitério.
 

@@ -1229,11 +1229,14 @@
         "contem": "careca"
       },
       {
-        "contem": "lament"
+        "contem": [
+          "lament",
+          "thales"
+        ]
       }
     ],
-    "texto": "1 monstro \"Careca\" + 1 monstro \"Lamentador\"/\"Lamentável\". Se este card atacar um monstro em Posição de Defesa, cause dano de batalha perfurante ao seu oponente.",
-    "comoFunciona": "Monstro de Fusão: entra pela \"Suruba\" com 1 monstro que tenha \"Careca\" no nome (Careca Feijão, Feiticeira Careca, Carecalla, Rafaza the Careca...) e 1 que tenha \"Lamento\", \"Lamentador\" ou \"Lamentável\" no nome (como O Herói do Lamento). Contra monstro em Defesa, o que o ATK dele passar da DEF vira dano no oponente. Se fosse voltar para a mão, volta para o Deck Adicional.",
+    "texto": "1 monstro \"Careca\" + 1 monstro \"Lamentador\"/\"Lamentável\" ou \"Thales\". Se este card atacar um monstro em Posição de Defesa, cause dano de batalha perfurante ao seu oponente.",
+    "comoFunciona": "Monstro de Fusão: entra pela \"Suruba\" com 1 monstro que tenha \"Careca\" no nome (Careca Feijão, Feiticeira Careca, Carecalla, Rafaza the Careca...) e 1 que tenha \"Lamento\", \"Lamentador\", \"Lamentável\" ou \"Thales\" no nome (como O Herói do Lamento ou o Thales Animal). Contra monstro em Defesa, o que o ATK dele passar da DEF vira dano no oponente. Se fosse voltar para a mão, volta para o Deck Adicional.",
     "frase": "Careca por fora, lamentando por dentro. E batendo forte dos dois jeitos.",
     "raridade": "Ultra Rara",
     "def": 3000,

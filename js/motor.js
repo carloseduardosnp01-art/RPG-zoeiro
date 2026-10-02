@@ -46,7 +46,7 @@ export function registrarCartas(lista) {
 export function versaoDasCartas(lista = Object.values(CARTAS)) {
   let h = 2166136261;
   for (const c of [...lista].sort((a, b) => a.id.localeCompare(b.id))) {
-    for (const ch of `${c.id}|${c.efeito}|${c.nivel}|${c.atk}|${c.def}|${c.limite ?? ""};`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+    for (const ch of `${c.id}|${c.efeito}|${c.nivel}|${c.atk}|${c.def}|${c.limite ?? ""}|${c.materiais ? JSON.stringify(c.materiais) : ""};`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
   }
   return (h >>> 0).toString(36);
 }
@@ -1407,14 +1407,15 @@ function baixarMagia(estado, j, { iid }, ev) {
 
 /* ---------- 6b. Fusão ---------- */
 
-// Um material serve para uma exigência da Fusão: { nome } exato ou { contem } um pedaço do nome
+// Um material serve para uma exigência da Fusão: { nome } exato ou { contem } um pedaço do nome (ou uma lista deles)
 function serveDeMaterial(estado, iid, exigencia) {
   const c = carta(estado, iid);
   if (!c || c.categoria !== "monstro") return false;
   const nomes = [c.nome];
   if (localizar(estado, iid)?.zona === "monstros" && c.nomeNoCampo) nomes.push(c.nomeNoCampo);
   if (exigencia.nome) return nomes.includes(exigencia.nome);
-  return nomes.some((n) => n.toLowerCase().includes(exigencia.contem));
+  const pedacos = [].concat(exigencia.contem); // um pedaço ou uma lista ("lament" ou "thales")
+  return nomes.some((n) => pedacos.some((pedaco) => n.toLowerCase().includes(pedaco)));
 }
 
 // Pares [material 1, material 2] (da mão ou do campo de j) que fazem a Fusão e deixam uma zona livre para ela

@@ -44,6 +44,7 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
   - perfil com nível, XP, vitórias/derrotas e botão para trocar a foto de perfil (as artes das cartas);
   - clique no nome de um duelista (ranking, chat, lista de online, histórico ou no seu próprio perfil) para abrir o **perfil** dele: nível, XP, vitórias/derrotas, se está online e os **últimos 10 duelos** com resultado, oponente e XP (o histórico fica salvo no perfil público e sincroniza entre aparelhos);
   - ranking com duas abas: **XP geral** (online + treino) e **Vitórias online**, com medalhas no top 3 e a sua posição se você estiver fora do top 10;
+  - **Careca Coins** (moeda do jogo, `img/careca-coin.webp`): **+5** por vitória contra jogador de verdade (1vs1 ou Tag 2vs2) e **+1** por vitória contra o Bot; derrota não dá moeda. O saldo aparece no seu perfil, no perfil dos outros, no histórico e na tela de vitória. No perfil público ficam `coinsGanhas` e `coinsGastas` (os dois só aumentam; saldo = ganhas − gastas), para que juntar cópias do perfil de abas/aparelhos diferentes nunca perca nem duplique moeda. Ainda não há onde gastar;
   - XP: online vitória +100 e derrota +40; contra o Bot, 30% disso (+30 / +12) sem contar vitória/derrota. Desistir do treino antes do 3º turno não dá XP.
 - **Arena**:
   - no PC, a arena ocupa a tela toda: os jogadores e o relógio ficam numa coluna à esquerda, as fases na vertical ao lado do campo, e o menu do site some durante o duelo (botões **⛶ Tela cheia** e **🏠 Ir ao site** na coluna dos jogadores);

@@ -12,14 +12,14 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610020240";
-import * as conta from "./conta.js?v=202610020240";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610020240";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610020240";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610020240";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610020240";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610020240";
-import { tocar } from "./som.js?v=202610020240";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610020304";
+import * as conta from "./conta.js?v=202610020304";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610020304";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610020304";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610020304";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610020304";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610020304";
+import { tocar } from "./som.js?v=202610020304";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -290,7 +290,7 @@ function desenharPerfil() {
   const nick = el("h3", "perfil__nick");
   if (u.tag) nick.append(el("span", "tag-cla", `[${u.tag}] `));
   nick.append(botaoPerfil(u, u.nick));
-  nomes.append(nick, el("div", "perfil__nivel", `Nível ${nivelDoXp(u.xp)} · ${u.xp} XP`));
+  nomes.append(nick, el("div", "perfil__nivel", `Nível ${nivelDoXp(u.xp)} · ${u.xp} XP`), seloCoins(conta.saldoCoins(u)));
   topo.append(img, nomes);
 
   const barra = el("div", "barra-xp");
@@ -437,6 +437,23 @@ function botaoPerfil(cartao, texto, classe = "link-perfil") {
 
 const TEXTO_MOTIVO = { desistencia: " (desistência)", wo: " (W.O.)", deck: " (deck acabou)" };
 
+// Careca Coin: ícone e selo com o saldo
+function iconeCoin(classe = "coin") {
+  const img = el("img", classe);
+  img.src = "img/careca-coin.webp";
+  img.alt = "Careca Coin";
+  img.width = 18;
+  img.height = 18;
+  return img;
+}
+
+function seloCoins(saldo) {
+  const selo = el("div", "selo-coins");
+  selo.title = "Careca Coins: +5 por vitória contra jogador (1vs1 ou Tag 2vs2), +1 por vitória contra o Bot";
+  selo.append(iconeCoin(), el("strong", "", String(saldo)), el("span", "", saldo === 1 ? " Careca Coin" : " Careca Coins"));
+  return selo;
+}
+
 function abrirPerfil(cartao) {
   const u = conta.usuarioAtual();
   // o perfil completo vem do broker; o meu, da conta (mais novo)
@@ -452,7 +469,7 @@ function abrirPerfil(cartao) {
   img.src = `img/cartas/${p.avatar || "careca-feijao"}.webp`;
   img.alt = "";
   const info = el("div", "pj__info");
-  info.append(el("div", "pj__nivel", `Nível ${nivelDoXp(p.xp || 0)} · ${p.xp || 0} XP`));
+  info.append(el("div", "pj__nivel", `Nível ${nivelDoXp(p.xp || 0)} · ${p.xp || 0} XP`), seloCoins(conta.saldoCoins(p)));
   const barra = el("div", "barra-xp");
   const cheio = el("span");
   cheio.style.width = `${progressoNivel(p.xp || 0) * 100}%`;
@@ -485,7 +502,8 @@ function abrirPerfil(cartao) {
     } else {
       li.append(el("span", "historico__oponente", contra));
     }
-    li.append(el("span", "historico__extra", `${TEXTO_MOTIVO[d.motivo] || ""} · +${d.xp} XP`));
+    li.append(el("span", "historico__extra", `${TEXTO_MOTIVO[d.motivo] || ""} · +${d.xp} XP${d.coins ? ` · +${d.coins}` : ""}`));
+    if (d.coins) li.append(iconeCoin());
     lista.append(li);
   }
   if (!(p.historico || []).length) lista.append(el("li", "historico__vazio", "Nenhum duelo registrado ainda."));
@@ -959,7 +977,7 @@ function entrarNoDuelo(estado, eventos) {
 function terminarDuelo(estado, eu) {
   if (ehTag(estado)) return terminarTag(estado, eu);
   const venceu = estado.vencedor === eu;
-  const xp = conta.registrarResultado({ dueloId: estado.id, venceu, oponente: estado.jogadores[1 - eu], motivo: estado.motivo });
+  const { xp, coins } = conta.registrarResultado({ dueloId: estado.id, venceu, oponente: estado.jogadores[1 - eu], motivo: estado.motivo });
   mudarStatusDuelo("livre");
   guardar.apagar(DUELO_ATIVO);
   desenharPerfil();
@@ -976,7 +994,7 @@ function terminarDuelo(estado, eu) {
     const texto = frases[estado.motivo] || `🏆 ${v} venceu ${d} na Arena!`;
     enviarGlobal({ id: gerarId(), tipo: "sistema", texto, t: Date.now() });
   }
-  return { xp };
+  return { xp, coins };
 }
 
 // Depois de recarregar a página: volta para o duelo que estava em andamento
@@ -1222,7 +1240,7 @@ function terminarTag(estado, eu) {
   const u = conta.usuarioAtual();
   const venceu = estado.vencedor === eu;
   const nomes = (p) => p.membros.map((m) => m.nick).join(" & ");
-  const xp = conta.registrarResultado({
+  const { xp, coins } = conta.registrarResultado({
     dueloId: estado.id, venceu, tipo: "tag", motivo: estado.motivo,
     oponente: { nick: nomes(estado.jogadores[1 - eu]), tag: "", chave: null },
   });
@@ -1235,7 +1253,7 @@ function terminarTag(estado, eu) {
     const texto = `🏆 ${nomes(estado.jogadores[eu])} venceram ${nomes(estado.jogadores[1 - eu])} no Tag da Zoeira 2vs2!`;
     enviarGlobal({ id: gerarId(), tipo: "sistema", texto, t: Date.now() });
   }
-  return { xp };
+  return { xp, coins };
 }
 
 function desenharMesas() {

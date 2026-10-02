@@ -1475,6 +1475,38 @@ a:hover {
   font-size: .85rem;
 }
 
+/* Careca Coins */
+.selo-coins {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  margin-top: .25rem;
+  padding: .1rem .55rem .1rem .2rem;
+  color: #ffe08a;
+  font-size: .82rem;
+  background: linear-gradient(180deg, rgba(255, 210, 90, .16), rgba(255, 210, 90, .06));
+  border: 1px solid rgba(255, 200, 80, .45);
+  border-radius: 1rem;
+}
+
+.selo-coins strong {
+  color: #fff3c4;
+  font-size: .95rem;
+}
+
+.coin {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  vertical-align: -3px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .5));
+}
+
+.selo-coins .coin {
+  width: 22px;
+  height: 22px;
+}
+
 .barra-xp {
   height: .5rem;
   margin: .3rem 0 .8rem;

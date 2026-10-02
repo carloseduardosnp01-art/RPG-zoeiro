@@ -14,11 +14,11 @@
 
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
-} from "./motor.js?v=202610020240";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610020240";
-import { el, esperar, aviso } from "./util.js?v=202610020240";
-import { tocar } from "./som.js?v=202610020240";
-import { abrirDetalhes } from "./catalogo.js?v=202610020240";
+} from "./motor.js?v=202610020304";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610020304";
+import { el, esperar, aviso } from "./util.js?v=202610020304";
+import { tocar } from "./som.js?v=202610020304";
+import { abrirDetalhes } from "./catalogo.js?v=202610020304";
 
 const raiz = document.querySelector("#arena");
 
@@ -1451,6 +1451,14 @@ function mostrarResultado(estado) {
   const [frVitoria, frDerrota] = FRASES_FIM[estado.motivo] || ["Vitória!", "Derrota."];
   caixa.append(arte, titulo, el("p", "resultado__frase", venceu ? frVitoria : frDerrota));
   if (extra && extra.xp) caixa.append(el("p", "resultado__xp", `+${extra.xp} XP`));
+  if (extra && extra.coins) {
+    const moeda = el("p", "resultado__coins");
+    const img = el("img", "resultado__coin");
+    img.src = "img/careca-coin.webp";
+    img.alt = "";
+    moeda.append(img, `+${extra.coins} Careca Coin${extra.coins > 1 ? "s" : ""}`);
+    caixa.append(moeda);
+  }
 
   const botoes = el("div", "d-flex flex-wrap gap-2 justify-content-center mt-3");
   if (opcoesArena.revanche) {

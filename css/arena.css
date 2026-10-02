@@ -1236,6 +1236,33 @@ button.fase:not(:disabled):hover {
   font-weight: 800;
 }
 
+.resultado__coins {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  margin: -.4rem 0 0;
+  color: #ffd75a;
+  font-size: 1.1rem;
+  font-weight: 800;
+  animation: moeda-entra .6s .3s ease both;
+}
+
+.resultado__coin {
+  width: 2.4rem;
+  height: 2.4rem;
+  filter: drop-shadow(0 0 8px rgba(255, 200, 60, .7));
+  animation: moeda-gira 1.2s .3s ease both;
+}
+
+@keyframes moeda-entra {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@keyframes moeda-gira {
+  from { transform: rotateY(540deg) scale(.4); }
+}
+
 /* ---------- PC: placar em coluna, fases na vertical, cartas maiores ---------- */
 @media (min-width: 1200px) {
   .coluna-jogadores {

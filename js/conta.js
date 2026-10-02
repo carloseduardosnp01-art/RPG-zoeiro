@@ -5,12 +5,12 @@
    Sem servidor próprio, a conta fica em duas mensagens retidas no broker:
      contas/<chave>  -> { chave, sal, hash }  (a senha nunca sai do navegador:
                         vai só o hash PBKDF2 com sal)
-     perfis/<chave>  -> dados públicos: nick, clã, avatar, vitórias, derrotas, XP
+     perfis/<chave>  -> dados públicos: nick, clã, avatar, vitórias, derrotas, XP, Careca Coins
    Uma cópia fica no navegador; se o broker "esquecer", o login republica.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610020240";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610020240";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610020304";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610020304";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -158,6 +158,8 @@ export function mesclarPerfis(a, b) {
   perfil.vitorias = Math.max(a.vitorias || 0, b.vitorias || 0);
   perfil.derrotas = Math.max(a.derrotas || 0, b.derrotas || 0);
   perfil.xp = Math.max(a.xp || 0, b.xp || 0);
+  perfil.coinsGanhas = Math.max(a.coinsGanhas || 0, b.coinsGanhas || 0);
+  perfil.coinsGastas = Math.max(a.coinsGastas || 0, b.coinsGastas || 0);
   perfil.atualizado = Math.max(a.atualizado || 0, b.atualizado || 0);
   perfil.historico = juntarHistoricos(a.historico, b.historico);
   return perfil;
@@ -198,22 +200,31 @@ export const XP_VITORIA = 100;
 export const XP_DERROTA = 40;
 export const FATOR_BOT = 0.3; // contra o bot: 30% do XP de uma partida online
 
-// Soma o resultado de um duelo (uma vez por duelo). Devolve o XP ganho.
+// Careca Coins: vitória contra gente de verdade (1vs1 ou Tag 2vs2) vale 5; contra o Bot, 1.
+// O saldo é "ganhas - gastas": os dois totais só aumentam, então juntar cópias do perfil
+// (outra aba, outro aparelho) pelo maior valor nunca perde nem duplica moeda.
+export const COINS_VITORIA = 5;
+export const COINS_VITORIA_BOT = 1;
+export const saldoCoins = (p) => Math.max(0, (p?.coinsGanhas || 0) - (p?.coinsGastas || 0));
+
+// Soma o resultado de um duelo (uma vez por duelo). Devolve { xp, coins } ganhos.
 // contraBot: vale só 30% do XP e não conta vitória/derrota (o ranking de vitórias é só online)
 // oponente: { nick, tag } para o histórico de duelos; motivo: "pl", "deck", "desistencia", "wo"
 export function registrarResultado({ dueloId, venceu, contraBot = false, oponente = null, motivo = null, tipo = null }) {
-  if (!usuario) return 0;
+  if (!usuario) return { xp: 0, coins: 0 };
   const feitos = guardar.ler(CHAVE_RESULTADOS, []);
-  if (feitos.includes(dueloId)) return 0;
+  if (feitos.includes(dueloId)) return { xp: 0, coins: 0 };
   guardar.gravar(CHAVE_RESULTADOS, [...feitos.slice(-50), dueloId]);
 
   const base = venceu ? XP_VITORIA : XP_DERROTA;
   const ganho = contraBot ? Math.round(base * FATOR_BOT) : base;
+  const coins = venceu ? (contraBot ? COINS_VITORIA_BOT : COINS_VITORIA) : 0;
   usuario = {
     ...usuario,
     vitorias: usuario.vitorias + (!contraBot && venceu ? 1 : 0),
     derrotas: usuario.derrotas + (!contraBot && !venceu ? 1 : 0),
     xp: usuario.xp + ganho,
+    coinsGanhas: (usuario.coinsGanhas || 0) + coins,
     atualizado: Date.now(),
   };
   const duelo = {
@@ -224,12 +235,13 @@ export function registrarResultado({ dueloId, venceu, contraBot = false, oponent
     contra: oponente ? { nick: oponente.nick, tag: oponente.tag || "", chave: oponente.chave || null } : null,
     motivo,
     xp: ganho,
+    coins,
   };
   usuario.historico = juntarHistoricos([duelo], usuario.historico);
   publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
   guardarLocalmente();
   avisar();
-  return ganho;
+  return { xp: ganho, coins };
 }
 
 export function atualizarPerfil(mudancas) {

@@ -24,6 +24,22 @@
 .carta[data-moldura="magia"] { --moldura: #1f9a82; --moldura-escura: #0f5e4f; --caixa: #d9efe6; }
 .carta[data-moldura="armadilha"] { --moldura: #b53c80; --moldura-escura: #6e1e4b; --caixa: #f3dcea; }
 .carta[data-moldura="fusao"] { --moldura: #8a5cc2; --moldura-escura: #4b2a78; --caixa: #ece0f7; }
+.carta[data-moldura="divino"] { --moldura: #4d62a8; --moldura-escura: #1f2d66; --caixa: #e6e9f5; }
+
+/* Cartas de Deus (atributo Divino): azul com manchas, como as cartas dos Deuses Egípcios */
+.carta[data-moldura="divino"] .carta__corpo {
+  background:
+    radial-gradient(ellipse at 20% 12%, rgba(255, 255, 255, .3), transparent 42%),
+    radial-gradient(circle at 72% 28%, rgba(14, 22, 70, .38), transparent 17%),
+    radial-gradient(circle at 18% 58%, rgba(14, 22, 70, .32), transparent 20%),
+    radial-gradient(circle at 85% 62%, rgba(255, 255, 255, .14), transparent 16%),
+    radial-gradient(circle at 45% 82%, rgba(14, 22, 70, .3), transparent 24%),
+    radial-gradient(circle at 92% 92%, rgba(14, 22, 70, .35), transparent 18%),
+    repeating-radial-gradient(circle at 60% 45%, rgba(255, 255, 255, .05) 0 1.3cqw, rgba(0, 0, 40, .08) 1.3cqw 2.8cqw),
+    linear-gradient(160deg, #6176bd, #4256a0 45%, #33478e);
+  border-color: #1a2147;
+  box-shadow: inset 0 0 0 .5cqw rgba(200, 215, 255, .25), 0 1.5cqw 4cqw rgba(0, 0, 0, .45);
+}
 
 .carta__corpo {
   position: absolute;
@@ -103,6 +119,17 @@
 
 @keyframes arco-iris {
   to { background-position: 200% 0; }
+}
+
+.carta[data-moldura="divino"] .carta__nome {
+  color: transparent;
+  background-image: linear-gradient(180deg, #ffffff, #e3e9ff 45%, #9aa9dc 58%, #f6f8ff);
+  background-size: 100% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-stroke: .22cqw rgba(8, 12, 40, .9);
+  filter: drop-shadow(0 .3cqw .25cqw rgba(0, 0, 0, .8));
+  animation: none;
 }
 
 .carta__atributo {
@@ -258,7 +285,9 @@
 .carta[data-moldura="magia"] .carta__codigo-linha,
 .carta[data-moldura="armadilha"] .carta__codigo-linha,
 .carta[data-moldura="magia"] .carta__rodape,
-.carta[data-moldura="armadilha"] .carta__rodape {
+.carta[data-moldura="armadilha"] .carta__rodape,
+.carta[data-moldura="divino"] .carta__codigo-linha,
+.carta[data-moldura="divino"] .carta__rodape {
   color: #fff;
   text-shadow: 0 .2cqw .4cqw rgba(0, 0, 0, .6);
 }

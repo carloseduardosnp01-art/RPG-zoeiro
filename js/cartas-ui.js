@@ -52,7 +52,10 @@ const SUBTIPOS_MAGIA = {
 const ehVire = (c) => Boolean(c.efeito && c.efeito.startsWith("flip-"));
 
 export function moldura(c) {
-  if (c.categoria === "monstro") return c.subtipo === "fusao" ? "fusao" : c.subtipo === "normal" ? "normal" : "efeito";
+  if (c.categoria === "monstro") {
+    if (c.atributo === "DIVINO") return "divino"; // cartas de Deus: moldura azul (continuam no deck normal)
+    return c.subtipo === "fusao" ? "fusao" : c.subtipo === "normal" ? "normal" : "efeito";
+  }
   return c.categoria;
 }
 

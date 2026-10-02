@@ -14,11 +14,11 @@
 
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
-} from "./motor.js?v=202610020038";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610020038";
-import { el, esperar, aviso } from "./util.js?v=202610020038";
-import { tocar } from "./som.js?v=202610020038";
-import { abrirDetalhes } from "./catalogo.js?v=202610020038";
+} from "./motor.js?v=202610020105";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610020105";
+import { el, esperar, aviso } from "./util.js?v=202610020105";
+import { tocar } from "./som.js?v=202610020105";
+import { abrirDetalhes } from "./catalogo.js?v=202610020105";
 
 const raiz = document.querySelector("#arena");
 
@@ -86,6 +86,11 @@ const FRASES = {
   "flip-parasita": "VAI PRO SEU DECK!",
   litro: "UM LITRO PELA MANHÃ!",
   daiki: "BANIDO PELO CAOS CALVO!",
+  sugadao: "SUGADÃO!",
+  "hoje-nao": "HOJE NÃO!",
+  "bora-bill": "BORA, BILL!",
+  thangan: "O THANGAN BUSCOU!",
+  hacker: "SISTEMA HACKEADO!",
 };
 
 const PROVOCACOES = ["😂 Chora não!", "🧑‍🦲 Careca demais!", "💨 Vapo!", "🤡 Tá com medo?", "🔥 Joga logo!", "👋 GG"];
@@ -724,6 +729,7 @@ function descreverEvento(estado, ev) {
     case "banida": return { texto: `🚫 ${nome(ev.iid)} foi banido do jogo.`, classe: "log--armadilha" };
     case "paraMao": return { texto: `↩️ ${nome(ev.iid)} voltou para a mão de ${quem(ev.j)}.`, classe: "log--armadilha" };
     case "ajusteDeck": return { texto: `⚠️ ${ev.nick ? `O deck de ${ev.nick} tinha` : ev.j === eu ? "Seu deck tinha" : `O deck de ${quem(ev.j)} tinha`} ${ev.trocadas} carta${ev.trocadas > 1 ? "s" : ""} acima do limite: ${ev.trocadas > 1 ? "viraram" : "virou"} Careca Feijão.`, classe: "log--turno" };
+    case "negada": return { texto: `⛔ ${nome(ev.iid)} foi negada e destruída!`, classe: "log--armadilha" };
     case "parasita": return { texto: `🐛 ${nome(ev.iid)} foi embaralhado com a face para cima no deck de ${quem(ev.j)}!`, classe: "log--armadilha" };
     case "indestrutivel": return { texto: `🛡️ ${nome(ev.iid)} não pode ser destruído em batalha.`, classe: "log--armadilha" };
     case "controle": return { texto: `🧠 ${quem(ev.j)} tomou o controle de ${nome(ev.iid)} até a Fase Final!`, classe: "log--armadilha" };
@@ -732,7 +738,7 @@ function descreverEvento(estado, ev) {
       : { texto: `↩️ ${nome(ev.iid)} voltou para o campo de ${quem(ev.j)}.`, classe: minha };
     case "ganhoPV": return { texto: `💚 ${quem(ev.j)} ganhou ${ev.valor} LP (${ev.pl}).`, classe: minha };
     case "recuperada": return { texto: `${quem(ev.j)} adicionou ${nome(ev.iid)} do Cemitério à mão.`, classe: minha };
-    case "protegido": return { texto: `🪽 ${ev.j === eu ? "Você não sofreu" : `${quem(ev.j)} não sofreu`} ${ev.valor} de dano de batalha (Karecoh Alado).`, classe: "log--armadilha" };
+    case "protegido": return { texto: `🪽 ${ev.j === eu ? "Você não sofreu" : `${quem(ev.j)} não sofreu`} ${ev.valor} de dano de batalha (${ev.por || "Karecoh Alado"}).`, classe: "log--armadilha" };
     case "posicao": return { texto: `${nome(ev.iid)} mudou para ${ev.pos === "atk" ? "Ataque" : "Defesa"}.`, classe: minha };
     case "descarte": return { texto: `${quem(ev.j)} descartou ${nome(ev.iid)}.`, classe: minha };
     case "expirou": return { texto: `${nome(ev.iid)} apagou a luz: acabaram os turnos.` };

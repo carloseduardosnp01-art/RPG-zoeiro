@@ -213,6 +213,12 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT056 | Mirasita | Efeito/Virar · TERRA · Inseto · Nv 2 · 500/300 | – | VIRE: vai para o deck do oponente; quando ele comprar, entra em Defesa do lado dele, ele leva 1000 e os monstros dele viram Insetos |
 | ZOE-PT057 | 1 Litro de Porra pela Manhã | Magia | – | +2000 PV (1 por turno) |
 | ZOE-PT058 | Daiki, Chaos Calvo **(limitada a 1)** | Efeito · TREVAS · Mago · Nv 6 · 2300/2000 | – | Só entra pela mão banindo 1 LUZ e 1 TREVAS do Cemitério; botão Efeito bane 1 monstro com a face para cima (nesse turno não ataca) |
+| ZOE-PT059 | Sugadão **(limitada a 1)** | Magia | – | Destrói todas as Magias e Armadilhas do campo (Zonas de Campo também) |
+| ZOE-PT060 | Hoje Não | Armadilha | – | Ativa sozinha num ataque que machucaria: no resto do turno você não sofre dano de batalha e seus monstros não são destruídos em batalha |
+| ZOE-PT061 | Bora Bill **(limitada a 1)** | Magia | – | Se um monstro seu foi do campo para o Cemitério neste turno: Invocação-Especial de 1 monstro com até 1500 de ATK do deck |
+| ZOE-PT062 | Thangan **(limitada a 1)** | Efeito · TREVAS · Demônio · Nv 3 · 1000/600 | – | Saiu do campo para o Cemitério: 1 monstro sorteado com até 1500 de ATK do deck para a mão (os efeitos dele ficam bloqueados no turno) |
+| ZOE-PT063 | W — Hackeando Sistema | Armadilha | – | Ativa sozinha quando o oponente ativa Magia/Armadilha: descarta 1 carta sorteada, nega e destrói |
+| ZOE-PT064 | W — Guerreiro das Lâminas Gêmeas | Efeito · INTERNET · Ciberso · Nv 4 · 1700/1000 | – | Contra monstro em Defesa: dano perfurante e um 2º ataque (1 vez por Batalha); só 1 dele no seu campo |
 
 **Cartas "Animal":** todo monstro com "Animal" no nome conta como "Animal" para esses efeitos. Para criar uma Magia/Armadilha que o Thales Animal consiga buscar, coloque `"mencionaIrmaos": true` nela em `data/cartas.json`.
 
@@ -271,7 +277,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
-├── data/cartas.json      # As 58 cartas (texto, stats, cópias no deck padrão, efeito)
+├── data/cartas.json      # As 64 cartas (texto, stats, cópias no deck padrão, efeito)
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```

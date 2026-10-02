@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNecessarios, validar, alvosDeAtaque,
-} from "./motor.js?v=202610020038";
+} from "./motor.js?v=202610020105";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 
@@ -171,6 +171,19 @@ function* jogadasPrincipais(estado, j) {
     }
   }
 
+  // 1f4. Sugadão quando o oponente tem mais Magias/Armadilhas que eu; Bora Bill traz o mais forte possível
+  for (const { iid, c } of mao) {
+    if (c.efeito === "sugadao" && opcoes(iid).some((x) => x.id === "ativar")) {
+      const contar = (q) => [...estado.jogadores[q].magias, estado.jogadores[q].campo].filter(Boolean).length;
+      const minhas = contar(j) - (localizar(estado, iid).zona === "magias" ? 1 : 0);
+      if (contar(o) >= 2 && contar(o) > minhas) yield { tipo: "ativar", iid };
+    }
+    if (c.efeito === "bora-bill") {
+      const op = opcoes(iid).find((x) => x.id === "ativar");
+      if (op) yield { tipo: "ativar", iid, alvos: [[...op.alvos.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0]] };
+    }
+  }
+
   // 1f3. Revolução Animal baixada: descarta a pior carta (de preferência um "Animal") e traz os "Animal" do Cemitério
   for (const mg of p.magias) {
     if (!mg || carta(estado, mg.iid).efeito !== "revolucao") continue;
@@ -310,6 +323,7 @@ function melhorInvocacao(estado, j, mao) {
   let melhorGanho = 0;
   for (const { iid, c } of mao) {
     if (c.categoria !== "monstro") continue;
+    if (c.efeito === "w-laminas" && p.monstros.some((m) => m && carta(estado, m.iid).efeito === "w-laminas")) continue;
     const n = tributosNecessarios(c.nivel);
     if (meusSlots.length < n) continue;
     const tributos = meusSlots.slice(0, n);
@@ -411,6 +425,7 @@ const VALOR_NA_MAO = {
   vapo: 9, "forca-careca": 8, "tributo-destruir-monstro": 7, soco: 6, "tributo-destruir-magias": 6,
   "armadilha-big": 6, luz: 6, penetra: 5, saideira: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
   "flip-descartar": 5, "flip-comprar": 4, karecoh: 4, egoismo: 6, zoologico: 5,
+  sugadao: 7, "hoje-nao": 6, "bora-bill": 4, thangan: 5, hacker: 7, "w-laminas": 5,
   berinjela: 4, revolucao: 6, rafaza: 5, negao: 6, "flip-parasita": 5, litro: 3, daiki: 7,
   controle: 7, menino: 4, "mestre-caos": 6, upstart: 3, jinreca: 6, "mil-facas": 6, irmaollow: 5,
   wellington: 5, "mestre-laminas": 6, lamento: 5, gole: 5, "sai-daqui": 6, "adm-ditador": 7, "manoel-gelo": 4, "gelo-careca": 5, "pote-gelo": 4, "flip-buscar-magia": 4,

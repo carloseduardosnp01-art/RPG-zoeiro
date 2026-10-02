@@ -9,8 +9,8 @@
    Uma cópia fica no navegador; se o broker "esquecer", o login republica.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610020304";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610020304";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610020317";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610020317";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -32,6 +32,16 @@ function avisar() {
 }
 
 export const usuarioAtual = () => usuario;
+
+
+/* ---------- ID do jogador ---------- */
+
+// 8 letras/números sorteados na criação da conta (ex.: "K7QX-9M2P"). É público e nunca muda.
+const LETRAS_ID = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+export function novoIdJogador() {
+  const sorteio = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => LETRAS_ID[b % LETRAS_ID.length]).join("");
+  return `${sorteio.slice(0, 4)}-${sorteio.slice(4)}`;
+}
 
 
 /* ---------- Senha ---------- */
@@ -78,6 +88,7 @@ export async function criarConta({ nick, senha, tag, avatar, lembrar = true }) {
     nick: nick.trim(),
     tag: (tag || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4),
     avatar: avatar || "careca-feijao",
+    id: novoIdJogador(),
     vitorias: 0,
     derrotas: 0,
     xp: 0,
@@ -107,6 +118,7 @@ export async function entrar({ nick, senha, lembrar = true }) {
   const remoto = await lerRetido(topicoPerfil(chave));
   let perfil = mesclarPerfis(local?.perfil, remoto);
   if (!perfil) perfil = { chave, nick: nick.trim(), tag: "", avatar: "careca-feijao", vitorias: 0, derrotas: 0, xp: 0, atualizado: Date.now() };
+  if (!perfil.id) perfil = { ...perfil, id: novoIdJogador() }; // contas antigas ganham o ID no próximo login
   if (JSON.stringify(perfil) !== JSON.stringify(remoto)) publicar(topicoPerfil(chave), perfil, { reter: true });
 
   salvarContaLocal(conta, perfil);
@@ -127,6 +139,10 @@ export function restaurarSessao() {
   if (!salvo) return null;
   const local = contasLocais()[salvo.chave];
   usuario = mesclarPerfis(local?.perfil, salvo);
+  if (usuario && !usuario.id) {
+    usuario = { ...usuario, id: novoIdJogador() };
+    guardarLocalmente();
+  }
   avisar();
   return usuario;
 }
@@ -162,6 +178,9 @@ export function mesclarPerfis(a, b) {
   perfil.coinsGastas = Math.max(a.coinsGastas || 0, b.coinsGastas || 0);
   perfil.atualizado = Math.max(a.atualizado || 0, b.atualizado || 0);
   perfil.historico = juntarHistoricos(a.historico, b.historico);
+  // o ID nunca muda; se dois aparelhos sortearem ao mesmo tempo, os dois escolhem o mesmo
+  perfil.id = a.id && b.id ? (a.id < b.id ? a.id : b.id) : a.id || b.id;
+  perfil.presentes = [...new Set([...(a.presentes || []), ...(b.presentes || [])])].slice(-300);
   return perfil;
 }
 
@@ -242,6 +261,21 @@ export function registrarResultado({ dueloId, venceu, contraBot = false, oponent
   guardarLocalmente();
   avisar();
   return { xp: ganho, coins };
+}
+
+// Presente de um ADM (já conferido pela assinatura): soma as Careca Coins uma vez só
+export function aplicarPresente(p) {
+  if (!usuario || p.para !== usuario.chave || (usuario.presentes || []).includes(p.id)) return false;
+  usuario = {
+    ...usuario,
+    coinsGanhas: (usuario.coinsGanhas || 0) + p.coins,
+    presentes: [...(usuario.presentes || []), p.id].slice(-300),
+    atualizado: Date.now(),
+  };
+  publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
+  guardarLocalmente();
+  avisar();
+  return true;
 }
 
 export function atualizarPerfil(mudancas) {

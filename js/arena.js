@@ -14,11 +14,13 @@
 
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
-} from "./motor.js?v=202610020304";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610020304";
-import { el, esperar, aviso } from "./util.js?v=202610020304";
-import { tocar } from "./som.js?v=202610020304";
-import { abrirDetalhes } from "./catalogo.js?v=202610020304";
+} from "./motor.js?v=202610020317";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610020317";
+import { el, esperar, aviso } from "./util.js?v=202610020317";
+import { tocar } from "./som.js?v=202610020317";
+import { abrirDetalhes } from "./catalogo.js?v=202610020317";
+import * as adm from "./admin.js?v=202610020317";
+import { usuarioAtual } from "./conta.js?v=202610020317";
 
 const raiz = document.querySelector("#arena");
 
@@ -395,7 +397,15 @@ function infoJogador(estado, j, lado) {
     });
   } else {
     if (p.tag) nome.append(el("span", "tag-cla", `[${p.tag}] `));
-    nome.append(p.nick);
+    // ADM: só com a assinatura conferida (eu mesmo, ou a presença assinada do oponente no salão)
+    const ehAdm = adm.ehAdmin(p.chave) && (p.chave === usuarioAtual()?.chave ? adm.souAdm(p.chave) : adm.admVerificado(p.chave));
+    if (ehAdm) {
+      const selo = el("span", "selo-adm", "ADM");
+      selo.title = "Administrador do Duelo da Zoeira";
+      nome.append(el("span", "nome-adm", p.nick), selo);
+    } else {
+      nome.append(p.nick);
+    }
   }
   if (p.semDanoBatalha === estado.turno) {
     const asa = el("span", "protecao", " 🪽");

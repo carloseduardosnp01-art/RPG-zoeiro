@@ -1475,6 +1475,116 @@ a:hover {
   font-size: .85rem;
 }
 
+/* ADM: nome em vermelho com selo */
+.nome-adm {
+  color: #ff5a4f;
+  font-weight: 800;
+  text-shadow: 0 0 8px rgba(255, 70, 60, .45);
+}
+
+.selo-adm {
+  display: inline-block;
+  margin-left: .3em;
+  padding: .05em .4em;
+  color: #fff;
+  font-size: .68em;
+  font-weight: 900;
+  line-height: 1.35;
+  letter-spacing: .04em;
+  vertical-align: .12em;
+  background: linear-gradient(180deg, #ff5a4f, #b3140c);
+  border: 1px solid #ffd2cc;
+  border-radius: .35em;
+  box-shadow: 0 0 6px rgba(255, 60, 50, .55);
+}
+
+.msg--adm {
+  background: rgba(255, 70, 60, .08);
+  border-left: 3px solid #ff5a4f;
+}
+
+.msg__falso {
+  margin-left: .35em;
+  color: #ffb84d;
+  font-size: .75em;
+  font-weight: 700;
+}
+
+.msg--aviso {
+  margin: .4rem 0;
+  padding: .55rem .75rem;
+  background: linear-gradient(180deg, rgba(255, 90, 79, .18), rgba(255, 90, 79, .06));
+  border: 1px solid rgba(255, 110, 90, .6);
+  border-radius: .6rem;
+  box-shadow: 0 0 14px rgba(255, 70, 60, .2);
+}
+
+.msg__aviso-titulo {
+  color: #ff8a7a;
+  font-size: .75rem;
+  font-weight: 900;
+  letter-spacing: .06em;
+}
+
+.msg__aviso-texto {
+  margin: .15rem 0;
+  color: #fff;
+  font-weight: 700;
+}
+
+.msg__aviso-de {
+  color: var(--texto-suave);
+  font-size: .78rem;
+}
+
+.painel-adm {
+  margin-top: .9rem;
+  padding: .7rem .8rem;
+  background: rgba(255, 70, 60, .07);
+  border: 1px solid rgba(255, 110, 90, .45);
+  border-radius: .7rem;
+}
+
+.painel-adm__titulo {
+  margin: 0 0 .4rem;
+  color: #ff8a7a;
+  font-size: .95rem;
+  font-weight: 800;
+}
+
+.painel-adm__dica {
+  margin-bottom: .5rem;
+  color: var(--texto-suave);
+  font-size: .8rem;
+}
+
+.painel-adm__form {
+  display: grid;
+  gap: .4rem;
+}
+
+.painel-adm__linha {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr auto;
+  gap: .4rem;
+}
+
+.linha-id {
+  display: block;
+  margin-top: .2rem;
+  padding: 0;
+  color: var(--texto-suave);
+  font-size: .75rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+  background: none;
+  border: 0;
+}
+
+.linha-id:hover {
+  color: var(--ouro-claro);
+}
+
 /* Careca Coins */
 .selo-coins {
   display: inline-flex;

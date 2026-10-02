@@ -12,14 +12,15 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610020304";
-import * as conta from "./conta.js?v=202610020304";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610020304";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610020304";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610020304";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610020304";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610020304";
-import { tocar } from "./som.js?v=202610020304";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610020317";
+import * as conta from "./conta.js?v=202610020317";
+import * as adm from "./admin.js?v=202610020317";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610020317";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610020317";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610020317";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610020317";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610020317";
+import { tocar } from "./som.js?v=202610020317";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -32,6 +33,8 @@ const T = {
   mesas: `${PREFIXO}/mesas/+`,
   mesa: (id) => `${PREFIXO}/mesas/${id}`,
   pedidos: (id) => `${PREFIXO}/mesas/${id}/pedidos`,
+  presentes: (chave) => `${PREFIXO}/presentes/${chave}/+`,
+  presente: (chave, id) => `${PREFIXO}/presentes/${chave}/${id}`,
 };
 const EMOJIS = ["😂", "😎", "😡", "😱", "💀", "🤡", "🏆", "⚔️", "🔥", "👀", "👍", "👎", "👋", "🧑‍🦲", "💨", "🪤", "🍺", "🤝"];
 const PRESENCA_VALIDA = 80 * 1000;
@@ -126,10 +129,12 @@ async function atualizarUsuario(usuario) {
   clearInterval(s.batimento);
 
   if (!usuario) return;
+  await adm.carregarAdm(usuario.chave);
   desenharPerfil();
   if (!(await garantirConexao()) || !conta.usuarioAtual()) return;
 
   s.cancelarUsuario.push(assinar(T.dm(usuario.chave), receberDM));
+  s.cancelarUsuario.push(assinar(T.presentes(usuario.chave), receberPresente));
   publicarPresenca();
   s.batimento = setInterval(publicarPresenca, 25000);
   desenharAbas();
@@ -153,10 +158,11 @@ function desenharBotaoConta(usuario) {
   botao.title = "Ir para o salão";
 }
 
-function publicarPresenca() {
+async function publicarPresenca() {
   const u = conta.usuarioAtual();
   if (!u) return;
-  publicar(T.presenca(SID), { sid: SID, ...conta.cartaoPublico(u), status: s.statusDuelo, t: Date.now() }, { reter: true });
+  const dados = await adm.assinarPresenca({ sid: SID, ...conta.cartaoPublico(u), status: s.statusDuelo, t: Date.now() });
+  publicar(T.presenca(SID), dados, { reter: true });
 }
 
 function mudarStatusDuelo(status) {
@@ -289,8 +295,11 @@ function desenharPerfil() {
   const nomes = el("div");
   const nick = el("h3", "perfil__nick");
   if (u.tag) nick.append(el("span", "tag-cla", `[${u.tag}] `));
-  nick.append(botaoPerfil(u, u.nick));
-  nomes.append(nick, el("div", "perfil__nivel", `Nível ${nivelDoXp(u.xp)} · ${u.xp} XP`), seloCoins(conta.saldoCoins(u)));
+  const meuNome = botaoPerfil(u, "");
+  if (adm.souAdm(u.chave)) meuNome.append(el("span", "nome-adm", u.nick), seloAdm());
+  else meuNome.append(u.nick);
+  nick.append(meuNome);
+  nomes.append(nick, el("div", "perfil__nivel", `Nível ${nivelDoXp(u.xp)} · ${u.xp} XP`), seloCoins(conta.saldoCoins(u)), linhaId(u));
   topo.append(img, nomes);
 
   const barra = el("div", "barra-xp");
@@ -364,6 +373,90 @@ function desenharPerfil() {
   botoes.prepend(trocar);
 
   area.append(topo, barra, stats, deck, botoes, grade);
+  if (adm.ehAdmin(u.chave)) area.append(painelAdm(u));
+}
+
+// Painel do ADM: ativar a chave neste aparelho e mandar avisos
+function painelAdm(u) {
+  const painel = el("section", "painel-adm");
+  painel.append(el("h4", "painel-adm__titulo", "👑 Painel do ADM"));
+  if (!adm.souAdm(u.chave)) {
+    painel.append(el("p", "painel-adm__dica", "Esta conta é de ADM. Para usar os poderes neste aparelho, cole aqui a chave de ADM (o código que começa com ZOEIRA-ADM:)."));
+    const form = el("form", "painel-adm__form");
+    const campo = el("textarea", "form-control form-control-sm");
+    campo.rows = 2;
+    campo.placeholder = "ZOEIRA-ADM:...";
+    campo.setAttribute("aria-label", "Chave de ADM");
+    campo.autocomplete = "off";
+    campo.spellcheck = false;
+    const botao = el("button", "btn btn-sm btn-ouro", "🔑 Ativar ADM neste aparelho");
+    botao.type = "submit";
+    form.append(campo, botao);
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try {
+        await adm.ativarAdm(u.chave, campo.value);
+        aviso("👑 ADM ativado neste aparelho!", "ok");
+        tocar("magia");
+        desenharPerfil();
+        desenharOnline();
+        publicarPresenca();
+      } catch (erro) {
+        aviso(erro.message, "erro");
+      }
+    });
+    painel.append(form);
+    return painel;
+  }
+  painel.append(el("p", "painel-adm__dica", "ADM ativo neste aparelho. Para dar Careca Coins, abra o perfil do jogador (toque no nome dele)."));
+  const avisar = el("button", "btn btn-sm btn-ouro", "📢 Mandar aviso no chat");
+  avisar.type = "button";
+  avisar.addEventListener("click", async () => {
+    const texto = (prompt("Aviso para todo mundo no chat:") || "").trim().slice(0, 300);
+    if (!texto) return;
+    enviarGlobal(await adm.assinarMsg({ id: gerarId(), tipo: "aviso", de: conta.cartaoPublico(), texto, t: Date.now() }));
+    aviso("📢 Aviso enviado!", "ok");
+  });
+  const sair = el("button", "btn btn-sm btn-outline-secondary", "Desativar ADM neste aparelho");
+  sair.type = "button";
+  sair.addEventListener("click", () => {
+    if (!confirm("Desativar o ADM neste aparelho? Para ativar de novo vai precisar colar a chave.")) return;
+    adm.desativarAdm();
+    desenharPerfil();
+    desenharOnline();
+    publicarPresenca();
+  });
+  const botoes = el("div", "d-grid gap-2");
+  botoes.append(avisar, sair);
+  painel.append(botoes);
+  return painel;
+}
+
+// Selo vermelho de ADM ao lado do nome
+function seloAdm() {
+  const selo = el("span", "selo-adm", "ADM");
+  selo.title = "Administrador do Duelo da Zoeira";
+  return selo;
+}
+
+// "ID #K7QX-9M2P" (toque para copiar)
+function linhaId(p) {
+  if (!p.id) return el("span");
+  const b = el("button", "linha-id", `ID #${p.id}`);
+  b.type = "button";
+  b.title = "Copiar o ID";
+  b.addEventListener("click", () => {
+    navigator.clipboard?.writeText(p.id).then(() => aviso(`ID ${p.id} copiado!`, "ok"), () => {});
+  });
+  return b;
+}
+
+// Presente de ADM chegou: confere a assinatura e soma as moedas (uma vez só)
+async function receberPresente(dados) {
+  if (!dados || !(await adm.verificarPresente(dados))) return;
+  if (!conta.aplicarPresente(dados)) return;
+  aviso(`🎁 Você ganhou ${dados.coins} Careca Coins do ADM ${dados.deNick || ""}!${dados.motivo ? ` (${dados.motivo})` : ""}`, "ok", 8000);
+  tocar("vitoria");
 }
 
 function receberPerfil(perfil, topico) {
@@ -407,7 +500,10 @@ function desenharRanking() {
     if (u && p.chave === u.chave) li.classList.add("ranking__minha");
     const medalha = ["🥇", "🥈", "🥉"][i];
     if (medalha) li.dataset.medalha = medalha;
-    const nome = botaoPerfil(p, `${p.tag ? `[${p.tag}] ` : ""}${p.nick}`);
+    const nome = botaoPerfil(p, "");
+    if (p.tag) nome.append(`[${p.tag}] `);
+    if (adm.ehAdmin(p.chave)) nome.append(el("span", "nome-adm", p.nick), seloAdm());
+    else nome.append(p.nick);
     li.append(nome);
     const valor = porXp ? `Nv ${nivelDoXp(p.xp)} · ${p.xp} XP` : `${p.vitorias}V ${p.derrotas}D`;
     li.append(el("span", "ranking__v", valor));
@@ -454,6 +550,45 @@ function seloCoins(saldo) {
   return selo;
 }
 
+// ADM: dar Careca Coins para um jogador (presente assinado; o jogo dele confere e soma)
+function formPresente(p) {
+  const form = el("form", "painel-adm painel-adm--presente");
+  form.append(el("h4", "painel-adm__titulo", `🎁 Dar Careca Coins para ${p.nick}`));
+  const linha = el("div", "painel-adm__linha");
+  const qtd = el("input", "form-control form-control-sm");
+  qtd.type = "number";
+  qtd.min = "1";
+  qtd.max = "100000";
+  qtd.value = "10";
+  qtd.setAttribute("aria-label", "Quantidade de Careca Coins");
+  const motivo = el("input", "form-control form-control-sm");
+  motivo.maxLength = 80;
+  motivo.placeholder = "Motivo (ex.: campeão da Copa Careca)";
+  motivo.setAttribute("aria-label", "Motivo");
+  const botao = el("button", "btn btn-sm btn-ouro", "🎁 Dar");
+  botao.type = "submit";
+  linha.append(qtd, motivo, botao);
+  form.append(linha);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const coins = Math.floor(Number(qtd.value));
+    if (!(coins >= 1 && coins <= 100000)) {
+      aviso("Escolha de 1 a 100000 Careca Coins.", "erro");
+      return;
+    }
+    const u = conta.usuarioAtual();
+    const presente = await adm.assinarPresente({
+      id: gerarId(12), para: p.chave, coins, motivo: motivo.value.trim().slice(0, 80), de: u.chave, deNick: u.nick, t: Date.now(),
+    });
+    publicar(T.presente(p.chave, presente.id), presente, { reter: true });
+    const texto = `🎁 ${p.nick} ganhou ${coins} Careca Coins${presente.motivo ? `: ${presente.motivo}` : "!"}`;
+    enviarGlobal(await adm.assinarMsg({ id: gerarId(), tipo: "aviso", de: conta.cartaoPublico(), texto, t: Date.now() }));
+    aviso(`Presente enviado para ${p.nick}! Ele recebe assim que estiver online.`, "ok");
+    form.reset();
+  });
+  return form;
+}
+
 function abrirPerfil(cartao) {
   const u = conta.usuarioAtual();
   // o perfil completo vem do broker; o meu, da conta (mais novo)
@@ -462,14 +597,17 @@ function abrirPerfil(cartao) {
 
   const corpo = $("#perfil-jogador-corpo");
   corpo.replaceChildren();
-  $("#perfil-jogador-titulo").textContent = `${p.tag ? `[${p.tag}] ` : ""}${p.nick}`;
+  const titulo = $("#perfil-jogador-titulo");
+  titulo.textContent = `${p.tag ? `[${p.tag}] ` : ""}`;
+  if (adm.ehAdmin(p.chave)) titulo.append(el("span", "nome-adm", p.nick), seloAdm());
+  else titulo.append(p.nick);
 
   const topo = el("div", "pj__topo");
   const img = el("img", "pj__avatar");
   img.src = `img/cartas/${p.avatar || "careca-feijao"}.webp`;
   img.alt = "";
   const info = el("div", "pj__info");
-  info.append(el("div", "pj__nivel", `Nível ${nivelDoXp(p.xp || 0)} · ${p.xp || 0} XP`), seloCoins(conta.saldoCoins(p)));
+  info.append(el("div", "pj__nivel", `Nível ${nivelDoXp(p.xp || 0)} · ${p.xp || 0} XP`), seloCoins(conta.saldoCoins(p)), linhaId(p));
   const barra = el("div", "barra-xp");
   const cheio = el("span");
   cheio.style.width = `${progressoNivel(p.xp || 0) * 100}%`;
@@ -510,6 +648,7 @@ function abrirPerfil(cartao) {
   historico.append(lista);
 
   corpo.append(topo, stats, historico);
+  if (u && adm.souAdm(u.chave)) corpo.append(formPresente(p));
 
   const botaoDesafiar = $("#perfil-jogador-desafiar");
   const souEu = u && p.chave === u.chave;
@@ -530,6 +669,13 @@ function receberPresenca(dados, topico) {
   if (!dados) s.online.delete(sid);
   else s.online.set(sid, dados);
   desenharOnline();
+  // ADM: só aparece como ADM se a assinatura conferir
+  if (dados && adm.ehAdmin(dados.chave)) {
+    adm.verificarPresenca(dados).then((ok) => {
+      dados.admOk = ok;
+      desenharOnline();
+    });
+  }
 }
 
 // Um item por duelista (se tiver duas abas abertas, vale a mais recente)
@@ -568,7 +714,9 @@ function desenharOnline() {
     avatar.append(img, el("span", "avatar__nivel", String(p.nivel)));
     b.append(el("span", "usuario-online__bolinha"), avatar);
     if (p.tag) b.append(el("span", "tag-cla", `|${p.tag}|`));
-    b.append(p.nick);
+    const admOk = p.admOk || (p.chave === u.chave && adm.souAdm(u.chave));
+    b.append(admOk ? el("span", "nome-adm", p.nick) : p.nick);
+    if (admOk) b.append(seloAdm());
     const abrir = (ev) => {
       ev.preventDefault();
       abrirMenuDuelista(p, ev);
@@ -698,13 +846,29 @@ function desenharMensagens() {
       area.append(caixaDesafio(s.desafios.get(item.id)));
     } else if (item.tipo === "mesa" && item.mesa) {
       area.append(caixaMesa(item.mesa));
+    } else if (item.tipo === "aviso" && item.admOk) {
+      // Aviso de ADM (assinatura conferida)
+      const d = el("div", "msg msg--aviso");
+      const autor = botaoPerfil(item.de, "", "msg__autor");
+      autor.append(el("span", "nome-adm", item.de.nick), seloAdm());
+      const rodape = el("div", "msg__aviso-de");
+      rodape.append("— ", autor, ` · ${hora(item.t)}`);
+      d.append(el("div", "msg__aviso-titulo", "📢 AVISO DO ADM"), el("div", "msg__aviso-texto", item.texto), rodape);
+      area.append(d);
     } else {
-      const d = el("div", "msg" + (u && item.de.chave === u.chave ? " msg--minha" : ""));
+      const ehAdm = adm.ehAdmin(item.de.chave);
+      const d = el("div", "msg" + (u && item.de.chave === u.chave ? " msg--minha" : "") + (ehAdm && item.admOk ? " msg--adm" : ""));
       d.append(el("span", "msg__hora", `[${hora(item.t)}]`));
       const autor = botaoPerfil(item.de, "", "msg__autor");
       if (item.de.tag) autor.append(el("span", "tag-cla", `|${item.de.tag}| `));
-      autor.append(`${item.de.nick}:`);
-      d.append(autor, item.texto);
+      if (ehAdm && item.admOk) autor.append(el("span", "nome-adm", item.de.nick), seloAdm(), ":");
+      else autor.append(`${item.de.nick}:`);
+      if (ehAdm && item.admOk === false) {
+        const alerta = el("span", "msg__falso", "⚠ não verificado");
+        alerta.title = "Essa mensagem diz ser de um ADM, mas não tem a assinatura dele.";
+        autor.append(alerta);
+      }
+      d.append(autor, " ", item.texto);
       area.append(d);
     }
   }
@@ -735,9 +899,19 @@ function adicionarMensagemGlobal(msg, nova) {
   }
   const u = conta.usuarioAtual();
   if (nova && u && msg.de?.chave !== u.chave) tocar("mensagem");
+  conferirAdm(item);
 }
 
-function enviarMensagem() {
+// Mensagem que diz ser de ADM: confere a assinatura e redesenha
+function conferirAdm(item) {
+  if (!adm.ehAdmin(item.de?.chave)) return;
+  adm.verificarMsg(item).then((ok) => {
+    item.admOk = ok;
+    desenharMensagens();
+  });
+}
+
+async function enviarMensagem() {
   const campo = $("#campo-chat");
   const texto = campo.value.trim().slice(0, 300);
   const u = conta.usuarioAtual();
@@ -750,20 +924,23 @@ function enviarMensagem() {
   campo.value = "";
 
   if (s.abaAtual === "global") {
-    enviarGlobal({ id: gerarId(), tipo: "msg", de: conta.cartaoPublico(), texto, t: Date.now() });
+    enviarGlobal(await adm.assinarMsg({ id: gerarId(), tipo: "msg", de: conta.cartaoPublico(), texto, t: Date.now() }));
   } else {
     const aba = s.abas.get(s.abaAtual);
-    const id = gerarId();
-    enviarDM(aba.chave, { id, tipo: "msg", texto });
-    s.vistos.add(id);
-    adicionarItem(aba.id, { id, tipo: "msg", de: conta.cartaoPublico(), texto, t: Date.now() });
+    const msg = await adm.assinarMsg({ id: gerarId(), tipo: "msg", de: conta.cartaoPublico(), texto, t: Date.now() });
+    publicar(T.dm(aba.chave), msg);
+    s.vistos.add(msg.id);
+    const item = { ...msg };
+    adicionarItem(aba.id, item);
+    conferirAdm(item);
   }
 }
 
 function enviarGlobal(msg) {
   publicar(T.chat, msg);
   // Atualiza o histórico retido (últimas 40)
-  const anteriores = s.abas.get("global").itens.filter((i) => i.tipo === "msg" || i.tipo === "sistema" || i.tipo === "mesa").slice(-39);
+  const anteriores = s.abas.get("global").itens.filter((i) => ["msg", "sistema", "mesa", "aviso"].includes(i.tipo)).slice(-39)
+    .map(({ admOk, ...resto }) => resto);
   publicar(T.historico, [...anteriores, msg], { reter: true });
 }
 
@@ -780,7 +957,9 @@ function receberDM(dados) {
   switch (dados.tipo) {
     case "msg": {
       const aba = abrirAbaPrivada(dados.de, false);
-      adicionarItem(aba.id, { id: dados.id, tipo: "msg", de: dados.de, texto: String(dados.texto).slice(0, 300), t: dados.t });
+      const item = { id: dados.id, tipo: "msg", de: dados.de, texto: String(dados.texto).slice(0, 300), t: dados.t, assinatura: dados.assinatura };
+      adicionarItem(aba.id, item);
+      conferirAdm(item);
       tocar("mensagem");
       break;
     }

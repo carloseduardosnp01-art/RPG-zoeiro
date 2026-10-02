@@ -20,16 +20,16 @@
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
         crossorigin="anonymous">
 
-  <link rel="stylesheet" href="css/estilo.css?v=202610020106">
-  <link rel="stylesheet" href="css/carta.css?v=202610020106">
-  <link rel="stylesheet" href="css/arena.css?v=202610020106">
+  <link rel="stylesheet" href="css/estilo.css?v=202610020157">
+  <link rel="stylesheet" href="css/carta.css?v=202610020157">
+  <link rel="stylesheet" href="css/arena.css?v=202610020157">
 
   <!-- Bootstrap (JS) e MQTT.js (conexão em tempo real para o modo online) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
           integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
           crossorigin="anonymous" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js" defer></script>
-  <script type="module" src="js/app.js?v=202610020106"></script>
+  <script type="module" src="js/app.js?v=202610020157"></script>
 </head>
 <body>
   <a class="visually-hidden-focusable pular-link" href="#conteudo">Pular para o conteúdo</a>
@@ -166,6 +166,7 @@
               <option value="GELO">Gelo</option>
               <option value="VENTO">Vento</option>
               <option value="INTERNET">Internet</option>
+              <option value="DIVINO">Divino</option>
               <option value="MAGIA">Magia</option>
               <option value="ARMADILHA">Armadilha</option>
             </select>
@@ -211,7 +212,7 @@
             <div class="barra-deck">
               <div class="barra-deck__contagem" aria-live="polite">
                 <strong id="deck-total">40</strong>
-                <span>/ 60 cartas<small>mínimo 40 · até 3 cópias de cada</small></span>
+                <span>/ 60 cartas<small>mínimo 40 · até 3 cópias de cada · Fusões ficam à parte, no Deck Adicional (até 15)</small></span>
               </div>
               <div class="barra-deck__tipos" id="deck-tipos"></div>
               <div class="barra-deck__status" id="deck-status" role="status"></div>

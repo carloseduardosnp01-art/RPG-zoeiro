@@ -27,6 +27,7 @@ export const ATRIBUTOS = {
   GELO: { chave: "gelo", kanji: "氷", nome: "Gelo" },
   VENTO: { chave: "vento", kanji: "風", nome: "Vento" },
   INTERNET: { chave: "internet", kanji: "网", nome: "Internet" },
+  DIVINO: { chave: "divino", kanji: "神", nome: "Divino" },
   MAGIA: { chave: "magia", kanji: "魔", nome: "Magia" },
   ARMADILHA: { chave: "armadilha", kanji: "罠", nome: "Armadilha" },
 };
@@ -51,24 +52,25 @@ const SUBTIPOS_MAGIA = {
 const ehVire = (c) => Boolean(c.efeito && c.efeito.startsWith("flip-"));
 
 export function moldura(c) {
-  if (c.categoria === "monstro") return c.subtipo === "normal" ? "normal" : "efeito";
+  if (c.categoria === "monstro") return c.subtipo === "fusao" ? "fusao" : c.subtipo === "normal" ? "normal" : "efeito";
   return c.categoria;
 }
 
 export function nomeCategoria(c) {
-  if (c.categoria === "monstro") return c.subtipo === "normal" ? "Monstro Normal" : "Monstro de Efeito";
+  if (c.categoria === "monstro") return c.subtipo === "fusao" ? "Monstro de Fusão" : c.subtipo === "normal" ? "Monstro Normal" : "Monstro de Efeito";
   if (c.categoria === "magia") return "Magia";
   return "Armadilha";
 }
 
 export function nomeSubtipo(c) {
-  if (c.categoria === "monstro") return ehVire(c) ? "Virar / Efeito" : c.subtipo === "normal" ? "Normal" : "Efeito";
+  if (c.categoria === "monstro") return c.subtipo === "fusao" ? "Fusão / Efeito" : ehVire(c) ? "Virar / Efeito" : c.subtipo === "normal" ? "Normal" : "Efeito";
   return SUBTIPOS_MAGIA[c.subtipo]?.nome || "Normal";
 }
 
 export function linhaTipo(c) {
   if (c.categoria !== "monstro") return "";
   if (c.subtipo === "normal") return `[${c.tipo}]`;
+  if (c.subtipo === "fusao") return `[${c.tipo} / Fusão / Efeito]`;
   if (ehVire(c)) return `[${c.tipo} / Virar / Efeito]`;
   return `[${c.tipo} / Efeito]`;
 }

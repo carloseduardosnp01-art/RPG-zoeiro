@@ -14,11 +14,11 @@
 
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
-} from "./motor.js?v=202610020106";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610020106";
-import { el, esperar, aviso } from "./util.js?v=202610020106";
-import { tocar } from "./som.js?v=202610020106";
-import { abrirDetalhes } from "./catalogo.js?v=202610020106";
+} from "./motor.js?v=202610020157";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610020157";
+import { el, esperar, aviso } from "./util.js?v=202610020157";
+import { tocar } from "./som.js?v=202610020157";
+import { abrirDetalhes } from "./catalogo.js?v=202610020157";
 
 const raiz = document.querySelector("#arena");
 
@@ -91,6 +91,9 @@ const FRASES = {
   "bora-bill": "BORA, BILL!",
   thangan: "O THANGAN BUSCOU!",
   hacker: "SISTEMA HACKEADO!",
+  fusao: "FUSÃO!",
+  obelisco: "PUNHO DO DEUS IMENSO!",
+  "armadura-gelo": "VIROU GELO!",
 };
 
 const PROVOCACOES = ["😂 Chora não!", "🧑‍🦲 Careca demais!", "💨 Vapo!", "🤡 Tá com medo?", "🔥 Joga logo!", "👋 GG"];
@@ -422,7 +425,7 @@ function desenharCampo(estado) {
   // Linha 1: deck do oponente, magias do oponente, zona extra
   campo.append(zonaPilha(estado, op, "deck"));
   invertido.forEach((s) => campo.append(zonaCarta(estado, op, "magias", s)));
-  campo.append(zonaDecorativa(op));
+  campo.append(zonaExtra(estado, op));
   // Linha 2: cemitério do oponente, monstros do oponente
   campo.append(zonaPilha(estado, op, "cemiterio"));
   invertido.forEach((s) => campo.append(zonaCarta(estado, op, "monstros", s)));
@@ -434,7 +437,7 @@ function desenharCampo(estado) {
   for (let s = 0; s < ZONAS; s++) campo.append(zonaCarta(estado, eu, "monstros", s));
   campo.append(zonaPilha(estado, eu, "cemiterio"));
   // Linha 4: minhas magias e meu deck
-  campo.append(zonaDecorativa(eu));
+  campo.append(zonaExtra(estado, eu));
   for (let s = 0; s < ZONAS; s++) campo.append(zonaCarta(estado, eu, "magias", s));
   campo.append(zonaPilha(estado, eu, "deck"));
 }
@@ -456,8 +459,23 @@ function vaziaCom(z, zona) {
   return z;
 }
 
-function zonaDecorativa(j) {
-  return vaziaCom(criarZona(j, "extra"), "extra");
+// Deck Adicional (Monstros de Fusão). Sem nenhum, a zona fica só de enfeite ("Zona Careca").
+function zonaExtra(estado, j) {
+  const lista = estado.jogadores[j].extra || [];
+  const z = criarZona(j, "extra");
+  if (!lista.length) return vaziaCom(z, "extra");
+  const qtd = `${lista.length} carta${lista.length === 1 ? "" : "s"}`;
+  const b = el("button", "pilha-campo");
+  b.type = "button";
+  b.append(criarVerso(), el("span", "pilha-campo__qtd", String(lista.length)));
+  b.title = "Deck Adicional (Monstros de Fusão)";
+  b.setAttribute("aria-label", `${deQuem(estado, j, "Deck Adicional")}: ${qtd}`);
+  b.addEventListener("click", () => {
+    if (j === sessao.eu) verDeckAdicional(sessao.estado, j);
+    else aviso(`${deQuem(estado, j, "Deck Adicional")}: ${qtd}.`);
+  });
+  z.append(b);
+  return z;
 }
 
 function zonaPilha(estado, j, zona) {
@@ -704,7 +722,7 @@ function descreverEvento(estado, ev) {
     case "turno": return { texto: `— Turno ${ev.turno}: ${quem(ev.j)} —`, classe: "log--turno" };
     case "compra": return ev.inicial ? null : { texto: ev.j === eu ? `Você comprou ${nome(ev.iid)}.` : `${quem(ev.j)} comprou 1 carta.`, classe: minha };
     case "invocacao": {
-      const modos = { normal: "invocou", tributo: "invocou por Invocação-Tributo", flip: "virou (Invocação-Flip)", especial: "invocou por Invocação-Especial" };
+      const modos = { normal: "invocou", tributo: "invocou por Invocação-Tributo", flip: "virou (Invocação-Flip)", especial: "invocou por Invocação-Especial", fusao: "invocou por Invocação-Fusão" };
       return { texto: `${quem(ev.j)} ${modos[ev.modo]} ${nome(ev.iid)}.`, classe: minha };
     }
     case "tributo": return { texto: `${nome(ev.iid)} foi oferecido como tributo.`, classe: minha };
@@ -729,6 +747,8 @@ function descreverEvento(estado, ev) {
     case "banida": return { texto: `🚫 ${nome(ev.iid)} foi banido do jogo.`, classe: "log--armadilha" };
     case "paraMao": return { texto: `↩️ ${nome(ev.iid)} voltou para a mão de ${quem(ev.j)}.`, classe: "log--armadilha" };
     case "ajusteDeck": return { texto: `⚠️ ${ev.nick ? `O deck de ${ev.nick} tinha` : ev.j === eu ? "Seu deck tinha" : `O deck de ${quem(ev.j)} tinha`} ${ev.trocadas} carta${ev.trocadas > 1 ? "s" : ""} acima do limite: ${ev.trocadas > 1 ? "viraram" : "virou"} Careca Feijão.`, classe: "log--turno" };
+    case "material": return { texto: `${nome(ev.iid)} foi usado como Matéria de Fusão.`, classe: minha };
+    case "aoExtra": return { texto: `↩️ ${nome(ev.iid)} voltou para o Deck Adicional de ${quem(ev.j)}.`, classe: "log--armadilha" };
     case "negada": return { texto: `⛔ ${nome(ev.iid)} foi negada e destruída!`, classe: "log--armadilha" };
     case "parasita": return { texto: `🐛 ${nome(ev.iid)} foi embaralhado com a face para cima no deck de ${quem(ev.j)}!`, classe: "log--armadilha" };
     case "indestrutivel": return { texto: `🛡️ ${nome(ev.iid)} não pode ser destruído em batalha.`, classe: "log--armadilha" };
@@ -910,6 +930,7 @@ function escolherCartas({ titulo, sub = "", candidatos, min, max, podeCancelar =
         : loc.zona === "deck" ? "No seu deck"
         : loc.zona === "cemiterio" ? (loc.j === eu ? "No seu Cemitério" : "Cemitério do oponente")
         : loc.zona === "banidas" ? "Banida"
+        : loc.zona === "extra" ? "Deck Adicional"
         : loc.j === eu ? "Seu campo" : "Campo do oponente";
       b.append(el("span", "escolha__lado", lado));
       b.addEventListener("click", () => {
@@ -982,25 +1003,41 @@ async function abrirEscolhaPendente(estado) {
   }
 }
 
-// Cemitério e cartas banidas de um jogador, em duas abas. Tocar numa carta mostra o texto dela.
+// Cemitério e cartas banidas de um jogador, em duas abas
 function verCemiterio(estado, j, aba = "cemiterio") {
-  fecharMenu();
   const p = estado.jogadores[j];
-  const listas = {
-    cemiterio: [...p.cemiterio].reverse(),
-    banidas: [...(p.banidas || [])].reverse(),
-  };
-  if (aba === "cemiterio" && !listas.cemiterio.length && listas.banidas.length) aba = "banidas";
+  verPilhas(estado, deQuem(estado, j, "Cemitério"), [
+    { chave: "cemiterio", icone: "🪦", rotulo: "Cemitério", lista: [...p.cemiterio].reverse(),
+      sub: "A primeira é a do topo. Toque numa carta para ler o efeito.", vazio: "Nenhuma carta no Cemitério." },
+    { chave: "banidas", icone: "🚫", rotulo: "Banidas", lista: [...(p.banidas || [])].reverse(),
+      sub: "Cartas banidas saíram do jogo: nada traz elas de volta.", vazio: "Nenhuma carta banida." },
+  ], aba);
+}
+
+// Deck Adicional (só o dono vê as cartas)
+function verDeckAdicional(estado, j) {
+  verPilhas(estado, deQuem(estado, j, "Deck Adicional"), [
+    { chave: "extra", icone: "🌀", rotulo: "Monstros de Fusão", lista: [...(estado.jogadores[j].extra || [])],
+      sub: "Eles entram em campo pela Magia \"Suruba\". Toque numa carta para ler o efeito.", vazio: "Nenhum Monstro de Fusão." },
+  ], "extra");
+}
+
+// Janela com abas de cartas só para olhar. Tocar numa carta mostra o texto dela.
+function verPilhas(estado, titulo, abas, aba) {
+  fecharMenu();
+  const atual = abas.find((x) => x.chave === aba) || abas[0];
+  if (!atual.lista.length) aba = (abas.find((x) => x.lista.length) || atual).chave;
 
   const fundo = el("div", "escolha");
   fundo.setAttribute("role", "dialog");
   fundo.setAttribute("aria-modal", "true");
-  fundo.setAttribute("aria-label", deQuem(estado, j, "Cemitério"));
+  fundo.setAttribute("aria-label", titulo);
   const caixa = el("div", "escolha__caixa");
-  caixa.append(el("h3", "escolha__titulo", deQuem(estado, j, "Cemitério")));
+  caixa.append(el("h3", "escolha__titulo", titulo));
 
-  const abas = el("div", "pilhas__abas");
-  abas.setAttribute("role", "tablist");
+  const barra = el("div", "pilhas__abas");
+  barra.setAttribute("role", "tablist");
+  barra.hidden = abas.length < 2;
   const sub = el("p", "escolha__sub");
   const detalhe = el("div", "pilhas__detalhe");
   const grade = el("div", "escolha__cartas");
@@ -1015,14 +1052,12 @@ function verCemiterio(estado, j, aba = "cemiterio") {
     grade.querySelectorAll(".escolha__opcao").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.iid === iid)));
   };
 
-  const mostrar = (qual) => {
-    for (const [k, b] of Object.entries(botoesAba)) b.setAttribute("aria-selected", String(k === qual));
-    const lista = listas[qual];
-    sub.textContent = lista.length
-      ? qual === "cemiterio" ? "A primeira é a do topo. Toque numa carta para ler o efeito." : "Cartas banidas saíram do jogo: nada traz elas de volta."
-      : qual === "cemiterio" ? "Nenhuma carta no Cemitério." : "Nenhuma carta banida.";
+  const mostrar = (chave) => {
+    const info = abas.find((x) => x.chave === chave);
+    for (const [k, b] of Object.entries(botoesAba)) b.setAttribute("aria-selected", String(k === chave));
+    sub.textContent = info.lista.length ? info.sub : info.vazio;
     detalhe.hidden = true;
-    grade.replaceChildren(...lista.map((iid) => {
+    grade.replaceChildren(...info.lista.map((iid) => {
       const b = el("button", "escolha__opcao");
       b.type = "button";
       b.dataset.iid = iid;
@@ -1037,24 +1072,24 @@ function verCemiterio(estado, j, aba = "cemiterio") {
     }));
   };
 
-  for (const [k, icone, rotulo] of [["cemiterio", "🪦", "Cemitério"], ["banidas", "🚫", "Banidas"]]) {
-    const b = el("button", "pilhas__aba", `${icone} ${rotulo} (${listas[k].length})`);
+  for (const info of abas) {
+    const b = el("button", "pilhas__aba", `${info.icone} ${info.rotulo} (${info.lista.length})`);
     b.type = "button";
     b.setAttribute("role", "tab");
-    b.addEventListener("click", () => mostrar(k));
-    botoesAba[k] = b;
-    abas.append(b);
+    b.addEventListener("click", () => mostrar(info.chave));
+    botoesAba[info.chave] = b;
+    barra.append(b);
   }
 
   const botoes = el("div", "escolha__botoes");
   const fechar = el("button", "btn btn-outline-light", "Fechar");
   fechar.type = "button";
   botoes.append(fechar);
-  caixa.append(abas, sub, detalhe, grade, botoes);
+  caixa.append(barra, sub, detalhe, grade, botoes);
   fundo.append(caixa);
   document.body.append(fundo);
   mostrar(aba);
-  botoesAba[aba].focus();
+  (abas.length > 1 ? botoesAba[aba] : fechar).focus();
 
   const teclas = (e) => {
     if (e.key === "Escape") terminar();
@@ -1090,7 +1125,7 @@ async function tocarEventos(eventos, estadoNovo) {
       case "invocacao": {
         const c = carta(estadoNovo, ev.iid);
         tocar("invocacao");
-        const frase = ev.modo === "tributo" ? "INVOCAÇÃO-TRIBUTO!" : ev.modo === "especial" ? (FRASES[c.efeito] || "INVOCAÇÃO-ESPECIAL!") : ev.modo === "flip" ? "INVOCAÇÃO-FLIP!" : "INVOCAÇÃO!";
+        const frase = ev.modo === "fusao" ? "INVOCAÇÃO-FUSÃO!" : ev.modo === "tributo" ? "INVOCAÇÃO-TRIBUTO!" : ev.modo === "especial" ? (FRASES[c.efeito] || "INVOCAÇÃO-ESPECIAL!") : ev.modo === "flip" ? "INVOCAÇÃO-FLIP!" : "INVOCAÇÃO!";
         await corte(estadoNovo, ev.iid, ev.j, frase, "invocacao", ev.j === sessao.eu ? 650 : 950);
         break;
       }
@@ -1162,6 +1197,7 @@ async function tocarEventos(eventos, estadoNovo) {
         break;
       }
       case "parasita":
+      case "aoExtra":
       case "paraMao": {
         const alvo = raiz.querySelector(`.campo [data-iid="${ev.iid}"]`);
         if (alvo) {

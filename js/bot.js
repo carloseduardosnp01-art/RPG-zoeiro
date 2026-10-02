@@ -7,8 +7,8 @@
 
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
-  luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNecessarios, validar, alvosDeAtaque,
-} from "./motor.js?v=202610020106";
+  luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosDaCarta, validar, alvosDeAtaque, paresDeFusao,
+} from "./motor.js?v=202610020157";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 
@@ -124,6 +124,10 @@ function* jogadasPrincipais(estado, j) {
       const alvo = deles2.sort((a, b) => forca(estado, j, b) - forca(estado, j, a))[0];
       if (alvo && forca(estado, j, alvo) >= (ef === "negao" ? 1500 : 1800)) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [alvo] };
     }
+    if (ef === "obelisco" && deles.length >= 2) {
+      const baratos = [...op.alvos.candidatos].sort((a, b) => forca(estado, j, a) - forca(estado, j, b)).slice(0, 2);
+      if (somaForca(estado, j, deles) > somaForca(estado, j, baratos) + 1000) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: baratos };
+    }
     if (ef === "mestre-caos") {
       yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [[...op.alvos.candidatos].sort((a, b) => valorNaMao(estado, j, b) - valorNaMao(estado, j, a))[0]] };
     }
@@ -182,6 +186,13 @@ function* jogadasPrincipais(estado, j) {
       const op = opcoes(iid).find((x) => x.id === "ativar");
       if (op) yield { tipo: "ativar", iid, alvos: [[...op.alvos.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0]] };
     }
+  }
+
+  // 1f5. Suruba: faz a Fusão mais forte possível
+  for (const { iid, c } of mao) {
+    if (c.efeito !== "fusao") continue;
+    const op = opcoes(iid).find((x) => x.id === "ativar");
+    if (op) yield { tipo: "ativar", iid, alvos: [[...op.alvos.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0]] };
   }
 
   // 1f3. Revolução Animal baixada: descarta a pior carta (de preferência um "Animal") e traz os "Animal" do Cemitério
@@ -324,7 +335,7 @@ function melhorInvocacao(estado, j, mao) {
   for (const { iid, c } of mao) {
     if (c.categoria !== "monstro") continue;
     if (c.efeito === "w-laminas" && p.monstros.some((m) => m && carta(estado, m.iid).efeito === "w-laminas")) continue;
-    const n = tributosNecessarios(c.nivel);
+    const n = tributosDaCarta(c);
     if (meusSlots.length < n) continue;
     const tributos = meusSlots.slice(0, n);
     const custo = tributos.reduce((t, x) => t + x.valor, 0);
@@ -425,6 +436,7 @@ const VALOR_NA_MAO = {
   vapo: 9, "forca-careca": 8, "tributo-destruir-monstro": 7, soco: 6, "tributo-destruir-magias": 6,
   "armadilha-big": 6, luz: 6, penetra: 5, saideira: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
   "flip-descartar": 5, "flip-comprar": 4, karecoh: 4, egoismo: 6, zoologico: 5,
+  "armadura-gelo": 7, obelisco: 6, fusao: 5,
   sugadao: 7, "hoje-nao": 6, "bora-bill": 4, thangan: 5, hacker: 7, "w-laminas": 5,
   berinjela: 4, revolucao: 6, rafaza: 5, negao: 6, "flip-parasita": 5, litro: 3, daiki: 7,
   controle: 7, menino: 4, "mestre-caos": 6, upstart: 3, jinreca: 6, "mil-facas": 6, irmaollow: 5,
@@ -466,6 +478,12 @@ function escolherAlvos(estado, j, pend) {
     return atkAtual(estado, deles[0]) >= 1500 ? [meus[0], deles[0]] : [];
   }
   if (pend.efeito === "midas-invocar") return [];
+  // Fusão: os materiais que menos fazem falta
+  if (pend.efeito === "fusao") {
+    const custo = (x) => (localizar(estado, x).zona === "monstros" ? forca(estado, j, x) : valorNaMao(estado, j, x) * 300);
+    const pares = paresDeFusao(estado, j, pend.fusao).sort((a, b) => custo(a[0]) + custo(a[1]) - custo(b[0]) - custo(b[1]));
+    return pares[0] || [];
+  }
   if (pend.efeito === "revolucao") {
     return [...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0)).slice(0, pend.max);
   }

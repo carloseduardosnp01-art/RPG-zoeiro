@@ -4,13 +4,13 @@
    deck para tirar. Regras: de 40 a 60 cartas e até 3 cópias de cada.
    ========================================================================== */
 
-import { montarDeck, DECK_MIN, DECK_MAX, limiteDaCarta, excessoDeLimite } from "./motor.js?v=202610020106";
-import { criarCarta } from "./cartas-ui.js?v=202610020106";
-import { deckAtual, salvarDeck, paraMapa, paraLista, totalDoMapa, ehDeckPadrao } from "./deck.js?v=202610020106";
-import { abrirDetalhes } from "./catalogo.js?v=202610020106";
-import * as conta from "./conta.js?v=202610020106";
-import { el, aviso } from "./util.js?v=202610020106";
-import { tocar } from "./som.js?v=202610020106";
+import { montarDeck, DECK_MIN, DECK_MAX, EXTRA_MAX, ehFusao, limiteDaCarta, excessoDeLimite } from "./motor.js?v=202610020157";
+import { criarCarta } from "./cartas-ui.js?v=202610020157";
+import { deckAtual, salvarDeck, paraMapa, paraLista, totalDoMapa, ehDeckPadrao } from "./deck.js?v=202610020157";
+import { abrirDetalhes } from "./catalogo.js?v=202610020157";
+import * as conta from "./conta.js?v=202610020157";
+import { el, aviso } from "./util.js?v=202610020157";
+import { tocar } from "./som.js?v=202610020157";
 
 const ORDEM_CATEGORIA = { monstro: 0, magia: 1, armadilha: 2 };
 
@@ -21,8 +21,10 @@ let rascunho = {};  // deck sendo editado
 const $ = (sel) => document.querySelector(sel);
 
 export function iniciarEditorDeck(lista) {
+  // Monstros de Fusão (Deck Adicional) por último
+  const ordem = (c) => (ehFusao(c) ? 3 : ORDEM_CATEGORIA[c.categoria]);
   cartas = [...lista].sort((a, b) =>
-    ORDEM_CATEGORIA[a.categoria] - ORDEM_CATEGORIA[b.categoria] ||
+    ordem(a) - ordem(b) ||
     (a.nivel ?? 0) - (b.nivel ?? 0) ||
     a.codigo.localeCompare(b.codigo));
 
@@ -50,7 +52,10 @@ function carregar() {
   desenhar();
 }
 
-const total = () => totalDoMapa(rascunho);
+// Deck principal (40 a 60) e Deck Adicional (até 15 Monstros de Fusão) contam separado
+const ehFusaoId = (id) => ehFusao(cartas.find((c) => c.id === id));
+const total = () => Object.entries(rascunho).reduce((t, [id, n]) => t + (ehFusaoId(id) ? 0 : n), 0);
+const totalExtra = () => totalDoMapa(rascunho) - total();
 const copias = (id) => rascunho[id] || 0;
 
 function temAlteracoes() {
@@ -59,14 +64,15 @@ function temAlteracoes() {
 }
 
 function motivoParaNaoColocar(id) {
-  if (total() >= DECK_MAX) return `O deck já tem ${DECK_MAX} cartas, o máximo. Tire uma antes de colocar outra.`;
+  if (ehFusaoId(id) && totalExtra() >= EXTRA_MAX) return `O Deck Adicional já tem ${EXTRA_MAX} Monstros de Fusão, o máximo.`;
+  if (!ehFusaoId(id) && total() >= DECK_MAX) return `O deck já tem ${DECK_MAX} cartas, o máximo. Tire uma antes de colocar outra.`;
   const limite = limiteDaCarta(id);
   if (copias(id) >= limite) return limite < 3 ? `Carta limitada: no máximo ${limite} cópia${limite > 1 ? "s" : ""} por deck.` : `Já tem ${limite} cópias dessa carta no deck (o máximo).`;
   return null;
 }
 
 function motivoParaNaoTirar() {
-  if (total() <= 0) return "O deck já está vazio.";
+  if (totalDoMapa(rascunho) <= 0) return "O deck já está vazio.";
   return null;
 }
 
@@ -113,8 +119,8 @@ function desenhar() {
   $("#deck-total").textContent = n;
   $("#deck-total").dataset.limite = n < DECK_MIN ? "min" : n >= DECK_MAX ? "max" : "";
 
-  const porCategoria = (cat) => cartas.filter((c) => c.categoria === cat).reduce((t, c) => t + copias(c.id), 0);
-  $("#deck-tipos").textContent = `${porCategoria("monstro")} monstros · ${porCategoria("magia")} magias · ${porCategoria("armadilha")} armadilhas`;
+  const porCategoria = (cat) => cartas.filter((c) => c.categoria === cat && !ehFusao(c)).reduce((t, c) => t + copias(c.id), 0);
+  $("#deck-tipos").textContent = `${porCategoria("monstro")} monstros · ${porCategoria("magia")} magias · ${porCategoria("armadilha")} armadilhas · Deck Adicional ${totalExtra()}/${EXTRA_MAX}`;
 
   const status = $("#deck-status");
   const alterado = temAlteracoes();

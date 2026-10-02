@@ -1112,5 +1112,132 @@
     "def": 1000,
     "copias": 0,
     "imagem": "img/cartas/w-guerreiro-das-laminas-gemeas.webp"
+  },
+  {
+    "id": "armadura-de-gelo",
+    "codigo": "ZOE-PT065",
+    "nome": "Armadura de Gelo",
+    "categoria": "armadilha",
+    "subtipo": "normal",
+    "efeito": "armadura-gelo",
+    "texto": "Quando um monstro do oponente declarar um ataque: bana o monstro atacante.",
+    "comoFunciona": "Automática. A partir do turno seguinte ao que foi baixada, o primeiro monstro do oponente que declarar um ataque é banido na hora (sai do jogo e o ataque não acontece). Tem \"Gelo\" no nome, então também conta como carta \"gelo\" para o Pote do Gelo.",
+    "frase": "Encostou, virou escultura.",
+    "raridade": "Ultra Rara",
+    "copias": 0,
+    "imagem": "img/cartas/armadura-de-gelo.webp"
+  },
+  {
+    "id": "obelisco-o-imenso",
+    "codigo": "ZOE-PT066",
+    "nome": "Obelisco, o Imenso",
+    "categoria": "monstro",
+    "subtipo": "efeito",
+    "atributo": "DIVINO",
+    "nivel": 10,
+    "tipo": "Besta Divina",
+    "atk": 4000,
+    "efeito": "obelisco",
+    "limite": 1,
+    "tributos": 3,
+    "naoBaixa": true,
+    "texto": "Requer 3 Tributos para Invocação-Normal (não pode ser Baixado). A Invocação-Normal deste card não pode ser negada. Quando Invocado por Invocação-Normal, cards e efeitos não podem ser ativados. Nenhum dos jogadores pode escolher este card como alvo de efeitos de card. Uma vez por turno, durante a Fase Final, se este card foi Invocado por Invocação-Especial: envie-o para o Cemitério. Você pode Tributar 2 monstros; destrua todos os monstros que seu oponente controla. Este card não pode declarar um ataque no turno em que este efeito for ativado.",
+    "comoFunciona": "Limitada a 1. Precisa de 3 tributos e não pode ser baixado. Quando ele entra por Invocação-Normal, nenhuma Armadilha responde (nem Armadilha do Big, nem ADM Ditador). Efeitos que escolhem alvo não pegam ele (Careca do PT, Controle Carecal, Daiki, Sai Daqui, Armadura de Gelo, equipamentos...); efeitos que pegam todos (Vapo!, Força Careca, Mil Facas) pegam. Se ele voltar por Invocação-Especial (Lamento Prematuro), vai para o Cemitério na Fase Final. Botão \"Efeito\": tribute 2 outros monstros seus e destrua todos os monstros do oponente; nesse turno ele não ataca.",
+    "frase": "O punho do deus imenso não pede licença.",
+    "raridade": "Lendária da Zoeira",
+    "def": 4000,
+    "copias": 0,
+    "imagem": "img/cartas/obelisco-o-imenso.webp"
+  },
+  {
+    "id": "dragao-sulista",
+    "codigo": "ZOE-PT067",
+    "nome": "Dragão Sulista Safado Olhos Nada Azuis",
+    "categoria": "monstro",
+    "subtipo": "normal",
+    "atributo": "LUZ",
+    "nivel": 8,
+    "tipo": "Dragão",
+    "atk": 3000,
+    "efeito": null,
+    "texto": "Lendário dragão do sul: brilhante, poderoso e, apesar de tudo, com olhos de qualquer cor menos azul.",
+    "comoFunciona": "Monstro Normal de Nível 8: pede 2 tributos (ou entra direto da mão pelo Invocador). É um dos materiais do \"Miro, o Adestrador de Dragões\".",
+    "frase": "Boné pra trás, asas abertas e zero olho azul.",
+    "raridade": "Ultra Rara",
+    "def": 2500,
+    "copias": 0,
+    "imagem": "img/cartas/dragao-sulista.webp"
+  },
+  {
+    "id": "suruba",
+    "codigo": "ZOE-PT068",
+    "nome": "Suruba",
+    "categoria": "magia",
+    "subtipo": "normal",
+    "efeito": "fusao",
+    "texto": "Invoque por Fusão 1 Monstro de Fusão do seu Deck Adicional, usando monstros da sua mão ou do campo como Matéria de Fusão.",
+    "comoFunciona": "Os Monstros de Fusão ficam no Deck Adicional (até 15, fora das 40 a 60 cartas do deck). Ao ativar, escolha uma Fusão que dê para fazer e depois os 2 materiais (da sua mão ou do seu campo, um para cada exigência dela). Os materiais vão para o Cemitério e a Fusão entra em Ataque.",
+    "frase": "Dedinho com dedinho, rabo de gato e pronto: viraram um só.",
+    "raridade": "Super Rara",
+    "copias": 0,
+    "imagem": "img/cartas/suruba.webp"
+  },
+  {
+    "id": "miro-adestrador-de-dragoes",
+    "codigo": "ZOE-PT069",
+    "nome": "Miro, o Adestrador de Dragões",
+    "categoria": "monstro",
+    "subtipo": "fusao",
+    "atributo": "LUZ",
+    "nivel": 8,
+    "tipo": "Dragão",
+    "atk": 3000,
+    "efeito": "miro-dragoes",
+    "limite": 1,
+    "somenteEspecial": true,
+    "nomeNoCampo": "Grande Mestre",
+    "materiais": [
+      {
+        "nome": "Grande Mestre"
+      },
+      {
+        "nome": "Dragão Sulista Safado Olhos Nada Azuis"
+      }
+    ],
+    "texto": "\"Grande Mestre\" + \"Dragão Sulista Safado Olhos Nada Azuis\". O nome deste card se torna \"Grande Mestre\" enquanto ele estiver no campo. Seu oponente não pode escolher Magias/Armadilhas que você controla como alvo de efeitos de card e, além disso, elas não podem ser destruídas pelos efeitos de card do seu oponente.",
+    "comoFunciona": "Limitada a 1. Monstro de Fusão: fica no Deck Adicional e entra pela \"Suruba\", com 1 \"Grande Mestre\" e 1 \"Dragão Sulista Safado Olhos Nada Azuis\" (da mão ou do campo). No campo ele se chama \"Grande Mestre\" (vale para As Mil Facas do Mestre e para a Berinjela do Imenso). Com ele de face para cima, o oponente não consegue mirar nem destruir com efeitos as suas Magias e Armadilhas (Soco do Big, Sugadão, Zoológico, W — Hackeando...). Se fosse voltar para a mão, volta para o Deck Adicional.",
+    "frase": "Três cabeças, uma sela e o bigode mais respeitado do céu.",
+    "raridade": "Lendária da Zoeira",
+    "def": 2500,
+    "copias": 0,
+    "imagem": "img/cartas/miro-adestrador-de-dragoes.webp"
+  },
+  {
+    "id": "careca-lamentador",
+    "codigo": "ZOE-PT070",
+    "nome": "Careca Lamentador",
+    "categoria": "monstro",
+    "subtipo": "fusao",
+    "atributo": "TREVAS",
+    "nivel": 8,
+    "tipo": "Guerreiro",
+    "atk": 3000,
+    "efeito": "careca-lamentador",
+    "somenteEspecial": true,
+    "materiais": [
+      {
+        "contem": "careca"
+      },
+      {
+        "contem": "lament"
+      }
+    ],
+    "texto": "1 monstro \"Careca\" + 1 monstro \"Lamentador\"/\"Lamentável\". Se este card atacar um monstro em Posição de Defesa, cause dano de batalha perfurante ao seu oponente.",
+    "comoFunciona": "Monstro de Fusão: entra pela \"Suruba\" com 1 monstro que tenha \"Careca\" no nome (Careca Feijão, Feiticeira Careca, Carecalla, Rafaza the Careca...) e 1 que tenha \"Lamento\", \"Lamentador\" ou \"Lamentável\" no nome (como O Herói do Lamento). Contra monstro em Defesa, o que o ATK dele passar da DEF vira dano no oponente. Se fosse voltar para a mão, volta para o Deck Adicional.",
+    "frase": "Careca por fora, lamentando por dentro. E batendo forte dos dois jeitos.",
+    "raridade": "Ultra Rara",
+    "def": 3000,
+    "copias": 0,
+    "imagem": "img/cartas/careca-lamentador.webp"
   }
 ]

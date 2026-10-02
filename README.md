@@ -219,8 +219,16 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT062 | Thangan **(limitada a 1)** | Efeito · TREVAS · Demônio · Nv 3 · 1000/600 | – | Saiu do campo para o Cemitério: 1 monstro sorteado com até 1500 de ATK do deck para a mão (os efeitos dele ficam bloqueados no turno) |
 | ZOE-PT063 | W — Hackeando Sistema **(limitada a 1)** | Armadilha | – | Ativa sozinha quando o oponente ativa Magia/Armadilha: descarta 1 carta sorteada, nega e destrói |
 | ZOE-PT064 | W — Guerreiro das Lâminas Gêmeas | Efeito · INTERNET · Ciberso · Nv 4 · 1700/1000 | – | Contra monstro em Defesa: dano perfurante e um 2º ataque (1 vez por Batalha); só 1 dele no seu campo |
+| ZOE-PT065 | Armadura de Gelo | Armadilha | – | Ativa sozinha quando um monstro do oponente ataca: bane o atacante |
+| ZOE-PT066 | Obelisco, o Imenso **(limitada a 1)** | Efeito · DIVINO · Besta Divina · Nv 10 · 4000/4000 | – | 3 tributos, não pode ser baixado, ninguém responde à Invocação-Normal e nenhum efeito escolhe ele como alvo; botão Efeito: tributa 2 e destrói todos os monstros do oponente |
+| ZOE-PT067 | Dragão Sulista Safado Olhos Nada Azuis | Monstro Normal · LUZ · Dragão · Nv 8 · 3000/2500 | – | Material do Miro, o Adestrador de Dragões |
+| ZOE-PT068 | Suruba | Magia | – | Invocação-Fusão: 1 Monstro de Fusão do Deck Adicional com materiais da mão ou do campo |
+| ZOE-PT069 | Miro, o Adestrador de Dragões **(limitada a 1)** | Fusão · LUZ · Dragão · Nv 8 · 3000/2500 | – | "Grande Mestre" + "Dragão Sulista"; no campo se chama "Grande Mestre"; o oponente não mira nem destrói com efeitos as suas Magias/Armadilhas |
+| ZOE-PT070 | Careca Lamentador | Fusão · TREVAS · Guerreiro · Nv 8 · 3000/3000 | – | 1 monstro "Careca" + 1 monstro "Lamento/Lamentador/Lamentável"; dano perfurante |
 
 **Cartas "Animal":** todo monstro com "Animal" no nome conta como "Animal" para esses efeitos. Para criar uma Magia/Armadilha que o Thales Animal consiga buscar, coloque `"mencionaIrmaos": true` nela em `data/cartas.json`.
+
+**Fusão e Deck Adicional:** os Monstros de Fusão (moldura roxa) não contam nas 40 a 60 cartas: ficam no **Deck Adicional** (até 15), que aparece no canto do tabuleiro (a antiga "Zona Careca"; tocando no seu, dá para ver as cartas). Eles só entram pela Magia "Suruba", que manda os 2 materiais (da mão ou do campo) para o Cemitério. No `data/cartas.json`, uma Fusão tem `"subtipo": "fusao"` e `"materiais"`: `{"nome": "..."}` (nome exato) ou `{"contem": "..."}` (pedaço do nome). Se uma Fusão fosse voltar para a mão, volta para o Deck Adicional.
 
 **Cemitério e banidas:** toque no Cemitério (de qualquer jogador, mesmo vazio) para ver as cartas dele; a janela tem uma aba **Banidas** com as cartas que saíram do jogo. Quando alguém tem cartas banidas, aparece um selo 🚫 com o número ao lado do Cemitério.
 
@@ -277,7 +285,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
-├── data/cartas.json      # As 64 cartas (texto, stats, cópias no deck padrão, efeito)
+├── data/cartas.json      # As 70 cartas (texto, stats, cópias no deck padrão, efeito)
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```

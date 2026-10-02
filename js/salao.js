@@ -12,14 +12,14 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610020105";
-import * as conta from "./conta.js?v=202610020105";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610020105";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610020105";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610020105";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610020105";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610020105";
-import { tocar } from "./som.js?v=202610020105";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610020106";
+import * as conta from "./conta.js?v=202610020106";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610020106";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610020106";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610020106";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610020106";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610020106";
+import { tocar } from "./som.js?v=202610020106";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {

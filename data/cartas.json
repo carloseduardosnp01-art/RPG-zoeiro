@@ -1087,11 +1087,12 @@
     "subtipo": "normal",
     "efeito": "hacker",
     "texto": "Quando o oponente ativar uma Magia/Armadilha: você pode descartar 1 carta; negue o efeito e destrua essa carta.",
-    "comoFunciona": "Automática. A partir do turno seguinte ao que foi baixada, ela ativa sozinha na primeira Magia ou Armadilha que o oponente ativar (inclusive as Armadilhas automáticas dele): uma carta sorteada da sua mão é descartada, o efeito é anulado e a carta do oponente é destruída. Custos já pagos (como os 800 PV do Lamento Prematuro) não voltam. Precisa de pelo menos 1 carta na mão; com o Jinreca no campo, não ativa.",
+    "comoFunciona": "Limitada a 1. Automática. A partir do turno seguinte ao que foi baixada, ela ativa sozinha na primeira Magia ou Armadilha que o oponente ativar (inclusive as Armadilhas automáticas dele): uma carta sorteada da sua mão é descartada, o efeito é anulado e a carta do oponente é destruída. Custos já pagos (como os 800 PV do Lamento Prematuro) não voltam. Precisa de pelo menos 1 carta na mão; com o Jinreca no campo, não ativa.",
     "frase": "Senha fraca, firewall de papelão. Acesso negado.",
     "raridade": "Ultra Rara",
     "copias": 0,
-    "imagem": "img/cartas/w-hackeando-sistema.webp"
+    "imagem": "img/cartas/w-hackeando-sistema.webp",
+    "limite": 1
   },
   {
     "id": "w-guerreiro-das-laminas-gemeas",

@@ -217,7 +217,7 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT060 | Hoje Não | Armadilha | – | Ativa sozinha num ataque que machucaria: no resto do turno você não sofre dano de batalha e seus monstros não são destruídos em batalha |
 | ZOE-PT061 | Bora Bill **(limitada a 1)** | Magia | – | Se um monstro seu foi do campo para o Cemitério neste turno: Invocação-Especial de 1 monstro com até 1500 de ATK do deck |
 | ZOE-PT062 | Thangan **(limitada a 1)** | Efeito · TREVAS · Demônio · Nv 3 · 1000/600 | – | Saiu do campo para o Cemitério: 1 monstro sorteado com até 1500 de ATK do deck para a mão (os efeitos dele ficam bloqueados no turno) |
-| ZOE-PT063 | W — Hackeando Sistema | Armadilha | – | Ativa sozinha quando o oponente ativa Magia/Armadilha: descarta 1 carta sorteada, nega e destrói |
+| ZOE-PT063 | W — Hackeando Sistema **(limitada a 1)** | Armadilha | – | Ativa sozinha quando o oponente ativa Magia/Armadilha: descarta 1 carta sorteada, nega e destrói |
 | ZOE-PT064 | W — Guerreiro das Lâminas Gêmeas | Efeito · INTERNET · Ciberso · Nv 4 · 1700/1000 | – | Contra monstro em Defesa: dano perfurante e um 2º ataque (1 vez por Batalha); só 1 dele no seu campo |
 
 **Cartas "Animal":** todo monstro com "Animal" no nome conta como "Animal" para esses efeitos. Para criar uma Magia/Armadilha que o Thales Animal consiga buscar, coloque `"mencionaIrmaos": true` nela em `data/cartas.json`.

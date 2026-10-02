@@ -485,6 +485,73 @@
   transform: translate(-50%, -50%) rotate(180deg);
 }
 
+/* Selo das cartas banidas, no Cemitério */
+.selo-banidas {
+  position: absolute;
+  bottom: calc(var(--cw) * -.12);
+  left: 50%;
+  z-index: 3;
+  padding: .05em .45em;
+  color: #fff;
+  font-size: max(10px, calc(var(--cw) * .14));
+  font-weight: 800;
+  line-height: 1.35;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #5d5d70, #2a2a36);
+  border: 2px solid #d9d9e8;
+  border-radius: 1rem;
+  box-shadow: 0 0 6px rgba(0, 0, 0, .6);
+  transform: translateX(-50%);
+}
+
+.zona--op .selo-banidas {
+  top: calc(var(--cw) * -.12);
+  bottom: auto;
+}
+
+/* Janela do Cemitério / Banidas */
+.pilhas__abas {
+  display: flex;
+  gap: .4rem;
+  margin: .5rem 0 .6rem;
+}
+
+.pilhas__aba {
+  flex: 1;
+  padding: .45rem .6rem;
+  color: var(--texto-suave);
+  font-weight: 700;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(224, 180, 74, .35);
+  border-radius: .5rem;
+}
+
+.pilhas__aba[aria-selected="true"] {
+  color: #1b1208;
+  background: var(--ouro);
+  border-color: var(--ouro);
+}
+
+.pilhas__detalhe {
+  margin-bottom: .8rem;
+  padding: .6rem .75rem;
+  font-size: .88rem;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(224, 180, 74, .25);
+  border-radius: .5rem;
+}
+
+.pilhas__detalhe h4 {
+  margin: 0 0 .15rem;
+  color: var(--ouro-claro);
+  font-size: 1rem;
+}
+
+.pilhas__tipo {
+  color: var(--texto-suave);
+  font-size: .8rem;
+}
+
 /* ---------- Fases ---------- */
 .fases {
   display: flex;

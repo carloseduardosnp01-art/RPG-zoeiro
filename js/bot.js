@@ -6,9 +6,9 @@
    ========================================================================== */
 
 import {
-  carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo,
+  carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNecessarios, validar, alvosDeAtaque,
-} from "./motor.js?v=202610011351";
+} from "./motor.js?v=202610020032";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 
@@ -86,8 +86,18 @@ function* jogadasPrincipais(estado, j) {
     if (op) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [[...op.alvos.candidatos].sort((a, b) => (carta(estado, a).atk || 0) - (carta(estado, b).atk || 0))[0]] };
   }
 
+  // 1a2. Daiki entra banindo o LUZ e o TREVAS mais fracos do Cemitério
+  for (const { iid, c } of mao) {
+    if (c.efeito !== "daiki") continue;
+    const op = opcoes(iid).find((x) => x.id === "especial" && x.alvos);
+    if (!op) continue;
+    const fraco = (atributo) => op.alvos.candidatos.filter((x) => carta(estado, x).atributo === atributo).sort((a, b) => carta(estado, a).atk - carta(estado, b).atk)[0];
+    yield { tipo: "invocarEspecial", iid, alvos: [fraco("LUZ"), fraco("TREVAS")] };
+  }
+
   // 1b. Manoel do Gelo Careca entra descartando 2 GELO
-  for (const { iid } of mao) {
+  for (const { iid, c } of mao) {
+    if (c.efeito === "daiki") continue;
     const op = opcoes(iid).find((x) => x.id === "especial" && x.alvos);
     if (op) yield { tipo: "invocarEspecial", iid, alvos: op.alvos.candidatos.slice(0, 2) };
   }
@@ -108,6 +118,11 @@ function* jogadasPrincipais(estado, j) {
     if (ef === "wellington") {
       const alvo = melhorMagiaDoOponente(estado, j, op.alvos.candidatos);
       if (alvo) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [alvo] };
+    }
+    if (ef === "negao" || (ef === "daiki" && primeira)) {
+      const deles2 = op.alvos.candidatos.filter((x) => localizar(estado, x).j !== j);
+      const alvo = deles2.sort((a, b) => forca(estado, j, b) - forca(estado, j, a))[0];
+      if (alvo && forca(estado, j, alvo) >= (ef === "negao" ? 1500 : 1800)) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [alvo] };
     }
     if (ef === "mestre-caos") {
       yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [[...op.alvos.candidatos].sort((a, b) => valorNaMao(estado, j, b) - valorNaMao(estado, j, a))[0]] };
@@ -137,6 +152,32 @@ function* jogadasPrincipais(estado, j) {
       if (op) yield { tipo: "ativar", iid, alvos: [[...op.alvos.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0]] };
     }
     if (c.efeito === "upstart" && p.deck.length > 5 && opcoes(iid).some((x) => x.id === "ativar")) yield { tipo: "ativar", iid };
+  }
+
+  // 1f2. 1 Litro pela Manhã com os PV baixos; Berinjela no meu monstro que mais ganha
+  for (const { iid, c } of mao) {
+    if (c.efeito === "litro" && p.pl <= 6000 && opcoes(iid).some((x) => x.id === "ativar")) yield { tipo: "ativar", iid };
+    if (c.efeito === "berinjela") {
+      const op = opcoes(iid).find((x) => x.id === "ativar");
+      if (!op) continue;
+      const meusAlvos = op.alvos.candidatos.filter((x) => localizar(estado, x).j === j);
+      const ganho = (x) => {
+        const nome = (q) => (ehAnimal(q) ? "Animal" : q.nome);
+        const alvo = nome(carta(estado, x));
+        return estado.jogadores.flatMap((q) => q.cemiterio).filter((y) => nome(carta(estado, y)) === alvo).length;
+      };
+      const melhor = meusAlvos.sort((a, b) => ganho(b) - ganho(a))[0];
+      if (melhor && ganho(melhor) >= 1) yield { tipo: "ativar", iid, alvos: [melhor] };
+    }
+  }
+
+  // 1f3. Revolução Animal baixada: descarta a pior carta (de preferência um "Animal") e traz os "Animal" do Cemitério
+  for (const mg of p.magias) {
+    if (!mg || carta(estado, mg.iid).efeito !== "revolucao") continue;
+    const op = opcoes(mg.iid).find((x) => x.id === "ativar");
+    if (!op) continue;
+    const peso = (x) => (ehAnimal(carta(estado, x)) ? -10 : 0) + valorNaMao(estado, j, x);
+    yield { tipo: "ativar", iid: mg.iid, alvos: [[...op.alvos.candidatos].sort((a, b) => peso(a) - peso(b))[0]] };
   }
 
   // 1g. Controle Carecal: pega o monstro mais forte do oponente para atacar com ele
@@ -196,7 +237,7 @@ function* jogadasPrincipais(estado, j) {
       if (!m || m.face) continue;
       const ef = carta(estado, m.iid).efeito;
       const temMagia = p.deck.some((x) => carta(estado, x).categoria === "magia");
-      if ((ef === "flip-destruir" && deles.length) || (ef === "flip-descartar" && maoDeles) || ef === "flip-comprar" || (ef === "flip-buscar-magia" && temMagia)) {
+      if ((ef === "flip-destruir" && deles.length) || (ef === "flip-descartar" && maoDeles) || ef === "flip-comprar" || (ef === "flip-buscar-magia" && temMagia) || ef === "flip-parasita") {
         yield { tipo: "virar", slot };
       }
     }
@@ -307,6 +348,7 @@ function melhorMagiaDoOponente(estado, j, candidatos) {
     const loc = localizar(estado, x);
     const c = carta(estado, x);
     if (loc.obj.face && c.efeito === "luz") return 3;
+    if (loc.obj.face && c.efeito === "revolucao" && (loc.obj.revividos || []).length) return 3;
     if (!loc.obj.face) return 2;
     return 1;
   };
@@ -369,6 +411,7 @@ const VALOR_NA_MAO = {
   vapo: 9, "forca-careca": 8, "tributo-destruir-monstro": 7, soco: 6, "tributo-destruir-magias": 6,
   "armadilha-big": 6, luz: 6, penetra: 5, saideira: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
   "flip-descartar": 5, "flip-comprar": 4, karecoh: 4, egoismo: 6, zoologico: 5,
+  berinjela: 4, revolucao: 6, rafaza: 5, negao: 6, "flip-parasita": 5, litro: 3, daiki: 7,
   controle: 7, menino: 4, "mestre-caos": 6, upstart: 3, jinreca: 6, "mil-facas": 6, irmaollow: 5,
   wellington: 5, "mestre-laminas": 6, lamento: 5, gole: 5, "sai-daqui": 6, "adm-ditador": 7, "manoel-gelo": 4, "gelo-careca": 5, "pote-gelo": 4, "flip-buscar-magia": 4,
 };
@@ -408,6 +451,9 @@ function escolherAlvos(estado, j, pend) {
     return atkAtual(estado, deles[0]) >= 1500 ? [meus[0], deles[0]] : [];
   }
   if (pend.efeito === "midas-invocar") return [];
+  if (pend.efeito === "revolucao") {
+    return [...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0)).slice(0, pend.max);
+  }
   // Zoológico: destrói a melhor Magia/Armadilha do oponente (nunca a minha)
   if (pend.efeito === "zoologico") {
     const alvo = melhorMagiaDoOponente(estado, j, pend.candidatos);

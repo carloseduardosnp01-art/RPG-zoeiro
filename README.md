@@ -206,8 +206,17 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT049 | Upstart Gordo | Magia | – | Compra 1 carta e o oponente ganha 1000 PV |
 | ZOE-PT050 | Jinreca | Efeito · TREVAS · Máquina · Nv 6 · 2400/1500 | – | Com a face para cima no campo, nenhuma Armadilha ativa (dos dois lados) |
 | ZOE-PT051 | As Mil Facas do Mestre | Magia | – | Com Grande Mestre ou Grande Mestre do Caos seu no campo: destrói todos os monstros do oponente |
+| ZOE-PT052 | Berinjela do Imenso **(limitada a 2)** | Magia de Equipamento | – | +900 ATK por carta com o mesmo nome do monstro nos dois Cemitérios (todo "Animal" se chama "Animal") |
+| ZOE-PT053 | Revolução Animal **(limitada a 1)** | Armadilha Contínua | – | A única que você ativa (no seu turno, a partir do seguinte ao que baixou): descarta 1 carta e Invoca os "Animal" do Cemitério; se ela sair do campo, eles são destruídos |
+| ZOE-PT054 | Rafaza the Careca **(limitada a 2)** | Efeito · TREVAS · Guerreiro · Nv 3 · 1300/800 | – | Ataca 2 vezes em toda Batalha; o Controle Carecal não pega ele |
+| ZOE-PT055 | Os Negão Pegaram Ele | Efeito · TERRA · Guerreiro · Nv 4 · 1000/1000 | – | Botão Efeito: vai como Tributo e destrói 1 monstro do campo |
+| ZOE-PT056 | Mirasita | Efeito/Virar · TERRA · Inseto · Nv 2 · 500/300 | – | VIRE: vai para o deck do oponente; quando ele comprar, entra em Defesa do lado dele, ele leva 1000 e os monstros dele viram Insetos |
+| ZOE-PT057 | 1 Litro de Porra pela Manhã | Magia | – | +2000 PV (1 por turno) |
+| ZOE-PT058 | Daiki, Chaos Calvo **(limitada a 1)** | Efeito · TREVAS · Mago · Nv 6 · 2300/2000 | – | Só entra pela mão banindo 1 LUZ e 1 TREVAS do Cemitério; botão Efeito bane 1 monstro com a face para cima (nesse turno não ataca) |
 
 **Cartas "Animal":** todo monstro com "Animal" no nome conta como "Animal" para esses efeitos. Para criar uma Magia/Armadilha que o Thales Animal consiga buscar, coloque `"mencionaIrmaos": true` nela em `data/cartas.json`.
+
+**Cemitério e banidas:** toque no Cemitério (de qualquer jogador, mesmo vazio) para ver as cartas dele; a janela tem uma aba **Banidas** com as cartas que saíram do jogo. Quando alguém tem cartas banidas, aparece um selo 🚫 com o número ao lado do Cemitério.
 
 **Dono e controle:** o Controle Carecal pode deixar um monstro no campo do outro jogador até a Fase Final. Tudo o que sai do campo vai sempre para o **dono** da carta (Cemitério, mão ou banidas), nunca para quem estava controlando.
 
@@ -262,7 +271,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
-├── data/cartas.json      # As 51 cartas (texto, stats, cópias no deck padrão, efeito)
+├── data/cartas.json      # As 58 cartas (texto, stats, cópias no deck padrão, efeito)
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```

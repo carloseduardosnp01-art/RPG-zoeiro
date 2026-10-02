@@ -13,12 +13,12 @@
    ========================================================================== */
 
 import {
-  carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo,
-} from "./motor.js?v=202610011351";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610011351";
-import { el, esperar, aviso } from "./util.js?v=202610011351";
-import { tocar } from "./som.js?v=202610011351";
-import { abrirDetalhes } from "./catalogo.js?v=202610011351";
+  carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
+} from "./motor.js?v=202610020032";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610020032";
+import { el, esperar, aviso } from "./util.js?v=202610020032";
+import { tocar } from "./som.js?v=202610020032";
+import { abrirDetalhes } from "./catalogo.js?v=202610020032";
 
 const raiz = document.querySelector("#arena");
 
@@ -80,6 +80,12 @@ const FRASES = {
   upstart: "MOEDINHA PRO OPONENTE!",
   jinreca: "ARMADILHA AQUI NÃO!",
   "mil-facas": "MIL FACAS!",
+  berinjela: "BERINJELA DO IMENSO!",
+  revolucao: "REVOLUÇÃO ANIMAL!",
+  negao: "LEVARAM ELE!",
+  "flip-parasita": "VAI PRO SEU DECK!",
+  litro: "UM LITRO PELA MANHÃ!",
+  daiki: "BANIDO PELO CAOS CALVO!",
 };
 
 const PROVOCACOES = ["😂 Chora não!", "🧑‍🦲 Careca demais!", "💨 Vapo!", "🤡 Tá com medo?", "🔥 Joga logo!", "👋 GG"];
@@ -453,6 +459,7 @@ function zonaPilha(estado, j, zona) {
   const p = estado.jogadores[j];
   const z = criarZona(j, zona);
   const lista = p[zona];
+  if (zona === "cemiterio") return zonaCemiterio(estado, j, z);
   if (!lista.length) return vaziaCom(z, zona);
 
   const b = el("button", "pilha-campo");
@@ -470,6 +477,39 @@ function zonaPilha(estado, j, zona) {
   }
   b.append(el("span", "pilha-campo__qtd", String(lista.length)));
   z.append(b);
+  return z;
+}
+
+// Cemitério: sempre dá para tocar (mesmo vazio) e ver o Cemitério e as cartas banidas
+function zonaCemiterio(estado, j, z) {
+  const p = estado.jogadores[j];
+  const lista = p.cemiterio;
+  const banidas = (p.banidas || []).length;
+  const b = el("button", "pilha-campo");
+  b.type = "button";
+  if (lista.length) {
+    const topo = lista[lista.length - 1];
+    b.append(criarCarta(carta(estado, topo)), el("span", "pilha-campo__qtd", String(lista.length)));
+    ligarPrevia(b, topo);
+  } else {
+    z.classList.add("zona--vazia");
+    b.append(el("span", "zona__rotulo", ROTULOS.cemiterio));
+  }
+  b.title = "Ver o Cemitério e as cartas banidas";
+  b.setAttribute("aria-label", `${deQuem(estado, j, "Cemitério")}: ${lista.length} carta${lista.length === 1 ? "" : "s"} e ${banidas} banida${banidas === 1 ? "" : "s"}. Ver cartas`);
+  b.addEventListener("click", () => verCemiterio(sessao.estado, j));
+  z.append(b);
+  if (banidas) {
+    const selo = el("button", "selo-banidas", `🚫 ${banidas}`);
+    selo.type = "button";
+    selo.title = `${banidas} carta${banidas === 1 ? "" : "s"} banida${banidas === 1 ? "" : "s"}`;
+    selo.setAttribute("aria-label", `Ver as ${banidas} cartas banidas`);
+    selo.addEventListener("click", (e) => {
+      e.stopPropagation();
+      verCemiterio(sessao.estado, j, "banidas");
+    });
+    z.append(selo);
+  }
   return z;
 }
 
@@ -510,7 +550,7 @@ function zonaCarta(estado, j, zona, slot) {
     mc.title = "Marcador de Magia";
     z.append(mc);
   }
-  if (zona === "monstros" && obj.ataqueDuplo === estado.turno && !obj.atacouDuas && estado.vez === j) {
+  if (zona === "monstros" && obj.face && temAtaqueDuplo(estado, obj) && !obj.atacouDuas && estado.vez === j) {
     const dup = el("span", "selo-marcador selo-marcador--duplo", "⚔×2");
     dup.title = "Pode atacar duas vezes neste turno";
     z.append(dup);
@@ -684,6 +724,7 @@ function descreverEvento(estado, ev) {
     case "banida": return { texto: `🚫 ${nome(ev.iid)} foi banido do jogo.`, classe: "log--armadilha" };
     case "paraMao": return { texto: `↩️ ${nome(ev.iid)} voltou para a mão de ${quem(ev.j)}.`, classe: "log--armadilha" };
     case "ajusteDeck": return { texto: `⚠️ ${ev.nick ? `O deck de ${ev.nick} tinha` : ev.j === eu ? "Seu deck tinha" : `O deck de ${quem(ev.j)} tinha`} ${ev.trocadas} carta${ev.trocadas > 1 ? "s" : ""} acima do limite: ${ev.trocadas > 1 ? "viraram" : "virou"} Careca Feijão.`, classe: "log--turno" };
+    case "parasita": return { texto: `🐛 ${nome(ev.iid)} foi embaralhado com a face para cima no deck de ${quem(ev.j)}!`, classe: "log--armadilha" };
     case "indestrutivel": return { texto: `🛡️ ${nome(ev.iid)} não pode ser destruído em batalha.`, classe: "log--armadilha" };
     case "controle": return { texto: `🧠 ${quem(ev.j)} tomou o controle de ${nome(ev.iid)} até a Fase Final!`, classe: "log--armadilha" };
     case "controleVolta": return ev.semZona
@@ -851,7 +892,7 @@ function escolherCartas({ titulo, sub = "", candidatos, min, max, podeCancelar =
     };
 
     for (const iid of candidatos) {
-      const loc = localizar(estado, iid);
+      const loc = localizar(estado, iid) || { j: eu, zona: "banidas", obj: null };
       const visivel = loc.j === eu || !loc.obj || loc.obj.face || loc.zona === "mao";
       const c = carta(estado, iid);
       const b = el("button", "escolha__opcao");
@@ -859,7 +900,11 @@ function escolherCartas({ titulo, sub = "", candidatos, min, max, podeCancelar =
       b.setAttribute("aria-pressed", "false");
       b.setAttribute("aria-label", visivel ? c.nome : "Carta virada do oponente");
       b.append(visivel ? criarCarta(c, { atk: loc.zona === "monstros" ? atkAtual(estado, iid) : undefined }) : criarVerso());
-      const lado = loc.zona === "mao" ? (loc.j === eu ? "Na sua mão" : "Mão do oponente") : loc.zona === "deck" ? "No seu deck" : loc.j === eu ? "Seu campo" : "Campo do oponente";
+      const lado = loc.zona === "mao" ? (loc.j === eu ? "Na sua mão" : "Mão do oponente")
+        : loc.zona === "deck" ? "No seu deck"
+        : loc.zona === "cemiterio" ? (loc.j === eu ? "No seu Cemitério" : "Cemitério do oponente")
+        : loc.zona === "banidas" ? "Banida"
+        : loc.j === eu ? "Seu campo" : "Campo do oponente";
       b.append(el("span", "escolha__lado", lado));
       b.addEventListener("click", () => {
         if (escolhidos.has(iid)) escolhidos.delete(iid);
@@ -931,12 +976,91 @@ async function abrirEscolhaPendente(estado) {
   }
 }
 
-function verCemiterio(estado, j) {
-  const lista = [...estado.jogadores[j].cemiterio].reverse();
-  escolherCartas({
-    titulo: `${deQuem(estado, j, "Cemitério")} (${lista.length})`,
-    sub: lista.length ? "A carta do topo é a primeira." : "Nenhuma carta no cemitério.",
-    candidatos: lista, min: 0, max: 0, somenteVer: true,
+// Cemitério e cartas banidas de um jogador, em duas abas. Tocar numa carta mostra o texto dela.
+function verCemiterio(estado, j, aba = "cemiterio") {
+  fecharMenu();
+  const p = estado.jogadores[j];
+  const listas = {
+    cemiterio: [...p.cemiterio].reverse(),
+    banidas: [...(p.banidas || [])].reverse(),
+  };
+  if (aba === "cemiterio" && !listas.cemiterio.length && listas.banidas.length) aba = "banidas";
+
+  const fundo = el("div", "escolha");
+  fundo.setAttribute("role", "dialog");
+  fundo.setAttribute("aria-modal", "true");
+  fundo.setAttribute("aria-label", deQuem(estado, j, "Cemitério"));
+  const caixa = el("div", "escolha__caixa");
+  caixa.append(el("h3", "escolha__titulo", deQuem(estado, j, "Cemitério")));
+
+  const abas = el("div", "pilhas__abas");
+  abas.setAttribute("role", "tablist");
+  const sub = el("p", "escolha__sub");
+  const detalhe = el("div", "pilhas__detalhe");
+  const grade = el("div", "escolha__cartas");
+  const botoesAba = {};
+
+  const mostrarDetalhe = (iid) => {
+    const c = carta(estado, iid);
+    detalhe.replaceChildren(el("h4", "", c.nome));
+    detalhe.append(el("div", "pilhas__tipo", c.categoria === "monstro" ? `${linhaTipo(c)} · Nível ${c.nivel} · ATK ${c.atk} / DEF ${c.def}` : nomeCategoria(c)));
+    detalhe.append(el("p", "mb-0 mt-1", c.texto));
+    detalhe.hidden = false;
+    grade.querySelectorAll(".escolha__opcao").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.iid === iid)));
+  };
+
+  const mostrar = (qual) => {
+    for (const [k, b] of Object.entries(botoesAba)) b.setAttribute("aria-selected", String(k === qual));
+    const lista = listas[qual];
+    sub.textContent = lista.length
+      ? qual === "cemiterio" ? "A primeira é a do topo. Toque numa carta para ler o efeito." : "Cartas banidas saíram do jogo: nada traz elas de volta."
+      : qual === "cemiterio" ? "Nenhuma carta no Cemitério." : "Nenhuma carta banida.";
+    detalhe.hidden = true;
+    grade.replaceChildren(...lista.map((iid) => {
+      const b = el("button", "escolha__opcao");
+      b.type = "button";
+      b.dataset.iid = iid;
+      b.setAttribute("aria-pressed", "false");
+      b.setAttribute("aria-label", carta(estado, iid).nome);
+      b.append(criarCarta(carta(estado, iid)));
+      b.addEventListener("click", () => {
+        tocar("clique");
+        mostrarDetalhe(iid);
+      });
+      return b;
+    }));
+  };
+
+  for (const [k, icone, rotulo] of [["cemiterio", "🪦", "Cemitério"], ["banidas", "🚫", "Banidas"]]) {
+    const b = el("button", "pilhas__aba", `${icone} ${rotulo} (${listas[k].length})`);
+    b.type = "button";
+    b.setAttribute("role", "tab");
+    b.addEventListener("click", () => mostrar(k));
+    botoesAba[k] = b;
+    abas.append(b);
+  }
+
+  const botoes = el("div", "escolha__botoes");
+  const fechar = el("button", "btn btn-outline-light", "Fechar");
+  fechar.type = "button";
+  botoes.append(fechar);
+  caixa.append(abas, sub, detalhe, grade, botoes);
+  fundo.append(caixa);
+  document.body.append(fundo);
+  mostrar(aba);
+  botoesAba[aba].focus();
+
+  const teclas = (e) => {
+    if (e.key === "Escape") terminar();
+  };
+  function terminar() {
+    document.removeEventListener("keydown", teclas);
+    fundo.remove();
+  }
+  document.addEventListener("keydown", teclas);
+  fechar.addEventListener("click", terminar);
+  fundo.addEventListener("click", (e) => {
+    if (e.target === fundo) terminar();
   });
 }
 
@@ -1031,6 +1155,7 @@ async function tocarEventos(eventos, estadoNovo) {
         }
         break;
       }
+      case "parasita":
       case "paraMao": {
         const alvo = raiz.querySelector(`.campo [data-iid="${ev.iid}"]`);
         if (alvo) {

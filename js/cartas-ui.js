@@ -144,7 +144,7 @@ export function criarCarta(c, opcoes = {}) {
     const info = SUBTIPOS_MAGIA[c.subtipo];
     if (info && info.icone) {
       const ic = el("span", "carta__subtipo-icone", info.icone);
-      ic.title = `Magia ${info.nome}`;
+      ic.title = `${c.categoria === "magia" ? "Magia" : "Armadilha"} ${info.nome}`;
       sub.append(ic);
     }
     sub.append("]");

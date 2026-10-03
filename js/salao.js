@@ -12,17 +12,17 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610022032";
-import * as conta from "./conta.js?v=202610022032";
-import * as adm from "./admin.js?v=202610022032";
-import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610022032";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610022032";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610022032";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610022032";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610022032";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610022032";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610022032";
-import { tocar } from "./som.js?v=202610022032";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610022144";
+import * as conta from "./conta.js?v=202610022144";
+import * as adm from "./admin.js?v=202610022144";
+import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610022144";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610022144";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610022144";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610022144";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610022144";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610022144";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610022144";
+import { tocar } from "./som.js?v=202610022144";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -165,8 +165,8 @@ function desenharBotaoConta(usuario) {
   const img = el("img");
   img.src = `img/cartas/${usuario.avatar}.webp`;
   img.alt = "";
-  botao.append(img, usuario.nick);
-  botao.title = "Ir para o salão";
+  botao.append(img, el("span", "chip-usuario__nick", usuario.nick));
+  botao.title = `${usuario.nick}: ir para o salão`;
 }
 
 async function publicarPresenca() {

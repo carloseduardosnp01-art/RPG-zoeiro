@@ -20,16 +20,16 @@
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
         crossorigin="anonymous">
 
-  <link rel="stylesheet" href="css/estilo.css?v=202610022032">
-  <link rel="stylesheet" href="css/carta.css?v=202610022032">
-  <link rel="stylesheet" href="css/arena.css?v=202610022032">
+  <link rel="stylesheet" href="css/estilo.css?v=202610022144">
+  <link rel="stylesheet" href="css/carta.css?v=202610022144">
+  <link rel="stylesheet" href="css/arena.css?v=202610022144">
 
   <!-- Bootstrap (JS) e MQTT.js (conexão em tempo real para o modo online) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
           integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
           crossorigin="anonymous" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js" defer></script>
-  <script type="module" src="js/app.js?v=202610022032"></script>
+  <script type="module" src="js/app.js?v=202610022144"></script>
 </head>
 <body>
   <a class="visually-hidden-focusable pular-link" href="#conteudo">Pular para o conteúdo</a>
@@ -42,7 +42,7 @@
 
   <!-- ===================== CABEÇALHO ===================== -->
   <header class="sticky-top">
-    <nav class="navbar navbar-expand-lg navbar-zoeira" aria-label="Navegação principal">
+    <nav class="navbar navbar-expand-xl navbar-zoeira" aria-label="Navegação principal">
       <div class="container-xl">
         <a class="navbar-brand marca" href="#inicio">
           <img class="logo-navbar" src="img/logo.webp" alt="Duelo da Zoeira: início" width="1100" height="242" fetchpriority="high">
@@ -52,14 +52,15 @@
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="menu-principal">
-          <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+          <ul class="navbar-nav ms-auto align-items-xl-center gap-xl-1">
             <li class="nav-item"><a class="nav-link" href="#inicio" data-link="inicio">🏠 Início</a></li>
+            <li class="nav-item"><a class="nav-link" href="#noticias" data-link="noticias">📰 Notícias</a></li>
             <li class="nav-item"><a class="nav-link" href="#catalogo" data-link="catalogo">🃏 Catálogo</a></li>
             <li class="nav-item"><a class="nav-link" href="#deck" data-link="deck">📦 Deck</a></li>
             <li class="nav-item"><a class="nav-link" href="#regras" data-link="regras">📜 Regras</a></li>
             <li class="nav-item"><a class="nav-link" href="#salao" data-link="salao">💬 Salão Online</a></li>
             <li class="nav-item"><a class="nav-link" href="#arena" data-link="arena">⚔️ Arena</a></li>
-            <li class="nav-item ms-lg-2">
+            <li class="nav-item ms-xl-2">
               <button type="button" class="btn btn-sm btn-icone" id="botao-som" aria-pressed="true" title="Som ligado">🔊</button>
             </li>
             <li class="nav-item">
@@ -76,6 +77,8 @@
     <!-- ===================== INÍCIO ===================== -->
     <section class="tela tela-inicio" data-tela="inicio" aria-labelledby="titulo-inicio">
       <div class="container-xl">
+        <div class="noticia-destaque" id="noticia-destaque" hidden></div>
+
         <div class="row align-items-center g-5 hero">
           <div class="col-12 col-lg-6">
             <p class="sobretitulo">Duelo da Zoeira</p>
@@ -118,6 +121,17 @@
               <p>Comece com o <em>Deck Careca Supremo</em> (40 cartas) ou monte o seu na página <a href="#deck">Deck</a>: de 40 a 60 cartas, até 3 cópias de cada. O deck salvo vai junto para todos os duelos.</p>
             </article>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== NOTÍCIAS ===================== -->
+    <section class="tela" data-tela="noticias" aria-labelledby="titulo-noticias" hidden>
+      <div class="container-xl">
+        <h2 id="titulo-noticias" class="titulo-secao">Notícias</h2>
+        <p>Torneios, cartas novas e tudo o que está rolando no Duelo da Zoeira.</p>
+        <div class="lista-noticias" id="lista-noticias" aria-live="polite">
+          <div class="estado">Carregando as notícias…</div>
         </div>
       </div>
     </section>

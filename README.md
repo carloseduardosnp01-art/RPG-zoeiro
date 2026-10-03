@@ -21,14 +21,16 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
 5. [As cartas e o deck](#as-cartas-e-o-deck)
 6. [Regras e automações](#regras-e-automações)
 7. [Estrutura do código](#estrutura-do-código)
-8. [Como criar cartas novas](#como-criar-cartas-novas)
-9. [Créditos](#créditos)
+8. [Como publicar uma notícia](#como-publicar-uma-notícia)
+9. [Como criar cartas novas](#como-criar-cartas-novas)
+10. [Créditos](#créditos)
 
 ---
 
 ## Funcionalidades
 
-- **Início** com leque de cartas em destaque.
+- **Início** com leque de cartas em destaque e, no topo, a faixa da última notícia.
+- **Notícias** (`#noticias`): anúncios de torneios e novidades, com cartaz, data do evento e contagem ("Faltam 3 dias", "É amanhã!", "É hoje!").
 - **Catálogo**: busca (sem diferenciar acentos), filtros por categoria, atributo e raridade, ordenação, paginação e modal com a carta completa, ficha, "como funciona no jogo" e frase da carta (com navegação Anterior/Próxima).
 - **Template próprio das cartas**, feito em HTML/CSS e usado em todo o site: moldura por tipo (Normal, Efeito, Magia, Armadilha), atributo com kanji, estrelas, selo de raridade (nome prateado, dourado ou arco-íris e brilho holográfico na arte), número de série e selo careca. A mesma carta escala de 50 px (campo no celular) até a carta grande do modal.
 - **Deck**:
@@ -270,7 +272,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 
 ```
 .
-├── index.html            # Todas as telas (início, catálogo, deck, regras, salão, arena)
+├── index.html            # Todas as telas (início, notícias, catálogo, deck, regras, salão, arena)
 ├── css/
 │   ├── estilo.css        # Tema do site, catálogo, deck, login e salão
 │   ├── carta.css         # Template das cartas (tudo em cqw: escala com o tamanho)
@@ -285,17 +287,32 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── conta.js          # Cadastro, login e estatísticas
 │   ├── rede.js           # Conexão MQTT (ou rede local entre abas)
 │   ├── catalogo.js       # Catálogo, modal, leque e mesa do deck padrão
+│   ├── noticias.js       # Página de notícias e faixa da última notícia no início
 │   ├── deck.js           # Deck do jogador: guardar, validar, usar nos duelos
 │   ├── editor-deck.js    # Tela "Meu deck"
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
 ├── data/cartas.json      # As 70 cartas (texto, stats, cópias no deck padrão, efeito)
+├── data/noticias.json    # As notícias (a mais nova aparece primeiro)
+├── img/noticias/         # Cartazes das notícias
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```
 
 O **motor** é independente da tela: dá para rodar partidas inteiras no Node (foi assim que ele foi testado, com milhares de partidas bot × bot e jogadas aleatórias, conferindo que nenhuma carta some ou duplica e que toda partida termina).
+
+---
+
+## Como publicar uma notícia
+
+1. Coloque o cartaz em `img/noticias/` (WebP, uns 900 px de largura).
+2. Acrescente um objeto no começo de `data/noticias.json`:
+   - `id` (único, sem espaços), `publicada` e, se for um evento, `evento` (as duas no formato `AAAA-MM-DD`);
+   - `categoria` (ex.: `"🏆 Torneio"`), `titulo`, `texto` (use `
+` para pular linha), `imagem`, `largura`, `altura` e `alt` (descrição do cartaz);
+   - `botao` (opcional): `{ "texto": "...", "href": "#salao" }`.
+3. Rode `python ferramentas/nova-versao.py` e publique. A mais nova (pela data `publicada`) vira a faixa da página inicial.
 
 ---
 

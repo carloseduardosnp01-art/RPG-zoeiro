@@ -1,0 +1,15 @@
+[
+  {
+    "id": "torneio-reliquias-do-milenio-1",
+    "publicada": "2026-10-02",
+    "evento": "2026-10-03",
+    "categoria": "🏆 Torneio",
+    "titulo": "1ª Edição do Torneio Relíquias do Milênio",
+    "imagem": "img/noticias/torneio-reliquias-do-milenio.webp",
+    "largura": 900,
+    "altura": 986,
+    "alt": "Cartaz do torneio: Torneio amanhã. Top 3 recebem troféu exclusivo no perfil (prata, ouro e bronze) e o campeão recebe o Enigma do Milênio, com a habilidade especial Compra do Destino.",
+    "texto": "🔥 ATENÇÃO, DUELISTAS!🔥\nEstá chegando a 1ª Edição do Torneio Relíquias do Milênio do Duelo da Zoeira! ⚔️🃏\nPrepare seu melhor deck e venha disputar esse torneio especial!\n🥇🥈🥉 TOP 3 recebem troféu exclusivo no perfil\n👑 O campeão recebe o Enigma do Milênio, com a habilidade especial \"Compra do Destino Carecal\" ✨\nMonte sua estratégia, confie no coração das cartas e mostre quem merece carregar uma das lendárias Relíquias do Milênio! 🔥\nQuem será o primeiro campeão? 👀🏆",
+    "botao": { "texto": "⚔️ Ir para o Salão Online", "href": "#salao" }
+  }
+]

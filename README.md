@@ -20,7 +20,7 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
 4. [Como o online funciona](#como-o-online-funciona)
 5. [As cartas e o deck](#as-cartas-e-o-deck)
 6. [Regras e automações](#regras-e-automações)
-7. [Estrutura do código](#estrutura-do-código)
+7. [Estrutura do código](#estrutura-do-código) · [Banco de dados](#banco-de-dados-supabase)
 8. [Como publicar uma notícia](#como-publicar-uma-notícia)
 9. [Como criar cartas novas](#como-criar-cartas-novas)
 10. [Créditos](#créditos)
@@ -115,8 +115,37 @@ Depois abra **http://localhost:8000**.
 | `?treino` | abre direto um duelo contra o bot |
 | `?rede=local` | troca o servidor online por uma rede **local entre abas** do mesmo navegador. Abra duas abas com `?rede=local#salao`, crie uma conta em cada uma e desafie você mesmo, sem internet |
 | `?debug` | deixa a sessão do duelo acessível no console (`zoeiraDebug.sessao()`) |
+| `?banco=local` | usa um banco de testes no computador (porta 8012) em vez do Supabase. Fora do site publicado o banco fica **desligado** e o jogo usa só o modo antigo |
+| `?banco=real` | força o Supabase de verdade (por exemplo, testando o site por outro endereço) |
 
 > Dica: com "continuar conectado" marcado, a segunda aba entra na mesma conta. Clique em **Sair da conta** nela e crie a outra.
+
+---
+
+## Banco de dados (Supabase)
+
+Desde 03/10/2026 o que **não pode sumir** fica num banco de dados de verdade, no [Supabase](https://supabase.com) (plano gratuito, servidor em São Paulo): **contas, perfis, Careca Coins, troféus, relíquias e o histórico de torneios**. O que é ao vivo (duelos, chat, quem está online) continua no broker MQTT, porque pode se perder sem problema. O site continua no GitHub Pages.
+
+- `supabase/banco.sql`: tabelas e funções do banco. As tabelas ficam no esquema `zoeira`, que o site **não enxerga**; o site só chama as funções do esquema `public`, e cada uma confere a sessão de quem chamou. Ninguém consegue mexer na conta, no perfil ou nas moedas dos outros.
+- `js/banco.js`: chama essas funções. Usa a chave **publishable** (feita para ficar no site). A chave **secret** e a senha do banco nunca entram no projeto.
+- A senha nunca vai para o banco: o navegador manda um código derivado dela (HMAC-SHA256 com o nick), guardado lá com bcrypt. 10 senhas erradas em 15 minutos bloqueiam a conta por 15 minutos.
+- O perfil grava com **versão**: se dois aparelhos gravarem ao mesmo tempo, o segundo recebe o perfil do primeiro, junta os dois e grava de novo (nada se perde).
+
+**Instalar ou atualizar o banco:** no Supabase, **SQL Editor → New query**, cole o `supabase/banco.sql` inteiro e clique em **Run** (pode rodar de novo quando o arquivo mudar; nada é apagado). As contas dos ADMs (MenonICE e MenonFIRE) já nascem reservadas e precisam de senha, também pelo SQL Editor:
+
+```sql
+select zoeira.definir_senha('menonice', 'a senha que você usa no jogo');
+select zoeira.definir_senha('menonfire', 'a senha que você usa no jogo');
+```
+
+**A mudança para o banco é automática:**
+- Quem **entra** com nick e senha de uma conta antiga é levado para o banco na hora, com a mesma senha e todo o progresso.
+- Quem **já estava conectado** é levado sem digitar nada; o jogo pede para ele escolher uma senha ("🔒 Escolher minha senha", pode ser a de sempre).
+- Se o banco não responder (sem internet, projeto pausado), o jogo segue no modo antigo, pelo broker.
+
+**ADM no banco:** redefinir senha (mesmo de quem ainda não veio para o banco), dar troféus e moedas (ficam guardados no perfil do jogador, mesmo offline), guardar torneios e **apagar uma conta** (para quem registrou o nick de outro jogador). Senha de ADM só pelo SQL Editor.
+
+**Plano gratuito:** o projeto "dorme" se ninguém usar por 7 dias. Os dados não se perdem; é só abrir o painel do Supabase e clicar em **Restore**.
 
 ---
 
@@ -155,7 +184,7 @@ Tópicos (todos começam com `rpgdazoeira/v1/`):
 - **🧹 Limpar o chat global** (Painel do ADM): apaga as mensagens para todo mundo (vale só com a assinatura do ADM).
 - Não há um servidor juiz, então um espertinho com o console aberto consegue trapacear. Jogue com amigos.
 - Brokers públicos podem limpar mensagens retidas. Por isso cada navegador guarda uma cópia da conta e do perfil e republica ao entrar.
-- Se um dia quiser contas "de verdade", dá para trocar `js/rede.js` e `js/conta.js` por um serviço como Firebase ou Supabase: o resto do jogo só conversa com essas duas partes.
+- Contas, perfis, moedas e troféus agora ficam no banco (veja **Banco de dados**); o broker público só guarda o que é ao vivo.
 
 ---
 
@@ -287,7 +316,8 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── arena.js          # Tela do duelo: desenha o estado, anima os eventos, menus e escolhas
 │   ├── sessao.js         # Liga a arena ao duelo (contra o bot ou online)
 │   ├── salao.js          # Salão: presença, chat, desafios, perfil e ranking
-│   ├── conta.js          # Cadastro, login e estatísticas
+│   ├── conta.js          # Cadastro, login, sessão no banco e estatísticas
+│   ├── banco.js          # Chamadas ao banco de dados (Supabase)
 │   ├── rede.js           # Conexão MQTT (ou rede local entre abas)
 │   ├── catalogo.js       # Catálogo, modal, leque e mesa do deck padrão
 │   ├── noticias.js       # Página de notícias e faixa da última notícia no início
@@ -296,6 +326,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
+├── supabase/banco.sql    # Banco de dados: tabelas, funções e permissões (cole no SQL Editor do Supabase)
 ├── data/cartas.json      # As 70 cartas (texto, stats, cópias no deck padrão, efeito)
 ├── data/noticias.json    # As notícias (a mais nova aparece primeiro)
 ├── img/noticias/         # Cartazes das notícias

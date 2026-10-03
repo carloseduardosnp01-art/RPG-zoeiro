@@ -2,27 +2,34 @@
    Duelo da Zoeira · js/conta.js
    Contas dos duelistas: cadastro, login, sessão e estatísticas.
 
-   Sem servidor próprio, a conta fica em duas mensagens retidas no broker:
-     contas/<chave>  -> { chave, sal, hash }  (a senha nunca sai do navegador:
-                        vai só o hash PBKDF2 com sal)
-     perfis/<chave>  -> dados públicos: nick, clã, avatar, vitórias, derrotas, XP, Careca Coins
-   Uma cópia fica no navegador; se o broker "esquecer", o login republica.
+   A conta e o perfil ficam no banco do jogo (Supabase, js/banco.js): só o dono
+   grava o próprio perfil, com a sessão que ganha ao entrar. O banco nunca recebe
+   a senha, só um código derivado dela.
+   Uma cópia do perfil fica no navegador, e o perfil também vai para o servidor de
+   mensagens (perfis/<chave>) para o ranking ao vivo.
+
+   Modo antigo (reserva, se o banco não responder): a conta fica em mensagens
+   retidas no broker (contas/<chave> com o hash PBKDF2). Quem entra com uma conta
+   antiga é levado para o banco na hora, com a mesma senha.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610031145";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610031145";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610031145";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610031145";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610031522";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610031522";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610031522";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610031522";
+import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610031522";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
 const CHAVE_RESULTADOS = "zoeira-resultados";
+const CHAVE_BANCO = "zoeira-banco"; // { chave, token, versao }: a sessão no banco
 
 const topicoConta = (chave) => `${PREFIXO}/contas/${chave}`;
 export const topicoPerfil = (chave) => `${PREFIXO}/perfis/${chave}`;
 
 let usuario = null; // perfil do usuário logado
 let senhaProvisoria = false; // entrou com a senha provisória que um ADM passou
+let banco = null; // { chave, token, versao } quando a conta está no banco
 const ouvintes = new Set();
 
 export function aoMudarUsuario(fn) {
@@ -36,6 +43,23 @@ function avisar() {
 
 export const usuarioAtual = () => usuario;
 export const temSenhaProvisoria = () => Boolean(usuario) && senhaProvisoria;
+export const contaNoBanco = () => Boolean(usuario && banco?.token);
+
+// Recados do banco para o jogador
+const MENSAGENS = {
+  nick_em_uso: "Esse nick já tem dono. Escolha outro.",
+  nick_invalido: "Esse nick não é válido.",
+  senha: "Senha incorreta.",
+  senha_invalida: "Senha inválida.",
+  bloqueado: "Muitas tentativas com a senha errada. Espere 15 minutos e tente de novo.",
+  reservada: "Essa conta de ADM ainda não tem senha no servidor novo (defina no painel do Supabase).",
+  sessao: "Sua sessão terminou. Entre de novo com seu nick e senha.",
+  nao_adm: "Sua conta não tem poder de ADM no servidor.",
+  alvo_adm: "A senha de um ADM só pode ser trocada pelo painel do Supabase.",
+  nao_existe: "Conta não encontrada.",
+  perfil_grande: "O perfil ficou grande demais para salvar.",
+};
+export const mensagemDoBanco = (r, padrao = "O servidor do jogo recusou.") => MENSAGENS[r?.erro] || padrao;
 
 
 /* ---------- ID do jogador ---------- */
@@ -61,11 +85,13 @@ async function hashSenha(senha, sal) {
   return Array.from(new Uint8Array(bits), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// Confere a senha. Se não bater, tenta sem os espaços das pontas (sobram ao copiar e colar)
-async function senhaConfere(senha, conta) {
-  if ((await hashSenha(senha, conta.sal)) === conta.hash) return true;
+// Confere a senha (modo antigo). Se não bater, tenta sem os espaços das pontas (sobram ao
+// copiar e colar). Devolve a senha que bateu, ou null.
+async function senhaQueConfere(senha, conta) {
+  if ((await hashSenha(senha, conta.sal)) === conta.hash) return senha;
   const limpa = senha.trim();
-  return limpa !== senha && limpa.length > 0 && (await hashSenha(limpa, conta.sal)) === conta.hash;
+  if (limpa !== senha && limpa.length > 0 && (await hashSenha(limpa, conta.sal)) === conta.hash) return limpa;
+  return null;
 }
 
 // Quanto esperar o servidor ao ler uma conta (a do celular pode demorar)
@@ -86,32 +112,50 @@ export function validarNick(nick) {
   return null;
 }
 
+// Perfil novo, com tudo zerado
+function perfilNovo(chave, nick, extra = {}) {
+  return {
+    chave, nick: nick.trim(), tag: "", avatar: "careca-feijao", id: novoIdJogador(),
+    vitorias: 0, derrotas: 0, xp: 0, criadoEm: Date.now(), atualizado: Date.now(), ...extra,
+  };
+}
+
+// O perfil que veio do banco tem conteúdo? (conta recriada por um ADM vem só com chave e nick)
+const temConteudo = (p) => Boolean(p && typeof p === "object" && "avatar" in p);
+
 export async function criarConta({ nick, senha, tag, avatar, lembrar = true }) {
   const erro = validarNick(nick);
   if (erro) throw new Error(erro);
   if (senha.length < 4) throw new Error("A senha precisa ter pelo menos 4 caracteres.");
   const chave = chaveDoNick(nick);
 
+  // o nick pode estar só no servidor antigo ou neste aparelho (conta de antes do banco)
   const existente = await lerRetido(topicoConta(chave));
   if (existente || contasLocais()[chave]) throw new Error("Esse nick já tem dono. Escolha outro.");
 
-  const sal = novoSal();
-  const conta = { chave, sal, hash: await hashSenha(senha, sal) };
-  const perfil = {
-    chave,
-    nick: nick.trim(),
+  const perfil = perfilNovo(chave, nick, {
     tag: (tag || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4),
     avatar: avatar || "careca-feijao",
-    id: novoIdJogador(),
-    vitorias: 0,
-    derrotas: 0,
-    xp: 0,
-    criadoEm: Date.now(),
-    atualizado: Date.now(),
-  };
+  });
+  if (bancoLigado()) {
+    try {
+      const r = await chamar("criar_conta", { p_chave: chave, p_nick: perfil.nick, p_senha: await derivarSenha(senha, chave), p_perfil: perfil });
+      if (r.erro) throw new Error(mensagemDoBanco(r, "Não foi possível criar a conta."));
+      definirBanco({ chave, token: r.token, versao: r.versao }, lembrar);
+      salvarContaLocal(chave, null, perfil);
+      iniciarSessao(perfil, lembrar);
+      publicar(topicoPerfil(chave), perfil, { reter: true }); // ranking ao vivo
+      return perfil;
+    } catch (e) {
+      if (!(e instanceof ErroBanco)) throw e;
+      // banco fora do ar: cria do jeito antigo (a conta vem para o banco no próximo login)
+    }
+  }
+  const sal = novoSal();
+  const conta = { chave, sal, hash: await hashSenha(senha, sal) };
   publicar(topicoConta(chave), conta, { reter: true });
   publicar(topicoPerfil(chave), perfil, { reter: true });
-  salvarContaLocal(conta, perfil);
+  salvarContaLocal(chave, conta, perfil);
   iniciarSessao(perfil, lembrar);
   return perfil;
 }
@@ -119,38 +163,99 @@ export async function criarConta({ nick, senha, tag, avatar, lembrar = true }) {
 export async function entrar({ nick, senha, lembrar = true }) {
   const chave = chaveDoNick(nick);
   if (!chave) throw new Error("Digite o seu nick.");
+
+  let r = null;
+  if (bancoLigado()) {
+    try {
+      r = await chamar("entrar", { p_chave: chave, p_senha: await derivarSenha(senha, chave) });
+      // senha colada com espaço nas pontas
+      if (r.erro === "senha" && senha.trim() && senha.trim() !== senha) {
+        r = await chamar("entrar", { p_chave: chave, p_senha: await derivarSenha(senha.trim(), chave) });
+      }
+    } catch (e) {
+      if (!(e instanceof ErroBanco)) throw e;
+      r = null; // banco fora do ar: entra do jeito antigo
+    }
+  }
+  if (r?.token) return entrarComBanco(chave, nick, r, lembrar);
+  if (r?.erro && r.erro !== "nao_existe") throw new Error(mensagemDoBanco(r, "Não foi possível entrar."));
+
+  // Conta de antes do banco (ou banco fora do ar): confere a senha do jeito antigo
+  const antiga = await conferirContaAntiga(chave, nick, senha);
+  if (r?.erro === "nao_existe") {
+    // traz a conta para o banco, com a mesma senha
+    try {
+      const c = await chamar("criar_conta", {
+        p_chave: chave, p_nick: antiga.perfil.nick || nick.trim(), p_senha: await derivarSenha(antiga.senha, chave), p_perfil: antiga.perfil,
+      });
+      if (c.token) return entrarComBanco(chave, nick, c, lembrar, antiga.conta);
+      throw new Error(c.erro === "nick_em_uso"
+        ? "Esse nick já foi registrado no servidor novo por outra pessoa. Fale com um ADM."
+        : mensagemDoBanco(c, "Não foi possível entrar."));
+    } catch (e) {
+      if (!(e instanceof ErroBanco)) throw e;
+    }
+  }
+  // banco fora do ar (ou desligado): sessão do jeito antigo
+  senhaProvisoria = Boolean(antiga.conta.provisoria);
+  if (antiga.publicar) publicar(topicoPerfil(chave), antiga.perfil, { reter: true });
+  salvarContaLocal(chave, antiga.conta, antiga.perfil);
+  iniciarSessao(antiga.perfil, lembrar);
+  return antiga.perfil;
+}
+
+// Login do modo antigo: confere a senha com o hash do broker (ou deste aparelho)
+async function conferirContaAntiga(chave, nick, senha) {
   const local = contasLocais()[chave];
   // Espera o servidor com folga: no celular a resposta pode demorar, e a cópia guardada
   // neste aparelho pode estar velha (ex.: um ADM acabou de trocar a senha)
   let conta = await lerRetido(topicoConta(chave), ESPERA_CONTA);
   const doServidor = Boolean(conta);
-  if (!conta && local) conta = local.conta;
+  if (!conta && local?.conta) conta = local.conta;
   if (!conta) throw new Error("Conta não encontrada. Confira o nick ou crie uma conta.");
-  if (!(await senhaConfere(senha, conta))) {
+  const certa = await senhaQueConfere(senha, conta);
+  if (!certa) {
     throw new Error(doServidor ? "Senha incorreta." : "Senha incorreta, ou o servidor demorou para responder. Confira a internet e tente de novo.");
   }
-  // o broker perdeu a conta: devolve a cópia daqui (só depois de a senha conferir,
-  // para uma tentativa errada nunca desfazer uma senha nova)
-  if (!doServidor) publicar(topicoConta(chave), conta, { reter: true });
-  senhaProvisoria = Boolean(conta.provisoria);
+  // o broker perdeu a conta: devolve a cópia daqui (só depois de a senha conferir, e só no
+  // modo antigo: com o banco, o hash não vai mais para o servidor público)
+  if (!doServidor && !bancoLigado()) publicar(topicoConta(chave), conta, { reter: true });
 
   // Junta o perfil do broker com o do navegador (o deck mais recente e as estatísticas maiores)
   const remoto = await lerRetido(topicoPerfil(chave));
   let perfil = juntarComRemoto(local?.perfil, await limparRemoto(remoto, Boolean(local?.perfil)));
-  if (!perfil) perfil = { chave, nick: nick.trim(), tag: "", avatar: "careca-feijao", vitorias: 0, derrotas: 0, xp: 0, atualizado: Date.now() };
+  if (!perfil) perfil = perfilNovo(chave, nick);
   if (!perfil.id) perfil = { ...perfil, id: novoIdJogador() }; // contas antigas ganham o ID no próximo login
-  if (JSON.stringify(perfil) !== JSON.stringify(remoto)) publicar(topicoPerfil(chave), perfil, { reter: true });
+  return { conta, perfil, senha: certa, publicar: JSON.stringify(perfil) !== JSON.stringify(remoto) };
+}
 
-  salvarContaLocal(conta, perfil);
+// Entrou pelo banco: junta o perfil de lá com a cópia deste aparelho
+function entrarComBanco(chave, nick, r, lembrar, contaAntiga) {
+  const local = contasLocais()[chave];
+  const doBanco = temConteudo(r.perfil) ? r.perfil : null;
+  const nome = r.perfil?.nick || doBanco?.nick || local?.perfil?.nick || nick.trim();
+  const junto = mesclarPerfis(local?.perfil, doBanco);
+  const perfil = { ...perfilNovo(chave, nome), ...(junto || {}), chave, nick: nome };
+  senhaProvisoria = Boolean(r.provisoria);
+  // a sessão do banco vem antes do resto: o salão confere a sessão assim que o usuário muda
+  definirBanco({ chave, token: r.token, versao: r.versao }, lembrar);
+  salvarContaLocal(chave, contaAntiga ?? local?.conta ?? null, perfil);
   iniciarSessao(perfil, lembrar);
+  if (JSON.stringify(perfil) !== JSON.stringify(r.perfil)) salvarNoBanco();
+  publicar(topicoPerfil(chave), perfil, { reter: true }); // ranking ao vivo
   return perfil;
 }
 
 export function sair() {
+  if (banco?.token) chamar("sair", { p_token: banco.token }).catch(() => {});
+  clearTimeout(timerBanco);
+  banco = null;
   usuario = null;
   senhaProvisoria = false;
   guardar.apagar(CHAVE_SESSAO);
   guardar.apagar(CHAVE_SESSAO, true);
+  guardar.apagar(CHAVE_BANCO);
+  guardar.apagar(CHAVE_BANCO, true);
   avisar();
 }
 
@@ -164,8 +269,23 @@ export function restaurarSessao() {
     usuario = { ...usuario, id: novoIdJogador() };
     guardarLocalmente();
   }
+  const sessaoBanco = guardar.ler(CHAVE_BANCO, null, true) || guardar.ler(CHAVE_BANCO);
+  banco = sessaoBanco && usuario && sessaoBanco.chave === usuario.chave ? sessaoBanco : null;
   avisar();
   return usuario;
+}
+
+function definirBanco(dados, lembrar) {
+  banco = dados;
+  guardar.gravar(CHAVE_BANCO, banco, true);
+  if (lembrar) guardar.gravar(CHAVE_BANCO, banco);
+  else guardar.apagar(CHAVE_BANCO);
+}
+
+function guardarBanco() {
+  if (!banco) return;
+  guardar.gravar(CHAVE_BANCO, banco, true);
+  if (guardar.ler(CHAVE_BANCO)) guardar.gravar(CHAVE_BANCO, banco);
 }
 
 function iniciarSessao(perfil, lembrar) {
@@ -184,26 +304,50 @@ function iniciarSessao(perfil, lembrar) {
    para o dono em particular; no login o jogo avisa para trocar por uma nova. */
 
 // conhecida: o salão já tem o perfil desse duelista (não precisa perguntar ao servidor se existe)
-export async function redefinirSenha(chave, novaSenha, conhecida = false) {
+// Com o banco: se a conta ainda não está lá, ela é criada só com a senha provisória (o
+// progresso vem do aparelho do jogador quando ele entrar). Devolve { criada }.
+export async function redefinirSenha(chave, novaSenha, conhecida = false, nick = chave) {
   novaSenha = novaSenha.trim();
   if (novaSenha.length < 4) throw new Error("A senha precisa ter pelo menos 4 caracteres.");
+  if (contaNoBanco()) {
+    if (!conhecida && !(await chamar("perfil_publico", { p_chave: chave }))) {
+      throw new Error("Conta não encontrada no servidor. Confira o nick (só o nick, sem a tag do clã).");
+    }
+    const r = await chamar("redefinir_senha", { p_token: banco.token, p_chave: chave, p_nick: nick, p_nova: await derivarSenha(novaSenha, chave) });
+    if (r.erro) throw new Error(mensagemDoBanco(r, "Não foi possível redefinir a senha."));
+    return { criada: Boolean(r.criada) };
+  }
   const existe = conhecida || (await lerRetido(topicoConta(chave), ESPERA_CONTA)) || (await lerRetido(topicoPerfil(chave), ESPERA_CONTA));
   if (!existe) throw new Error("Conta não encontrada no servidor. Confira o nick (só o nick, sem a tag do clã).");
   const sal = novoSal();
   publicar(topicoConta(chave), { chave, sal, hash: await hashSenha(novaSenha, sal), provisoria: true }, { reter: true });
+  return { criada: false };
 }
 
+// Com senha provisória (do ADM, ou conta trazida do jogo antigo) a senha atual não é pedida
 export async function trocarSenha(senhaAtual, novaSenha) {
   if (!usuario) throw new Error("Entre na sua conta primeiro.");
   novaSenha = novaSenha.trim();
   if (novaSenha.length < 4) throw new Error("A senha nova precisa ter pelo menos 4 caracteres.");
   const chave = usuario.chave;
+  if (contaNoBanco()) {
+    const nova = await derivarSenha(novaSenha, chave);
+    let r = await chamar("trocar_senha", { p_token: banco.token, p_atual: await derivarSenha(senhaAtual, chave), p_nova: nova });
+    if (r.erro === "senha" && senhaAtual.trim() && senhaAtual.trim() !== senhaAtual) {
+      r = await chamar("trocar_senha", { p_token: banco.token, p_atual: await derivarSenha(senhaAtual.trim(), chave), p_nova: nova });
+    }
+    if (r.erro === "sessao") expirar(MENSAGENS.sessao);
+    if (r.erro) throw new Error(r.erro === "senha" ? "A senha atual não confere." : mensagemDoBanco(r));
+    senhaProvisoria = false;
+    avisar();
+    return;
+  }
   const atual = (await lerRetido(topicoConta(chave), ESPERA_CONTA)) || contasLocais()[chave]?.conta;
-  if (!atual || !(await senhaConfere(senhaAtual, atual))) throw new Error("A senha atual não confere.");
+  if (!atual || !(await senhaQueConfere(senhaAtual, atual))) throw new Error("A senha atual não confere.");
   const sal = novoSal();
   const conta = { chave, sal, hash: await hashSenha(novaSenha, sal) };
   publicar(topicoConta(chave), conta, { reter: true });
-  salvarContaLocal(conta, usuario);
+  salvarContaLocal(chave, conta, usuario);
   senhaProvisoria = false;
   avisar();
 }
@@ -307,7 +451,7 @@ export async function sincronizarComRemoto(remoto) {
   usuario = junto;
   guardarLocalmente();
   // se o daqui tinha algo mais novo, devolve para o broker
-  if (JSON.stringify(junto) !== JSON.stringify(remoto)) publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
+  if (JSON.stringify(junto) !== JSON.stringify(remoto)) publicarPerfil();
   avisar();
 }
 
@@ -332,12 +476,140 @@ const ESPERA_RESTAURAR = 8000;
 
 // Alguém apagou o meu perfil do servidor: publica de novo
 export function republicarPerfil() {
-  if (usuario) publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
+  if (usuario) publicarPerfil();
+}
+
+// O perfil mudou: vai para o servidor de mensagens (ranking ao vivo) e para o banco
+function publicarPerfil() {
+  publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
+  salvarNoBanco();
+}
+
+
+/* ---------- Banco: gravar e conferir ---------- */
+
+let timerBanco = null;
+let gravando = false;
+let gravarDeNovo = false;
+const ouvintesSaida = new Set();
+
+// Quando a sessão do banco acaba (senha trocada em outro aparelho, conta apagada...)
+export function aoSairSozinho(fn) {
+  ouvintesSaida.add(fn);
+  return () => ouvintesSaida.delete(fn);
+}
+
+function expirar(motivo) {
+  sair();
+  ouvintesSaida.forEach((fn) => fn(motivo));
+}
+
+// Junta as mudanças por um instante e grava uma vez só
+function salvarNoBanco(espera = 800) {
+  if (!contaNoBanco()) return;
+  clearTimeout(timerBanco);
+  timerBanco = setTimeout(gravarNoBanco, espera);
+}
+
+async function gravarNoBanco() {
+  if (!contaNoBanco()) return;
+  if (gravando) {
+    gravarDeNovo = true;
+    return;
+  }
+  gravando = true;
+  const chave = usuario.chave;
+  try {
+    // "conflito": outro aparelho gravou antes. Junta os dois perfis e tenta de novo.
+    for (let tentativa = 0; tentativa < 4 && contaNoBanco() && usuario.chave === chave; tentativa++) {
+      const r = await chamar("salvar_perfil", { p_token: banco.token, p_perfil: usuario, p_versao: banco.versao });
+      if (!contaNoBanco() || usuario.chave !== chave) break;
+      if (r.ok) {
+        banco.versao = r.versao;
+        guardarBanco();
+        break;
+      }
+      if (r.erro === "conflito") {
+        banco.versao = r.versao;
+        guardarBanco();
+        if (temConteudo(r.perfil)) {
+          usuario = mesclarPerfis(usuario, r.perfil);
+          guardarLocalmente();
+          avisar();
+        }
+        continue;
+      }
+      if (r.erro === "sessao") expirar(MENSAGENS.sessao);
+      break;
+    }
+  } catch (e) {
+    if (!(e instanceof ErroBanco)) throw e;
+    salvarNoBanco(30000); // sem conexão agora: tenta de novo daqui a pouco
+  } finally {
+    gravando = false;
+    if (gravarDeNovo) {
+      gravarDeNovo = false;
+      salvarNoBanco();
+    }
+  }
+}
+
+// Ao abrir o salão: confere a sessão no banco e junta o perfil de lá com o daqui.
+// Quem estava conectado no jogo antigo (sem sessão no banco) é levado para o banco sem
+// digitar a senha, e o jogo pede para ele escolher uma.
+// Devolve "banco", "migrou" (veio agora para o banco) ou "antigo" (banco desligado/fora do ar).
+export async function sincronizarComBanco() {
+  if (!usuario || !bancoLigado()) return "antigo";
+  const chave = usuario.chave;
+  try {
+    if (!banco?.token) {
+      const r = await chamar("migrar_sessao", { p_chave: chave, p_nick: usuario.nick, p_perfil: usuario });
+      if (!usuario || usuario.chave !== chave) return "antigo";
+      if (r.token) {
+        definirBanco({ chave, token: r.token, versao: r.versao }, Boolean(guardar.ler(CHAVE_SESSAO)));
+        senhaProvisoria = true;
+        avisar();
+        return "migrou";
+      }
+      expirar(r.erro === "nick_em_uso"
+        ? "Sua conta já está no servidor novo. Entre de novo com seu nick e senha (seu progresso continua salvo neste aparelho)."
+        : mensagemDoBanco(r, MENSAGENS.sessao));
+      return "antigo";
+    }
+    const r = await chamar("meu_perfil", { p_token: banco.token });
+    if (!usuario || usuario.chave !== chave) return "antigo";
+    if (r.erro) {
+      expirar(MENSAGENS.sessao);
+      return "antigo";
+    }
+    senhaProvisoria = Boolean(r.provisoria);
+    banco.versao = r.versao;
+    guardarBanco();
+    const junto = mesclarPerfis(usuario, temConteudo(r.perfil) ? r.perfil : null);
+    if (JSON.stringify(junto) !== JSON.stringify(usuario)) {
+      usuario = junto;
+      guardarLocalmente();
+      avisar();
+    }
+    if (JSON.stringify(usuario) !== JSON.stringify(r.perfil)) salvarNoBanco(0);
+    return "banco";
+  } catch (e) {
+    if (!(e instanceof ErroBanco)) throw e;
+    return "antigo";
+  }
+}
+
+// Funções do banco que precisam da sessão (ADM: troféus, presentes, torneios, apagar conta)
+export async function chamarComSessao(funcao, parametros = {}) {
+  if (!contaNoBanco()) throw new ErroBanco("Sem sessão no banco.");
+  const r = await chamar(funcao, { p_token: banco.token, ...parametros });
+  if (r?.erro === "sessao") expirar(MENSAGENS.sessao);
+  return r;
 }
 
 function guardarLocalmente() {
   const local = contasLocais()[usuario.chave];
-  if (local) salvarContaLocal(local.conta, usuario);
+  if (local) salvarContaLocal(usuario.chave, local.conta, usuario);
   guardar.gravar(CHAVE_SESSAO, usuario, true);
   if (guardar.ler(CHAVE_SESSAO)) guardar.gravar(CHAVE_SESSAO, usuario);
 }
@@ -388,7 +660,7 @@ export function registrarResultado({ dueloId, venceu, contraBot = false, oponent
     coins,
   };
   usuario.historico = juntarHistoricos([duelo], usuario.historico);
-  publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
+  publicarPerfil();
   guardarLocalmente();
   avisar();
   return { xp: ganho, coins };
@@ -404,7 +676,7 @@ export function aplicarPresente(p) {
     presentesContados: contadosDe(usuario),
     atualizado: Date.now(),
   };
-  publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
+  publicarPerfil();
   guardarLocalmente();
   avisar();
   return true;
@@ -414,7 +686,7 @@ export function aplicarPresente(p) {
 export function aplicarPremio(p) {
   if (!usuario || p.para !== usuario.chave || premioRemovido(p.id) || premiosDe(usuario).some((x) => x.id === p.id)) return false;
   usuario = { ...usuario, premios: [...premiosDe(usuario), p].slice(-60), atualizado: Date.now() };
-  publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
+  publicarPerfil();
   guardarLocalmente();
   avisar();
   return true;
@@ -433,7 +705,7 @@ export function equiparReliquia(id) {
 export function atualizarPerfil(mudancas) {
   if (!usuario) return;
   usuario = { ...usuario, ...mudancas, atualizado: Date.now() };
-  publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
+  publicarPerfil();
   guardarLocalmente();
   avisar();
 }
@@ -450,8 +722,8 @@ function contasLocais() {
   return guardar.ler(CHAVE_CONTAS, {});
 }
 
-function salvarContaLocal(conta, perfil) {
+function salvarContaLocal(chave, conta, perfil) {
   const todas = contasLocais();
-  todas[conta.chave] = { conta, perfil };
+  todas[chave] = { conta, perfil };
   guardar.gravar(CHAVE_CONTAS, todas);
 }

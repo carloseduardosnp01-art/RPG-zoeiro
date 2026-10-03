@@ -12,18 +12,19 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031145";
-import * as conta from "./conta.js?v=202610031145";
-import * as adm from "./admin.js?v=202610031145";
-import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610031145";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031145";
-import { abrirPremio } from "./visor-premio.js?v=202610031145";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031145";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031145";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031145";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031145";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031145";
-import { tocar } from "./som.js?v=202610031145";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031522";
+import * as conta from "./conta.js?v=202610031522";
+import { bancoLigado, chamar } from "./banco.js?v=202610031522";
+import * as adm from "./admin.js?v=202610031522";
+import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610031522";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031522";
+import { abrirPremio } from "./visor-premio.js?v=202610031522";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031522";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031522";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031522";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031522";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031522";
+import { tocar } from "./som.js?v=202610031522";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -80,6 +81,14 @@ export function iniciarSalao({ cartas }) {
   });
 
   conta.aoMudarUsuario(atualizarUsuario);
+  conta.aoSairSozinho((motivo) => {
+    aviso(motivo, "info", 15000);
+    const msg = $("#entrar-mensagem");
+    if (msg) {
+      msg.className = "mensagem-form info";
+      msg.textContent = motivo;
+    }
+  });
   document.addEventListener("deck-mudou", desenharPerfil);
   conta.aoMudarUsuario(() => desenharRanking());
   setInterval(() => desenharOnline(), 10000);
@@ -106,6 +115,8 @@ async function garantirConexao() {
   assinar(T.presencas, receberPresenca);
   assinar(T.chat, receberChatGlobal);
   assinar(T.perfis, receberPerfil);
+  carregarPerfisDoBanco();
+  setInterval(carregarPerfisDoBanco, 2 * 60 * 1000);
   assinar(T.mesas, receberMesa);
   iniciarTorneio({ SID, entrarNoDuelo, avisarChat, perfis: () => s.perfis, entregarPremio });
   lerRetido(T.historico).then((lista) => {
@@ -142,7 +153,12 @@ async function atualizarUsuario(usuario) {
   await adm.carregarAdm(usuario.chave);
   desenharPerfil();
   if (!(await garantirConexao()) || !conta.usuarioAtual()) return;
-  conta.restaurarNoServidor();
+  conta.sincronizarComBanco().then((modo) => {
+    if (modo === "antigo") conta.restaurarNoServidor();
+    if (modo === "migrou") {
+      aviso("☁️ Sua conta agora fica guardada no servidor novo do jogo! No seu perfil, em \"🔒 Trocar senha\", escolha uma senha (pode ser a de sempre) para entrar em outros aparelhos.", "ok", 20000);
+    }
+  });
 
   s.cancelarUsuario.push(assinar(T.dm(usuario.chave), receberDM));
   s.cancelarUsuario.push(assinar(T.presentes(usuario.chave), receberPresente));
@@ -544,12 +560,18 @@ function secaoPremios(p, meu) {
 function formTrocarSenha() {
   const caixa = el("div", "trocar-senha");
   const provisoria = conta.temSenhaProvisoria();
-  const abrir = el("button", provisoria ? "btn btn-sm btn-ouro" : "btn btn-sm btn-outline-light", "🔒 Trocar senha");
+  // no banco, com senha provisória (do ADM ou da mudança de servidor), a sessão já prova quem é
+  const semAtual = provisoria && conta.contaNoBanco();
+  const abrir = el("button", provisoria ? "btn btn-sm btn-ouro" : "btn btn-sm btn-outline-light", provisoria ? "🔒 Escolher minha senha" : "🔒 Trocar senha");
   abrir.type = "button";
   const form = el("form", "trocar-senha__form");
   form.hidden = !provisoria;
   abrir.setAttribute("aria-expanded", String(!form.hidden));
-  if (provisoria) form.append(el("p", "trocar-senha__aviso", "Você entrou com a senha provisória que o ADM passou. Escolha uma senha nova só sua."));
+  if (provisoria) {
+    form.append(el("p", "trocar-senha__aviso", semAtual
+      ? "Escolha a senha da sua conta (pode ser a de sempre). É com ela que você entra em outros aparelhos."
+      : "Você entrou com a senha provisória que o ADM passou. Escolha uma senha nova só sua."));
+  }
   const campo = (rotulo, auto) => {
     const i = el("input", "form-control form-control-sm");
     i.type = "password";
@@ -560,7 +582,7 @@ function formTrocarSenha() {
     form.append(i);
     return i;
   };
-  const atual = campo(provisoria ? "Senha provisória (a do ADM)" : "Senha atual", "current-password");
+  const atual = semAtual ? null : campo(provisoria ? "Senha provisória (a do ADM)" : "Senha atual", "current-password");
   const nova = campo("Senha nova (mínimo 4)", "new-password");
   const repetir = campo("Repita a senha nova", "new-password");
   nova.minLength = 4;
@@ -572,7 +594,7 @@ function formTrocarSenha() {
   abrir.addEventListener("click", () => {
     form.hidden = !form.hidden;
     abrir.setAttribute("aria-expanded", String(!form.hidden));
-    if (!form.hidden) atual.focus();
+    if (!form.hidden) (atual || nova).focus();
   });
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -583,7 +605,7 @@ function formTrocarSenha() {
     }
     salvar.disabled = true;
     try {
-      await conta.trocarSenha(atual.value, nova.value);
+      await conta.trocarSenha(atual ? atual.value : "", nova.value);
       aviso("🔒 Senha trocada! Use a nova no próximo login.", "ok");
     } catch (erro) {
       msg.textContent = erro.message;
@@ -703,19 +725,21 @@ function formRedefinirSenha(p = null) {
     if (!confirm(`Redefinir a senha de ${alvo.nick}?\n\nA senha antiga para de funcionar na hora. Só faça isso se tiver certeza de que é o dono da conta pedindo.`)) return;
     botao.disabled = true;
     botao.textContent = "Procurando…";
+    let resultado = null;
     try {
       try {
-        await conta.redefinirSenha(alvo.chave, senha.value, Boolean(p || busca.perfil));
+        resultado = await conta.redefinirSenha(alvo.chave, senha.value, Boolean(p || busca.perfil), alvo.nick);
       } catch (erro) {
         if (!erro.message.startsWith("Conta não encontrada")) throw erro;
         // o servidor público pode ter esquecido a conta: recria só a senha (o progresso
         // do jogador volta do aparelho dele quando ele entrar)
         if (!confirm(`"${alvo.nick}" não está no servidor agora (o servidor público às vezes perde os dados guardados).\n\nRecriar a conta "${alvo.nick}" com essa senha provisória? Quando ele entrar no aparelho de sempre, o progresso guardado lá volta junto.\n\nConfira bem o nick antes de confirmar.`)) return;
-        await conta.redefinirSenha(alvo.chave, senha.value, true);
+        resultado = await conta.redefinirSenha(alvo.chave, senha.value, true, alvo.nick);
       }
       navigator.clipboard?.writeText(senha.value).catch(() => {});
       aviso(`Senha de ${alvo.nick} redefinida (e copiada). Passe a senha provisória para ele em particular.`, "ok", 9000);
       feito.replaceChildren(`✅ A senha de ${alvo.nick} agora é `, el("code", "", senha.value), " (copiada). Passe exatamente assim (maiúscula e minúscula fazem diferença).");
+      if (resultado?.criada) feito.append(" A conta foi criada no servidor novo: o progresso dele volta quando ele entrar no aparelho de sempre.");
       feito.hidden = false;
     } catch (erro) {
       aviso(erro.message, "erro");
@@ -727,12 +751,60 @@ function formRedefinirSenha(p = null) {
   return form;
 }
 
+// Com o banco, o prêmio/presente fica guardado no perfil do jogador (não depende de ele
+// estar online nem de o servidor de mensagens guardar a entrega)
+async function guardarNoBanco(funcao, parametros) {
+  if (!conta.contaNoBanco()) return;
+  try {
+    const r = await conta.chamarComSessao(funcao, parametros);
+    if (r?.erro === "nao_existe") aviso("Esse jogador ainda não entrou no servidor novo: o prêmio chega quando ele estiver online.", "info", 9000);
+    else if (r?.erro) aviso(conta.mensagemDoBanco(r), "erro");
+  } catch {
+    aviso("O servidor do jogo não respondeu: o prêmio chega pelo jeito antigo quando o jogador estiver online.", "info", 9000);
+  }
+}
+
+// ADM: apagar uma conta (ex.: alguém registrou o nick de outro jogador na mudança de servidor)
+function formApagarConta(p) {
+  const form = el("form", "painel-adm painel-adm--presente");
+  form.append(el("h4", "painel-adm__titulo", `🗑 Apagar a conta de ${p.nick}`));
+  form.append(el("p", "painel-adm__dica", "Só para casos sérios (ex.: alguém pegou o nick de outro jogador). Apaga a conta e o progresso dela no servidor; não dá para desfazer."));
+  const botao = el("button", "btn btn-sm btn-outline-danger", "Apagar conta");
+  botao.type = "submit";
+  form.append(botao);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const digitado = prompt(`Para apagar a conta, digite o nick exatamente: ${p.nick}`);
+    if (digitado === null) return;
+    if (digitado.trim() !== p.nick) {
+      aviso("O nick digitado não confere. Nada foi apagado.", "erro");
+      return;
+    }
+    botao.disabled = true;
+    try {
+      const r = await conta.chamarComSessao("apagar_conta", { p_chave: p.chave });
+      if (r?.erro) throw new Error(conta.mensagemDoBanco(r));
+      publicar(conta.topicoPerfil(p.chave), null, { reter: true });
+      s.perfis.delete(p.chave);
+      desenharRanking();
+      aviso(`Conta de ${p.nick} apagada.`, "ok");
+      bootstrap.Modal.getOrCreateInstance("#modal-perfil").hide();
+    } catch (erro) {
+      aviso(erro.message, "erro");
+    } finally {
+      botao.disabled = false;
+    }
+  });
+  return form;
+}
+
 // ADM: entregar troféu ou relíquia (prêmio assinado; o jogo do jogador confere e guarda)
 async function entregarPremio(chave, item, torneioNome) {
   const u = conta.usuarioAtual();
   if (!u || !adm.souAdm(u.chave)) return;
   const premio = await adm.assinarPremio({ id: gerarId(12), item, torneio: torneioNome, para: chave, de: u.chave, deNick: u.nick, t: Date.now() });
   publicar(T.premio(chave, premio.id), premio, { reter: true });
+  guardarNoBanco("dar_premio", { p_para: chave, p_premio: premio });
   const nick = s.perfis.get(chave)?.nick || chave;
   avisarChat(`${PREMIOS[item].emoji} ${nick} recebeu ${PREMIOS[item].tipo === "reliquia" ? "a relíquia" : "o"} ${PREMIOS[item].nome} (${torneioNome})!`);
   aviso(`${PREMIOS[item].nome} entregue para ${nick}! Chega assim que ele estiver online.`, "ok");
@@ -793,12 +865,50 @@ async function receberPresente(dados) {
 function receberPerfil(perfil, topico) {
   const chave = topico.split("/").pop();
   if (chave === conta.usuarioAtual()?.chave) {
+    if (conta.contaNoBanco()) return; // o meu perfil: quem vale é o banco
     if (perfil) conta.sincronizarComRemoto(perfil);
     else conta.republicarPerfil(); // alguém apagou o meu perfil do servidor
+  }
+  // Com o banco no ar, a mensagem só avisa que o perfil mudou (qualquer um consegue publicar
+  // no broker): o perfil de verdade vem do banco
+  if (s.perfisDoBanco) {
+    atualizarPerfilDoBanco(chave, perfil);
+    return;
   }
   if (perfil) s.perfis.set(chave, perfil);
   else s.perfis.delete(chave);
   desenharRanking();
+}
+
+// Todos os perfis (ranking) a partir do banco
+async function carregarPerfisDoBanco() {
+  if (!bancoLigado()) return;
+  try {
+    const lista = await chamar("perfis_publicos");
+    if (!Array.isArray(lista)) return;
+    s.perfisDoBanco = true;
+    for (const p of lista) if (p?.chave) s.perfis.set(p.chave, p);
+    desenharRanking();
+  } catch {
+    // banco fora do ar: o ranking segue pelo broker
+  }
+}
+
+const perfisPedidos = new Map();
+function atualizarPerfilDoBanco(chave, doBroker) {
+  clearTimeout(perfisPedidos.get(chave));
+  perfisPedidos.set(chave, setTimeout(async () => {
+    perfisPedidos.delete(chave);
+    try {
+      const p = await chamar("perfil_publico", { p_chave: chave });
+      // quem ainda não veio para o banco (jogo antigo aberto) continua aparecendo pelo broker
+      if (p?.chave) s.perfis.set(chave, p);
+      else if (doBroker && !s.perfis.has(chave)) s.perfis.set(chave, doBroker);
+      desenharRanking();
+    } catch {
+      // banco fora do ar: fica o que já tinha
+    }
+  }, 1500));
 }
 
 let tipoRanking = "xp";
@@ -915,6 +1025,7 @@ function formPresente(p) {
       id: gerarId(12), para: p.chave, coins, motivo: motivo.value.trim().slice(0, 80), de: u.chave, deNick: u.nick, t: Date.now(),
     });
     publicar(T.presente(p.chave, presente.id), presente, { reter: true });
+    guardarNoBanco("dar_presente", { p_para: p.chave, p_presente: presente });
     const texto = `🎁 ${p.nick} ganhou ${coins} Careca Coins${presente.motivo ? `: ${presente.motivo}` : "!"}`;
     enviarGlobal(await adm.assinarMsg({ id: gerarId(), tipo: "aviso", de: conta.cartaoPublico(), texto, t: Date.now() }));
     aviso(`Presente enviado para ${p.nick}! Ele recebe assim que estiver online.`, "ok");
@@ -984,6 +1095,7 @@ function abrirPerfil(cartao) {
   corpo.append(topo, stats, secaoPremios(p, false), historico);
   if (u && adm.souAdm(u.chave)) corpo.append(formPremio(p), formPresente(p));
   if (u && adm.souAdm(u.chave) && p.chave !== u.chave) corpo.append(formRedefinirSenha(p));
+  if (u && adm.souAdm(u.chave) && p.chave !== u.chave && !adm.ehAdmin(p.chave) && conta.contaNoBanco()) corpo.append(formApagarConta(p));
 
   const botaoDesafiar = $("#perfil-jogador-desafiar");
   const souEu = u && p.chave === u.chave;

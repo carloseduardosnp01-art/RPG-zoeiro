@@ -11,19 +11,21 @@
    Tópicos:  torneio/atual                       (retido, assinado pelo ADM)
              torneio/inscricao/<torneio>/<chave> (retido, pedido do jogador)
              torneio/historico/<torneio>         (retido, cópia assinada de cada torneio que terminou)
+   O histórico também fica no banco do jogo (js/banco.js), que não esquece.
    ========================================================================== */
 
-import { PREFIXO, publicar, assinar, lerRetido } from "./rede.js?v=202610031145";
-import * as conta from "./conta.js?v=202610031145";
-import * as adm from "./admin.js?v=202610031145";
-import * as T from "./torneio.js?v=202610031145";
-import { PREMIOS, ehReliquia } from "./premios.js?v=202610031145";
-import { novoDuelo, problemaDoDeck } from "./motor.js?v=202610031145";
-import { paraLista } from "./deck.js?v=202610031145";
-import { topicosDuelo } from "./sessao.js?v=202610031145";
-import { arenaAtiva, sessaoAtual, fecharArena } from "./arena.js?v=202610031145";
-import { el, gerarId, aviso, nivelDoXp } from "./util.js?v=202610031145";
-import { tocar } from "./som.js?v=202610031145";
+import { PREFIXO, publicar, assinar, lerRetido } from "./rede.js?v=202610031522";
+import * as conta from "./conta.js?v=202610031522";
+import { bancoLigado, chamar } from "./banco.js?v=202610031522";
+import * as adm from "./admin.js?v=202610031522";
+import * as T from "./torneio.js?v=202610031522";
+import { PREMIOS, ehReliquia } from "./premios.js?v=202610031522";
+import { novoDuelo, problemaDoDeck } from "./motor.js?v=202610031522";
+import { paraLista } from "./deck.js?v=202610031522";
+import { topicosDuelo } from "./sessao.js?v=202610031522";
+import { arenaAtiva, sessaoAtual, fecharArena } from "./arena.js?v=202610031522";
+import { el, gerarId, aviso, nivelDoXp } from "./util.js?v=202610031522";
+import { tocar } from "./som.js?v=202610031522";
 
 const TOPICO = `${PREFIXO}/torneio/atual`;
 const topicoInscricao = (id, chave) => `${PREFIXO}/torneio/inscricao/${id}/${chave}`;
@@ -49,6 +51,7 @@ export function iniciarTorneio(dependencias) {
   assinar(TOPICO, receberTorneio);
   assinar(`${PREFIXO}/torneio/historico/+`, receberHistorico);
   setInterval(protegerDoEsquecimento, 90 * 1000);
+  carregarHistoricoDoBanco();
   // saiu de um duelo: se o próximo jogo do torneio já começou, entra nele
   document.addEventListener("arena-mudou", () => setTimeout(entrarNoMeuJogo, 300));
   $("#botao-torneio")?.addEventListener("click", () => {
@@ -105,9 +108,27 @@ async function protegerDoEsquecimento() {
   }
 }
 
-// O torneio já vem assinado pelo ADM, então a cópia no histórico continua valendo
+// O torneio já vem assinado pelo ADM, então a cópia no histórico continua valendo.
+// O ADM também guarda no banco (só ADM consegue gravar lá).
 function guardarNoHistorico(t) {
   publicar(topicoHistorico(t.id), t, { reter: true });
+  const u = eu();
+  if (u && adm.souAdm(u.chave) && conta.contaNoBanco()) conta.chamarComSessao("guardar_torneio", { p_dados: t }).catch(() => {});
+}
+
+// Torneios guardados no banco (assinatura do ADM conferida, como os do broker)
+async function carregarHistoricoDoBanco() {
+  if (!bancoLigado()) return;
+  try {
+    const lista = await chamar("torneios_encerrados");
+    if (!Array.isArray(lista)) return;
+    for (const t of lista) {
+      if (t?.status === "encerrado" && !historico.has(t.id) && (await adm.verificarTorneio(t))) historico.set(t.id, t);
+    }
+    desenhar();
+  } catch {
+    // banco fora do ar: fica o histórico do broker
+  }
 }
 
 
@@ -566,6 +587,7 @@ function itemHistorico(t) {
     tirar.addEventListener("click", () => {
       if (confirm(`Tirar o torneio "${t.nome}" do histórico? Os troféus que já foram entregues continuam nos perfis.`)) {
         publicar(topicoHistorico(t.id), null, { reter: true });
+        if (conta.contaNoBanco()) conta.chamarComSessao("apagar_torneio", { p_id: t.id }).catch(() => {});
       }
     });
     acoes.append(tirar);

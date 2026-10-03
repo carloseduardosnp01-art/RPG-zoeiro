@@ -6,13 +6,13 @@
    e presentes de ADM vão assinados; sem assinatura válida, não vale.
    ========================================================================== */
 
-import { guardar } from "./util.js?v=202610022144";
+import { guardar } from "./util.js?v=202610022151";
 
 // Chaves públicas dos ADMs (as secretas ficam só com eles). Para trocar uma chave,
 // gere um par novo e troque aqui: a antiga deixa de valer na hora.
 const ADMINS = {
-  menonice: { x: "8NKLNKDqxPWLxJtIieWw5KaHP2D111qsQ6QHyFS646c", y: "Xk-QHY4MEymPYXIGxIrw0R-M53ct7jhysGGVApURFmY" },
-  menonfire: { x: "orHSRdGa52glic7QyTrd928EnwLEWm8KGWlLubsPZo4", y: "7bvNAaYlWwORWigpTNQpICQmPGZfS8NAoVP6zzzWcv0" },
+  menonice: { nick: "MenonICE", x: "8NKLNKDqxPWLxJtIieWw5KaHP2D111qsQ6QHyFS646c", y: "Xk-QHY4MEymPYXIGxIrw0R-M53ct7jhysGGVApURFmY" },
+  menonfire: { nick: "MenonFIRE", x: "orHSRdGa52glic7QyTrd928EnwLEWm8KGWlLubsPZo4", y: "7bvNAaYlWwORWigpTNQpICQmPGZfS8NAoVP6zzzWcv0" },
 };
 
 const ALGORITMO = { name: "ECDSA", namedCurve: "P-256" };
@@ -21,6 +21,7 @@ const CHAVE_LOCAL = "zoeira-adm";
 const PREFIXO_CODIGO = "ZOEIRA-ADM:";
 
 export const ehAdmin = (chave) => Object.prototype.hasOwnProperty.call(ADMINS, chave || "");
+export const nomeDoAdmin = (chave) => (ehAdmin(chave) ? ADMINS[chave].nick : chave);
 
 let privada = null; // chave secreta carregada neste aparelho
 let dono = null;    // conta dona dessa chave

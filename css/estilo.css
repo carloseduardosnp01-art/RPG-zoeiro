@@ -1831,17 +1831,45 @@ a:hover {
 }
 
 .premios__trofeu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 74px;
   margin: 0;
+  padding: .2rem .1rem;
+  color: inherit;
   text-align: center;
+  cursor: zoom-in;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: .5rem;
+  transition: transform .2s ease, border-color .2s ease, background .2s ease;
+}
+
+.premios__trofeu:hover,
+.premios__trofeu:focus-visible {
+  transform: translateY(-3px);
+  background: rgba(224, 180, 74, .08);
+  border-color: var(--borda);
+}
+
+.premios__trofeu:focus-visible,
+.reliquia__img:focus-visible {
+  outline: 2px solid var(--ouro);
+  outline-offset: 2px;
 }
 
 .premios__trofeu img {
   width: 100%;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .6));
+  transition: filter .2s ease;
 }
 
-.premios__trofeu figcaption {
+.premios__trofeu:hover img {
+  filter: drop-shadow(0 0 10px rgba(255, 210, 110, .45)) drop-shadow(0 4px 8px rgba(0, 0, 0, .6));
+}
+
+.premios__legenda {
   color: var(--texto-suave);
   font-size: .62rem;
   line-height: 1.15;
@@ -1867,7 +1895,207 @@ a:hover {
 .reliquia__img {
   width: 56px;
   height: 56px;
+  padding: 0;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: none;
+  border: 0;
   border-radius: .45rem;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.reliquia__img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.reliquia__img:hover {
+  transform: scale(1.06);
+  box-shadow: 0 0 14px rgba(255, 200, 80, .55);
+}
+
+/* ---------- Detalhes do troféu / relíquia (janela grande) ---------- */
+.visor-premio {
+  --cor-premio: 255, 200, 80;
+  width: min(820px, calc(100% - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  overflow: visible;
+  color: var(--texto);
+  background: transparent;
+  border: 0;
+}
+
+.visor-premio--prata { --cor-premio: 190, 175, 255; }
+.visor-premio--bronze { --cor-premio: 230, 130, 70; }
+
+.visor-premio::backdrop {
+  background: rgba(5, 3, 2, .82);
+  backdrop-filter: blur(3px);
+}
+
+.visor-premio[open] .visor-premio__caixa {
+  animation: visor-entrar .28s ease-out;
+}
+
+.visor-premio__caixa {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: center;
+  max-height: calc(100dvh - 32px);
+  padding: 1.5rem;
+  overflow-y: auto;
+  background:
+    radial-gradient(circle at 25% 40%, rgba(var(--cor-premio), .16), transparent 60%),
+    linear-gradient(180deg, #241a13, #120d0a);
+  border: 1px solid rgba(var(--cor-premio), .55);
+  border-radius: 1rem;
+  box-shadow: 0 0 40px rgba(var(--cor-premio), .18), 0 20px 60px rgba(0, 0, 0, .6);
+}
+
+.visor-premio__fechar {
+  position: absolute;
+  top: .6rem;
+  right: .6rem;
+  z-index: 2;
+  width: 2.2rem;
+  height: 2.2rem;
+  color: var(--texto);
+  font-size: 1rem;
+  line-height: 1;
+  background: rgba(0, 0, 0, .45);
+  border: 1px solid var(--borda);
+  border-radius: 50%;
+}
+
+.visor-premio__fechar:hover,
+.visor-premio__fechar:focus-visible {
+  color: #1b1208;
+  background: var(--ouro);
+}
+
+.visor-premio__palco {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+
+.visor-premio__brilho {
+  position: absolute;
+  inset: 8% 4%;
+  background: radial-gradient(circle, rgba(var(--cor-premio), .45), transparent 65%);
+  filter: blur(18px);
+  animation: visor-pulsar 3.2s ease-in-out infinite;
+}
+
+.visor-premio__img {
+  position: relative;
+  width: 100%;
+  max-height: min(62vh, 520px);
+  object-fit: contain;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, .65));
+  animation: visor-flutuar 4s ease-in-out infinite;
+}
+
+.visor-premio--careca-do-milenio .visor-premio__img {
+  border-radius: .7rem;
+  box-shadow: 0 0 30px rgba(var(--cor-premio), .35);
+}
+
+.visor-premio__tipo {
+  margin-bottom: .2rem;
+  color: rgb(var(--cor-premio));
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.visor-premio__nome {
+  margin-bottom: .4rem;
+  color: var(--ouro-claro);
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.visor-premio__posicao,
+.visor-premio__habilidade {
+  display: inline-block;
+  margin-bottom: .8rem;
+  padding: .2rem .7rem;
+  color: #1b1208;
+  font-weight: 700;
+  background: rgb(var(--cor-premio));
+  border-radius: 999px;
+}
+
+.visor-premio__descricao {
+  color: var(--texto-suave);
+}
+
+.visor-premio__ficha {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .35rem .9rem;
+  margin: 0 0 1rem;
+  padding: .8rem 1rem;
+  background: rgba(0, 0, 0, .28);
+  border: 1px solid var(--borda);
+  border-radius: .6rem;
+}
+
+.visor-premio__ficha dt {
+  color: var(--texto-suave);
+  font-weight: 600;
+}
+
+.visor-premio__ficha dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.visor-premio__selo {
+  margin: 0;
+  color: var(--verde);
+  font-size: .85rem;
+  font-weight: 600;
+}
+
+@keyframes visor-entrar {
+  from { opacity: 0; transform: scale(.94) translateY(10px); }
+}
+
+@keyframes visor-flutuar {
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes visor-pulsar {
+  50% { opacity: .55; transform: scale(.94); }
+}
+
+@media (max-width: 767.98px) {
+  .visor-premio__caixa {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1.1rem;
+  }
+
+  .visor-premio__img {
+    max-height: 42vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visor-premio__img,
+  .visor-premio__brilho,
+  .visor-premio[open] .visor-premio__caixa {
+    animation: none;
+  }
 }
 
 .reliquia__texto strong {

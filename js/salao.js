@@ -12,17 +12,18 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610022144";
-import * as conta from "./conta.js?v=202610022144";
-import * as adm from "./admin.js?v=202610022144";
-import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610022144";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610022144";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610022144";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610022144";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610022144";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610022144";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610022144";
-import { tocar } from "./som.js?v=202610022144";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610022151";
+import * as conta from "./conta.js?v=202610022151";
+import * as adm from "./admin.js?v=202610022151";
+import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610022151";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610022151";
+import { abrirPremio } from "./visor-premio.js?v=202610022151";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610022151";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610022151";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610022151";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610022151";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610022151";
+import { tocar } from "./som.js?v=202610022151";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -479,12 +480,15 @@ function secaoPremios(p, meu) {
       sec.append(el("h4", "premios__titulo", "🏆 Troféus"));
       const linha = el("div", "premios__trofeus");
       for (const x of trofeus) {
-        const d = el("figure", "premios__trofeu");
+        const d = el("button", "premios__trofeu");
+        d.type = "button";
         const img = el("img");
         img.src = PREMIOS[x.item].imagem;
-        img.alt = PREMIOS[x.item].nome;
-        d.title = `${PREMIOS[x.item].nome} · ${PREMIOS[x.item].posicao} · ${x.torneio}`;
-        d.append(img, el("figcaption", "", x.torneio));
+        img.alt = "";
+        d.title = "Ver detalhes";
+        d.setAttribute("aria-label", `${PREMIOS[x.item].nome} (${PREMIOS[x.item].posicao}) · ${x.torneio}: ver detalhes`);
+        d.append(img, el("span", "premios__legenda", x.torneio));
+        d.addEventListener("click", () => abrirPremio(x, p, d));
         linha.append(d);
       }
       sec.append(linha);
@@ -495,9 +499,15 @@ function secaoPremios(p, meu) {
       for (const x of mostrar) {
         const info = PREMIOS[x.item];
         const d = el("div", "reliquia" + (p.reliquia === x.id ? " reliquia--equipada" : ""));
-        const img = el("img", "reliquia__img");
-        img.src = info.icone;
-        img.alt = "";
+        const img = el("button", "reliquia__img");
+        img.type = "button";
+        img.title = "Ver detalhes";
+        img.setAttribute("aria-label", `${info.nome}: ver detalhes`);
+        const icone = el("img");
+        icone.src = info.icone;
+        icone.alt = "";
+        img.append(icone);
+        img.addEventListener("click", () => abrirPremio(x, p, img));
         const txt = el("div", "reliquia__texto");
         txt.append(el("strong", "", info.nome), el("span", "reliquia__de", `Prêmio: ${x.torneio}`), el("p", "", info.texto));
         d.append(img, txt);

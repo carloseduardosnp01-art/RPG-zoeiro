@@ -12,17 +12,17 @@
              torneio/inscricao/<torneio>/<chave> (retido, pedido do jogador)
    ========================================================================== */
 
-import { PREFIXO, publicar, assinar, lerRetido } from "./rede.js?v=202610022144";
-import * as conta from "./conta.js?v=202610022144";
-import * as adm from "./admin.js?v=202610022144";
-import * as T from "./torneio.js?v=202610022144";
-import { PREMIOS, ehReliquia } from "./premios.js?v=202610022144";
-import { novoDuelo, problemaDoDeck } from "./motor.js?v=202610022144";
-import { paraLista } from "./deck.js?v=202610022144";
-import { topicosDuelo } from "./sessao.js?v=202610022144";
-import { arenaAtiva, sessaoAtual, fecharArena } from "./arena.js?v=202610022144";
-import { el, gerarId, aviso, nivelDoXp } from "./util.js?v=202610022144";
-import { tocar } from "./som.js?v=202610022144";
+import { PREFIXO, publicar, assinar, lerRetido } from "./rede.js?v=202610022151";
+import * as conta from "./conta.js?v=202610022151";
+import * as adm from "./admin.js?v=202610022151";
+import * as T from "./torneio.js?v=202610022151";
+import { PREMIOS, ehReliquia } from "./premios.js?v=202610022151";
+import { novoDuelo, problemaDoDeck } from "./motor.js?v=202610022151";
+import { paraLista } from "./deck.js?v=202610022151";
+import { topicosDuelo } from "./sessao.js?v=202610022151";
+import { arenaAtiva, sessaoAtual, fecharArena } from "./arena.js?v=202610022151";
+import { el, gerarId, aviso, nivelDoXp } from "./util.js?v=202610022151";
+import { tocar } from "./som.js?v=202610022151";
 
 const TOPICO = `${PREFIXO}/torneio/atual`;
 const topicoInscricao = (id, chave) => `${PREFIXO}/torneio/inscricao/${id}/${chave}`;

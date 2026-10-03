@@ -4,8 +4,8 @@
    leque de cartas do início e a mesa do deck.
    ========================================================================== */
 
-import { criarCarta, nomeCategoria, nomeSubtipo, atributoDaCarta, chaveRaridade, moldura } from "./cartas-ui.js?v=202610022246";
-import { el, normalizar } from "./util.js?v=202610022246";
+import { criarCarta, nomeCategoria, nomeSubtipo, atributoDaCarta, chaveRaridade, moldura } from "./cartas-ui.js?v=202610030033";
+import { el, normalizar } from "./util.js?v=202610030033";
 
 const CARTAS_POR_PAGINA = 12;
 const ORDEM_RARIDADE = ["Comum", "Rara", "Super Rara", "Ultra Rara", "Lendária da Zoeira"];

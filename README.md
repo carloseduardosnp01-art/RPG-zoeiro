@@ -184,9 +184,9 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT020 | Karecoh Alado | Efeito · Nv 1 · 300/200 | – | Destruído no campo → sem dano de batalha pelo resto do turno |
 | ZOE-PT021 | Wellington, O Guerreiro Mágico | Efeito · Nv 4 · 1600/1600 | – | Entra com 1 Marcador (+300 ATK); botão Efeito gasta o marcador e destrói 1 Magia/Armadilha |
 | ZOE-PT022 | O Alquimista das Farmácias **(limitada a 1)** | Efeito/Virar · Nv 3 · 1500/1300 | – | VIRE: busca 1 Magia do deck (você escolhe no seu turno; sorteada no turno do oponente) |
-| ZOE-PT023 | Miqueas, o Mestre das Lâminas e Punhos **(limitada a 1)** | Efeito · Nv 6 · 2400/2200 | – | Ao ser Invocado pode destruir 1 Magia/Armadilha; botão Efeito: descarta 1 carta e ataca 2 vezes |
+| ZOE-PT023 | Miqueas, o Mestre das Lâminas e Punhos **(limitada a 1)** | Efeito · Nv 6 · 2400/2200 | – | Ao ser Invocado pode destruir 1 Magia/Armadilha; botão Efeito (só na Fase Principal 1): descarta 1 carta e ataca 2 vezes |
 | ZOE-PT024 | Manoel do Gelo | Efeito · GELO · Nv 3 · 1500/1200 | – | Destruído: chama outro "Manoel do Gelo" sorteado do deck (1 vez por turno) |
-| ZOE-PT025 | Manoel do Gelo Careca | Efeito · GELO · Nv 7 · 2400/1900 | – | Invocação-Especial descartando 2 GELO; botão Efeito: tributa 1 GELO em ataque e ataca 2 vezes |
+| ZOE-PT025 | Manoel do Gelo Careca | Efeito · GELO · Nv 7 · 2400/1900 | – | Invocação-Especial descartando 2 GELO; botão Efeito (só na Fase Principal 1): tributa 1 GELO em ataque e ataca 2 vezes |
 | ZOE-PT026 | Pote do Gelo | Magia | – | Devolve 2 cartas "gelo" da mão ao deck e compra 3 |
 | ZOE-PT027 | Lamento Prematuro **(limitada a 1)** | Magia de Equipamento | – | Paga 800 PV e traz 1 monstro do seu Cemitério em ataque; se ela for destruída, o monstro vai junto |
 | ZOE-PT028 | Sai Daqui Obeso | Armadilha | – | Oponente atacou → o atacante volta para a mão dele |

@@ -12,18 +12,18 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610022246";
-import * as conta from "./conta.js?v=202610022246";
-import * as adm from "./admin.js?v=202610022246";
-import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610022246";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610022246";
-import { abrirPremio } from "./visor-premio.js?v=202610022246";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610022246";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610022246";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610022246";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610022246";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610022246";
-import { tocar } from "./som.js?v=202610022246";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610030033";
+import * as conta from "./conta.js?v=202610030033";
+import * as adm from "./admin.js?v=202610030033";
+import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610030033";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610030033";
+import { abrirPremio } from "./visor-premio.js?v=202610030033";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610030033";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610030033";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610030033";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610030033";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610030033";
+import { tocar } from "./som.js?v=202610030033";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {

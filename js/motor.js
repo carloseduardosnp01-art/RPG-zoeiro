@@ -1769,7 +1769,9 @@ export function efeitoAtivavel(estado, j, iid) {
   const m = loc.obj;
   const c = carta(estado, iid);
   const p = estado.jogadores[j];
-  const antesDoAtaque = estado.fase === "principal1" || estado.fase === "batalha";
+  // Efeitos de "atacar 2 vezes": só na Fase Principal 1, antes de qualquer ataque. Na Batalha não
+  // (senão dava para atacar com um monstro e depois tributar ele para o outro atacar de novo)
+  const antesDaBatalha = estado.fase === "principal1";
   switch (c.efeito) {
     case "wellington": {
       const candidatos = magiasAlvejaveis(estado, j);
@@ -1780,7 +1782,7 @@ export function efeitoAtivavel(estado, j, iid) {
       };
     }
     case "mestre-laminas":
-      if (!antesDoAtaque || m.efeitoUsado === estado.turno || !p.mao.length || m.pos !== "atk" || m.atacouDuas) return null;
+      if (!antesDaBatalha || m.efeitoUsado === estado.turno || !p.mao.length || m.pos !== "atk" || m.atacouDuas) return null;
       return {
         rotulo: "Efeito: descartar 1 carta e atacar 2 vezes",
         alvos: { candidatos: [...p.mao], min: 1, max: 1, titulo: `${c.nome}: descarte 1 carta para atacar duas vezes neste turno` },
@@ -1842,7 +1844,7 @@ export function efeitoAtivavel(estado, j, iid) {
       };
     }
     case "gelo-careca": {
-      if (!antesDoAtaque || m.ataqueDuplo === estado.turno || m.pos !== "atk") return null;
+      if (!antesDaBatalha || m.ataqueDuplo === estado.turno || m.pos !== "atk") return null;
       const candidatos = p.monstros.filter((x) => x && x.iid !== iid && x.face && x.pos === "atk" && ehMonstroGelo(carta(estado, x.iid))).map((x) => x.iid);
       if (!candidatos.length) return null;
       return {

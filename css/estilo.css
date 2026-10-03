@@ -2683,9 +2683,183 @@ a:hover {
   font-weight: 800;
 }
 
+.ranking__linha {
+  display: flex;
+  align-items: baseline;
+  gap: .4rem;
+  min-width: 0;
+}
+
+.ranking__linha > .link-perfil {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .ranking__lista .ranking__v {
-  float: right;
+  flex: none;
   color: var(--texto-suave);
+  white-space: nowrap;
+}
+
+/* "Ver todos": a lista inteira rola dentro do quadro */
+.ranking__lista--todos {
+  max-height: min(60vh, 520px);
+  overflow-y: auto;
+}
+
+.ranking__mais {
+  display: block;
+  width: 100%;
+  margin-top: .5rem;
+}
+
+/* Meu perfil (janela): posição e atalhos */
+.pj__meu {
+  margin: .6rem 0;
+  padding: .6rem .7rem;
+  background: rgba(224, 180, 74, .08);
+  border: 1px solid var(--borda);
+  border-radius: .6rem;
+}
+
+.pj__posicao {
+  margin: 0 0 .5rem;
+  color: var(--ouro-claro);
+  font-weight: 700;
+}
+
+.pj__atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+/* Celular: o meu avatar no topo, ao lado do menu */
+.avatar-topo {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  overflow: hidden;
+  background: none;
+  border: 2px solid var(--ouro);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(224, 180, 74, .35);
+}
+
+.avatar-topo[hidden] {
+  display: none !important;
+}
+
+.avatar-topo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------- Salão no celular e tablet: abas (uma parte por vez) ---------- */
+.salao-abas {
+  display: none;
+}
+
+@media (max-width: 1199.98px) {
+  .salao-abas {
+    position: sticky;
+    top: var(--altura-nav);
+    z-index: 30;
+    display: flex;
+    gap: .3rem;
+    margin-bottom: -.25rem;
+    padding: .35rem;
+    background: rgba(20, 14, 10, .96);
+    border: 1px solid var(--borda);
+    border-radius: .8rem;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+  }
+
+  .salao-abas button {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: .45rem .2rem;
+    color: var(--texto-suave);
+    font-size: .82rem;
+    font-weight: 700;
+    white-space: nowrap;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: .55rem;
+  }
+
+  .salao-abas button[aria-selected="true"] {
+    color: #1b1208;
+    background: linear-gradient(180deg, var(--ouro-claro), var(--ouro));
+  }
+
+  .salao-abas__conta,
+  .salao-abas__novas {
+    display: inline-block;
+    min-width: 1.2rem;
+    padding: 0 .3rem;
+    font-size: .7rem;
+    line-height: 1.2rem;
+    text-align: center;
+    border-radius: 1rem;
+  }
+
+  .salao-abas__conta {
+    color: #fff;
+    background: rgba(31, 191, 117, .55);
+  }
+
+  .salao-abas__novas {
+    color: #fff;
+    background: var(--vermelho);
+  }
+
+  #painel-salao:not([data-painel="chat"]) .salao__chat,
+  #painel-salao:not([data-painel="online"]) .salao__online,
+  #painel-salao:not([data-painel="online"]) .salao__info,
+  #painel-salao:not([data-painel="perfil"]) #perfil,
+  #painel-salao:not([data-painel="ranking"]) .ranking,
+  #painel-salao[data-painel="perfil"] .salao__corpo,
+  #painel-salao[data-painel="ranking"] .salao__corpo {
+    display: none;
+  }
+
+  #painel-salao .salao__corpo {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  #painel-salao .salao__chat {
+    border: 0;
+  }
+
+  /* o chat ocupa a tela */
+  #painel-salao[data-painel="chat"] .mensagens {
+    height: calc(100dvh - 360px);
+    min-height: 220px;
+  }
+
+  #painel-salao[data-painel="online"] .lista-online {
+    max-height: none;
+  }
+
+  #painel-salao .ranking {
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .salao-abas button {
+    font-size: .74rem;
+  }
 }
 
 /* ---------- Arena vazia ---------- */
@@ -2845,6 +3019,13 @@ a:hover {
 
 .navbar-zoeira .logo-navbar {
   height: 52px;
+}
+
+/* celular: logo menor para caber o meu avatar e o menu na mesma linha */
+@media (max-width: 575.98px) {
+  .navbar-zoeira .logo-navbar {
+    height: 40px;
+  }
 }
 
 .selo-limite {

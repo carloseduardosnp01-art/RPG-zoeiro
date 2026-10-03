@@ -12,19 +12,19 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031544";
-import * as conta from "./conta.js?v=202610031544";
-import { bancoLigado, chamar } from "./banco.js?v=202610031544";
-import * as adm from "./admin.js?v=202610031544";
-import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610031544";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031544";
-import { abrirPremio } from "./visor-premio.js?v=202610031544";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031544";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031544";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031544";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031544";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031544";
-import { tocar } from "./som.js?v=202610031544";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031607";
+import * as conta from "./conta.js?v=202610031607";
+import { bancoLigado, chamar } from "./banco.js?v=202610031607";
+import * as adm from "./admin.js?v=202610031607";
+import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610031607";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031607";
+import { abrirPremio } from "./visor-premio.js?v=202610031607";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031607";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031607";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031607";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031607";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031607";
+import { tocar } from "./som.js?v=202610031607";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -81,6 +81,20 @@ export function iniciarSalao({ cartas }) {
   });
 
   conta.aoMudarUsuario(atualizarUsuario);
+  ligarAbasDoSalao();
+  // o meu avatar lá em cima abre o meu perfil (sem conta, leva para o login)
+  for (const botao of [$("#botao-conta"), $("#botao-conta-celular")]) {
+    botao.addEventListener("click", (e) => {
+      const u = conta.usuarioAtual();
+      if (!u) return;
+      e.preventDefault();
+      abrirPerfil(conta.cartaoPublico(u));
+    });
+  }
+  $("#ranking-mais").addEventListener("click", () => {
+    s.rankingTodos = !s.rankingTodos;
+    desenharRanking();
+  });
   conta.aoSairSozinho((motivo) => {
     aviso(motivo, "info", 15000);
     const msg = $("#entrar-mensagem");
@@ -172,6 +186,15 @@ async function atualizarUsuario(usuario) {
 }
 
 function desenharBotaoConta(usuario) {
+  const celular = $("#botao-conta-celular");
+  celular.hidden = !usuario;
+  celular.replaceChildren();
+  if (usuario) {
+    const foto = el("img");
+    foto.src = `img/cartas/${usuario.avatar}.webp`;
+    foto.alt = "";
+    celular.append(foto);
+  }
   const botao = $("#botao-conta");
   botao.replaceChildren();
   if (!usuario) {
@@ -184,7 +207,7 @@ function desenharBotaoConta(usuario) {
   img.src = `img/cartas/${usuario.avatar}.webp`;
   img.alt = "";
   botao.append(img, el("span", "chip-usuario__nick", usuario.nick));
-  botao.title = `${usuario.nick}: ir para o salão`;
+  botao.title = `${usuario.nick}: ver meu perfil`;
 }
 
 async function publicarPresenca() {
@@ -967,21 +990,49 @@ document.addEventListener("click", (e) => {
   desenharRanking();
 });
 
-function desenharRanking() {
-  const lista = $("#ranking");
+// No meu perfil: a minha posição no ranking e atalhos para o ranking e o meu painel
+function atalhosDoMeuPerfil(u) {
+  const caixa = el("div", "pj__meu");
+  const todos = rankingOrdenado(true);
+  const pos = todos.findIndex((x) => x.chave === u.chave);
+  caixa.append(el("p", "pj__posicao", pos >= 0
+    ? `🏆 Você está em ${pos + 1}º lugar no ranking de XP (de ${todos.length} duelistas).`
+    : "🏆 Jogue uma partida para aparecer no ranking."));
+  const botoes = el("div", "pj__atalhos");
+  const ranking = el("button", "btn btn-sm btn-ouro", "🏆 Ver o ranking");
+  ranking.type = "button";
+  ranking.addEventListener("click", () => irParaSalao("ranking"));
+  const painel = el("button", "btn btn-sm btn-outline-light", "⚙️ Meu painel (foto, senha, deck)");
+  painel.type = "button";
+  painel.addEventListener("click", () => irParaSalao("perfil"));
+  botoes.append(ranking, painel);
+  caixa.append(botoes);
+  return caixa;
+}
+
+// Todos os duelistas do ranking, em ordem (o meu perfil sempre com os números mais novos)
+function rankingOrdenado(porXp) {
   const u = conta.usuarioAtual();
-  // o meu perfil sempre entra com os números mais novos
   const perfis = new Map(s.perfis);
   if (u) perfis.set(u.chave, u);
-  const porXp = tipoRanking === "xp";
-  const todos = [...perfis.values()]
+  return [...perfis.values()]
     .filter((p) => (porXp ? (p.xp || 0) > 0 : (p.vitorias || 0) + (p.derrotas || 0) > 0))
     .sort(porXp
       ? (a, b) => (b.xp || 0) - (a.xp || 0) || (b.vitorias || 0) - (a.vitorias || 0)
       : (a, b) => (b.vitorias || 0) - (a.vitorias || 0) || (b.xp || 0) - (a.xp || 0));
-  const top = todos.slice(0, 10);
+}
+
+const RANKING_TOP = 10;
+
+function desenharRanking() {
+  const lista = $("#ranking");
+  const u = conta.usuarioAtual();
+  const porXp = tipoRanking === "xp";
+  const todos = rankingOrdenado(porXp);
+  const top = s.rankingTodos ? todos : todos.slice(0, RANKING_TOP);
 
   lista.replaceChildren();
+  lista.classList.toggle("ranking__lista--todos", Boolean(s.rankingTodos));
   if (!top.length) {
     lista.append(el("li", "ranking__vazio", porXp ? "Ninguém fez XP ainda. Jogue uma partida e apareça aqui!" : "Ninguém venceu online ainda. Seja o primeiro careca da lista!"));
   }
@@ -990,20 +1041,76 @@ function desenharRanking() {
     if (u && p.chave === u.chave) li.classList.add("ranking__minha");
     const medalha = ["🥇", "🥈", "🥉"][i];
     if (medalha) li.dataset.medalha = medalha;
+    // nome e pontos na mesma linha: nome comprido vira "…" em vez de empurrar os pontos
+    const linha = el("div", "ranking__linha");
     const nome = botaoPerfil(p, "");
     if (p.tag) nome.append(`[${p.tag}] `);
     if (adm.ehAdmin(p.chave)) nome.append(el("span", "nome-adm", p.nick), seloAdm());
     else nome.append(p.nick);
-    li.append(nome);
+    nome.title = `${p.tag ? `[${p.tag}] ` : ""}${p.nick}: ver perfil`;
     const valor = porXp ? `Nv ${nivelDoXp(p.xp)} · ${p.xp} XP` : `${p.vitorias}V ${p.derrotas}D`;
-    li.append(el("span", "ranking__v", valor));
+    linha.append(nome, el("span", "ranking__v", valor));
+    li.append(linha);
     lista.append(li);
   });
 
-  // a minha posição, se eu não estiver no top 10
+  const mais = $("#ranking-mais");
+  mais.hidden = todos.length <= RANKING_TOP;
+  mais.textContent = s.rankingTodos ? `Mostrar só o top ${RANKING_TOP}` : `Ver todos (${todos.length})`;
+  mais.setAttribute("aria-expanded", String(Boolean(s.rankingTodos)));
+
+  // a minha posição, se ela não estiver na lista mostrada
   const eu = $("#ranking-eu");
   const pos = u ? todos.findIndex((p) => p.chave === u.chave) : -1;
-  eu.textContent = pos >= 10 ? `Você está em ${pos + 1}º lugar (${porXp ? `${u.xp} XP` : `${u.vitorias}V ${u.derrotas}D`}).` : "";
+  eu.textContent = pos >= top.length ? `Você está em ${pos + 1}º lugar (${porXp ? `${u.xp} XP` : `${u.vitorias}V ${u.derrotas}D`}).` : "";
+}
+
+/* ---------- Salão no celular: uma parte por vez ---------- */
+
+const telaPequena = () => matchMedia("(max-width: 1199.98px)").matches;
+
+function ligarAbasDoSalao() {
+  document.querySelectorAll(".salao-abas [data-painel]").forEach((b) => {
+    b.addEventListener("click", () => mostrarPainelSalao(b.dataset.painel));
+  });
+}
+
+function mostrarPainelSalao(painel) {
+  const raiz = $("#painel-salao");
+  raiz.dataset.painel = painel;
+  document.querySelectorAll(".salao-abas [data-painel]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.painel === painel)));
+  if (painel === "chat") {
+    s.chatNovasCelular = 0;
+    const selo = $("#abas-chat-novas");
+    selo.hidden = true;
+    const area = $("#mensagens");
+    area.scrollTop = area.scrollHeight;
+  }
+  if (telaPequena()) $(".salao-abas").scrollIntoView({ block: "nearest" });
+}
+
+// Chegou mensagem e, no celular, a pessoa está em outra parte do salão: avisa na aba do chat
+function avisarChatNoCelular() {
+  if ($("#painel-salao").dataset.painel === "chat" || !telaPequena()) return;
+  s.chatNovasCelular = (s.chatNovasCelular || 0) + 1;
+  const selo = $("#abas-chat-novas");
+  selo.textContent = s.chatNovasCelular > 9 ? "9+" : String(s.chatNovasCelular);
+  selo.hidden = false;
+}
+
+// Do meu perfil (janela) para o ranking ou para o meu painel no salão
+function irParaSalao(painel) {
+  bootstrap.Modal.getOrCreateInstance("#modal-perfil").hide();
+  if (location.hash !== "#salao") location.hash = "#salao";
+  setTimeout(() => {
+    mostrarPainelSalao(painel);
+    if (painel === "ranking" && !s.rankingTodos) {
+      s.rankingTodos = true;
+      desenharRanking();
+    }
+    const alvo = painel === "ranking" ? $(".ranking") : $("#perfil");
+    alvo?.scrollIntoView({ behavior: "smooth", block: telaPequena() ? "nearest" : "start" });
+  }, 250);
 }
 
 
@@ -1138,7 +1245,9 @@ function abrirPerfil(cartao) {
   if (!(p.historico || []).length) lista.append(el("li", "historico__vazio", "Nenhum duelo registrado ainda."));
   historico.append(lista);
 
-  corpo.append(topo, stats, secaoPremios(p, false), historico);
+  corpo.append(topo, stats);
+  if (u && p.chave === u.chave) corpo.append(atalhosDoMeuPerfil(u));
+  corpo.append(secaoPremios(p, false), historico);
   if (u && adm.souAdm(u.chave)) corpo.append(formPremio(p), formPresente(p));
   if (u && adm.souAdm(u.chave) && p.chave !== u.chave) corpo.append(formRedefinirSenha(p));
   if (u && adm.souAdm(u.chave) && p.chave !== u.chave && !adm.ehAdmin(p.chave) && conta.contaNoBanco()) corpo.append(formApagarConta(p));
@@ -1190,6 +1299,7 @@ function desenharOnline() {
   const todos = duelistasOnline();
   $("#contagem-online").textContent = todos.length;
   $("#contagem-online-2").textContent = todos.length;
+  $("#abas-online-conta").textContent = todos.length;
   const busca = $("#busca-online").value.trim().toLowerCase();
   lista.replaceChildren();
   for (const p of todos) {
@@ -1317,6 +1427,7 @@ function desenharAbas() {
 function adicionarItem(idAba, item) {
   const aba = s.abas.get(idAba);
   if (!aba) return;
+  avisarChatNoCelular();
   aba.itens.push(item);
   if (aba.itens.length > 120) aba.itens.shift();
   if (idAba === s.abaAtual) desenharMensagens();
@@ -1412,7 +1523,10 @@ function adicionarMensagemGlobal(msg, nova) {
     desenharAbas();
   }
   const u = conta.usuarioAtual();
-  if (nova && u && msg.de?.chave !== u.chave) tocar("mensagem");
+  if (nova && u && msg.de?.chave !== u.chave) {
+    tocar("mensagem");
+    avisarChatNoCelular();
+  }
   conferirAdm(item);
 }
 

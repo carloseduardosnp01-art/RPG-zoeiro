@@ -12,19 +12,19 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031522";
-import * as conta from "./conta.js?v=202610031522";
-import { bancoLigado, chamar } from "./banco.js?v=202610031522";
-import * as adm from "./admin.js?v=202610031522";
-import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610031522";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031522";
-import { abrirPremio } from "./visor-premio.js?v=202610031522";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031522";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031522";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031522";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031522";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031522";
-import { tocar } from "./som.js?v=202610031522";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031538";
+import * as conta from "./conta.js?v=202610031538";
+import { bancoLigado, chamar } from "./banco.js?v=202610031538";
+import * as adm from "./admin.js?v=202610031538";
+import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610031538";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031538";
+import { abrirPremio } from "./visor-premio.js?v=202610031538";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031538";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031538";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031538";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031538";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031538";
+import { tocar } from "./som.js?v=202610031538";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {

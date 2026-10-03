@@ -13,11 +13,11 @@
    antiga é levado para o banco na hora, com a mesma senha.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610031522";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610031522";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610031522";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610031522";
-import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610031522";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610031538";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610031538";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610031538";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610031538";
+import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610031538";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -177,7 +177,7 @@ export async function entrar({ nick, senha, lembrar = true }) {
       r = null; // banco fora do ar: entra do jeito antigo
     }
   }
-  if (r?.token) return entrarComBanco(chave, nick, r, lembrar);
+  if (r?.token) return await entrarComBanco(chave, nick, r, lembrar);
   if (r?.erro && r.erro !== "nao_existe") throw new Error(mensagemDoBanco(r, "Não foi possível entrar."));
 
   // Conta de antes do banco (ou banco fora do ar): confere a senha do jeito antigo
@@ -188,7 +188,7 @@ export async function entrar({ nick, senha, lembrar = true }) {
       const c = await chamar("criar_conta", {
         p_chave: chave, p_nick: antiga.perfil.nick || nick.trim(), p_senha: await derivarSenha(antiga.senha, chave), p_perfil: antiga.perfil,
       });
-      if (c.token) return entrarComBanco(chave, nick, c, lembrar, antiga.conta);
+      if (c.token) return await entrarComBanco(chave, nick, c, lembrar, antiga.conta);
       throw new Error(c.erro === "nick_em_uso"
         ? "Esse nick já foi registrado no servidor novo por outra pessoa. Fale com um ADM."
         : mensagemDoBanco(c, "Não foi possível entrar."));
@@ -230,11 +230,16 @@ async function conferirContaAntiga(chave, nick, senha) {
 }
 
 // Entrou pelo banco: junta o perfil de lá com a cópia deste aparelho
-function entrarComBanco(chave, nick, r, lembrar, contaAntiga) {
+async function entrarComBanco(chave, nick, r, lembrar, contaAntiga) {
   const local = contasLocais()[chave];
   const doBanco = temConteudo(r.perfil) ? r.perfil : null;
   const nome = r.perfil?.nick || doBanco?.nick || local?.perfil?.nick || nick.trim();
-  const junto = mesclarPerfis(local?.perfil, doBanco);
+  // Primeira vez no banco (conta de ADM reservada ou recriada pelo ADM): junta também a cópia
+  // do servidor antigo, que pode ter vindo de outro aparelho (troféus e presentes só com a
+  // assinatura conferida). Só nessa vez: depois, quem vale é o banco.
+  let base = local?.perfil || null;
+  if (!doBanco) base = juntarComRemoto(base, await limparRemoto(await lerRetido(topicoPerfil(chave)), Boolean(base)));
+  const junto = mesclarPerfis(base, doBanco);
   const perfil = { ...perfilNovo(chave, nome), ...(junto || {}), chave, nick: nome };
   senhaProvisoria = Boolean(r.provisoria);
   // a sessão do banco vem antes do resto: o salão confere a sessão assim que o usuário muda
@@ -563,6 +568,13 @@ export async function sincronizarComBanco() {
   const chave = usuario.chave;
   try {
     if (!banco?.token) {
+      // a cópia do servidor antigo pode ter algo de outro aparelho: entra junto
+      const remoto = await lerRetido(topicoPerfil(chave));
+      if (!usuario || usuario.chave !== chave) return "antigo";
+      if (remoto) {
+        usuario = juntarComRemoto(usuario, await limparRemoto(remoto, true));
+        guardarLocalmente();
+      }
       const r = await chamar("migrar_sessao", { p_chave: chave, p_nick: usuario.nick, p_perfil: usuario });
       if (!usuario || usuario.chave !== chave) return "antigo";
       if (r.token) {

@@ -13,17 +13,17 @@
              torneio/historico/<torneio>         (retido, cópia assinada de cada torneio que terminou)
    ========================================================================== */
 
-import { PREFIXO, publicar, assinar, lerRetido } from "./rede.js?v=202610031126";
-import * as conta from "./conta.js?v=202610031126";
-import * as adm from "./admin.js?v=202610031126";
-import * as T from "./torneio.js?v=202610031126";
-import { PREMIOS, ehReliquia } from "./premios.js?v=202610031126";
-import { novoDuelo, problemaDoDeck } from "./motor.js?v=202610031126";
-import { paraLista } from "./deck.js?v=202610031126";
-import { topicosDuelo } from "./sessao.js?v=202610031126";
-import { arenaAtiva, sessaoAtual, fecharArena } from "./arena.js?v=202610031126";
-import { el, gerarId, aviso, nivelDoXp } from "./util.js?v=202610031126";
-import { tocar } from "./som.js?v=202610031126";
+import { PREFIXO, publicar, assinar, lerRetido } from "./rede.js?v=202610031145";
+import * as conta from "./conta.js?v=202610031145";
+import * as adm from "./admin.js?v=202610031145";
+import * as T from "./torneio.js?v=202610031145";
+import { PREMIOS, ehReliquia } from "./premios.js?v=202610031145";
+import { novoDuelo, problemaDoDeck } from "./motor.js?v=202610031145";
+import { paraLista } from "./deck.js?v=202610031145";
+import { topicosDuelo } from "./sessao.js?v=202610031145";
+import { arenaAtiva, sessaoAtual, fecharArena } from "./arena.js?v=202610031145";
+import { el, gerarId, aviso, nivelDoXp } from "./util.js?v=202610031145";
+import { tocar } from "./som.js?v=202610031145";
 
 const TOPICO = `${PREFIXO}/torneio/atual`;
 const topicoInscricao = (id, chave) => `${PREFIXO}/torneio/inscricao/${id}/${chave}`;
@@ -48,6 +48,7 @@ export function iniciarTorneio(dependencias) {
   deps = dependencias;
   assinar(TOPICO, receberTorneio);
   assinar(`${PREFIXO}/torneio/historico/+`, receberHistorico);
+  setInterval(protegerDoEsquecimento, 90 * 1000);
   // saiu de um duelo: se o próximo jogo do torneio já começou, entra nele
   document.addEventListener("arena-mudou", () => setTimeout(entrarNoMeuJogo, 300));
   $("#botao-torneio")?.addEventListener("click", () => {
@@ -89,6 +90,19 @@ async function receberHistorico(dados, topico) {
   if (dados.id !== id || dados.status !== "encerrado" || !(await adm.verificarTorneio(dados))) return;
   historico.set(id, dados);
   desenhar();
+}
+
+// O servidor público às vezes esquece o que guardava (sem avisar ninguém). Quem já tem
+// a cópia assinada devolve: o ADM que organiza devolve o torneio em andamento e qualquer
+// um devolve os torneios do histórico (são assinados, ninguém consegue mudar). Quando um
+// ADM tira um torneio do histórico, chega um "apagado" e ele sai da lista: não volta.
+async function protegerDoEsquecimento() {
+  if (souOrganizador() && ativo() && !(await lerRetido(TOPICO, 6000)) && souOrganizador() && ativo()) {
+    publicar(TOPICO, torneio, { reter: true });
+  }
+  for (const [id, t] of historico) {
+    if (!(await lerRetido(topicoHistorico(id), 6000)) && historico.get(id) === t) guardarNoHistorico(t);
+  }
 }
 
 // O torneio já vem assinado pelo ADM, então a cópia no histórico continua valendo

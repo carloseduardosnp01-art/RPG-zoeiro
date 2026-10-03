@@ -150,7 +150,9 @@ Tópicos (todos começam com `rpgdazoeira/v1/`):
 
 - O broker é **público**: qualquer pessoa que conheça os tópicos consegue ler as mensagens. Não mande nada sério pelo chat.
 - A senha nunca sai do navegador: vai só um hash **PBKDF2 (150 mil iterações, com sal)**. Mesmo assim, **use uma senha só para o jogo**.
-- **Esqueceu a senha?** Ninguém consegue ver a senha (nem os ADMs), só trocar. No **Painel do ADM** (ou no perfil do jogador), o ADM digita o nick e define uma **senha provisória**, que passa para o dono em particular. No login com ela, o jogo avisa e já abre o "🔒 Trocar senha". As estatísticas, moedas e prêmios da conta não mudam.
+- **Esqueceu a senha?** Ninguém consegue ver a senha (nem os ADMs), só trocar. No **Painel do ADM** (ou no perfil do jogador), o ADM digita o nick e define uma **senha provisória**, que passa para o dono em particular. No login com ela, o jogo avisa e já abre o "🔒 Trocar senha". As estatísticas, moedas e prêmios da conta não mudam. Se a conta nem estiver no servidor (ver abaixo), o jogo pergunta se o ADM quer recriá-la com a senha provisória.
+- **O servidor público pode esquecer tudo** (broker.emqx.io é gratuito e sem garantia: já apagou perfis, contas, chat e torneios). O jogo se recupera sozinho: quem está logado, ao abrir o jogo, devolve o próprio perfil e a conta a partir da cópia do aparelho; o ADM que organiza devolve o torneio em andamento e qualquer jogador devolve os torneios do histórico (são assinados). Quem só joga em outro aparelho precisa entrar de novo no aparelho de sempre.
+- **🧹 Limpar o chat global** (Painel do ADM): apaga as mensagens para todo mundo (vale só com a assinatura do ADM).
 - Não há um servidor juiz, então um espertinho com o console aberto consegue trapacear. Jogue com amigos.
 - Brokers públicos podem limpar mensagens retidas. Por isso cada navegador guarda uma cópia da conta e do perfil e republica ao entrar.
 - Se um dia quiser contas "de verdade", dá para trocar `js/rede.js` e `js/conta.js` por um serviço como Firebase ou Supabase: o resto do jogo só conversa com essas duas partes.

@@ -9,10 +9,10 @@
    Uma cópia fica no navegador; se o broker "esquecer", o login republica.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610031126";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610031126";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610031126";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610031126";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610031145";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610031145";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610031145";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610031145";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -310,6 +310,25 @@ export async function sincronizarComRemoto(remoto) {
   if (JSON.stringify(junto) !== JSON.stringify(remoto)) publicar(topicoPerfil(usuario.chave), usuario, { reter: true });
   avisar();
 }
+
+// O servidor público às vezes "esquece" tudo o que guardava (perfis, contas, chat...).
+// Ao entrar no salão, quem está logado confere se o seu perfil e a sua conta ainda estão
+// lá; o que sumiu é devolvido a partir da cópia deste aparelho. Espera bastante pela
+// resposta para não confundir "servidor lento" com "servidor esqueceu".
+export async function restaurarNoServidor() {
+  if (!usuario) return;
+  const chave = usuario.chave;
+  const [perfil, contaRemota] = await Promise.all([
+    lerRetido(topicoPerfil(chave), ESPERA_RESTAURAR),
+    lerRetido(topicoConta(chave), ESPERA_RESTAURAR),
+  ]);
+  if (!usuario || usuario.chave !== chave) return; // saiu da conta enquanto conferia
+  if (!perfil) publicar(topicoPerfil(chave), usuario, { reter: true });
+  const local = contasLocais()[chave]?.conta;
+  if (!contaRemota && local) publicar(topicoConta(chave), local, { reter: true });
+}
+
+const ESPERA_RESTAURAR = 8000;
 
 // Alguém apagou o meu perfil do servidor: publica de novo
 export function republicarPerfil() {

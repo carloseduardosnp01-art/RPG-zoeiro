@@ -12,18 +12,18 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031126";
-import * as conta from "./conta.js?v=202610031126";
-import * as adm from "./admin.js?v=202610031126";
-import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610031126";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031126";
-import { abrirPremio } from "./visor-premio.js?v=202610031126";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031126";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031126";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031126";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031126";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031126";
-import { tocar } from "./som.js?v=202610031126";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031145";
+import * as conta from "./conta.js?v=202610031145";
+import * as adm from "./admin.js?v=202610031145";
+import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610031145";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031145";
+import { abrirPremio } from "./visor-premio.js?v=202610031145";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031145";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031145";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031145";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031145";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031145";
+import { tocar } from "./som.js?v=202610031145";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -142,6 +142,7 @@ async function atualizarUsuario(usuario) {
   await adm.carregarAdm(usuario.chave);
   desenharPerfil();
   if (!(await garantirConexao()) || !conta.usuarioAtual()) return;
+  conta.restaurarNoServidor();
 
   s.cancelarUsuario.push(assinar(T.dm(usuario.chave), receberDM));
   s.cancelarUsuario.push(assinar(T.presentes(usuario.chave), receberPresente));
@@ -430,6 +431,15 @@ function painelAdm(u) {
     enviarGlobal(await adm.assinarMsg({ id: gerarId(), tipo: "aviso", de: conta.cartaoPublico(), texto, t: Date.now() }));
     aviso("📢 Aviso enviado!", "ok");
   });
+  const limpar = el("button", "btn btn-sm btn-outline-light", "🧹 Limpar o chat global");
+  limpar.type = "button";
+  limpar.addEventListener("click", async () => {
+    if (!confirm("Apagar todas as mensagens do chat global para todo mundo?")) return;
+    const msg = await adm.assinarMsg({ id: gerarId(), tipo: "limpar", de: conta.cartaoPublico(), texto: "", t: Date.now() });
+    publicar(T.chat, msg);
+    publicar(T.historico, [msg], { reter: true });
+    aviso("🧹 Chat limpo!", "ok");
+  });
   const sair = el("button", "btn btn-sm btn-outline-secondary", "Desativar ADM neste aparelho");
   sair.type = "button";
   sair.addEventListener("click", () => {
@@ -440,7 +450,7 @@ function painelAdm(u) {
     publicarPresenca();
   });
   const botoes = el("div", "d-grid gap-2");
-  botoes.append(avisar, sair);
+  botoes.append(avisar, limpar, sair);
   painel.append(botoes, formRedefinirSenha());
   return painel;
 }
@@ -692,8 +702,17 @@ function formRedefinirSenha(p = null) {
     }
     if (!confirm(`Redefinir a senha de ${alvo.nick}?\n\nA senha antiga para de funcionar na hora. Só faça isso se tiver certeza de que é o dono da conta pedindo.`)) return;
     botao.disabled = true;
+    botao.textContent = "Procurando…";
     try {
-      await conta.redefinirSenha(alvo.chave, senha.value, Boolean(p || busca.perfil));
+      try {
+        await conta.redefinirSenha(alvo.chave, senha.value, Boolean(p || busca.perfil));
+      } catch (erro) {
+        if (!erro.message.startsWith("Conta não encontrada")) throw erro;
+        // o servidor público pode ter esquecido a conta: recria só a senha (o progresso
+        // do jogador volta do aparelho dele quando ele entrar)
+        if (!confirm(`"${alvo.nick}" não está no servidor agora (o servidor público às vezes perde os dados guardados).\n\nRecriar a conta "${alvo.nick}" com essa senha provisória? Quando ele entrar no aparelho de sempre, o progresso guardado lá volta junto.\n\nConfira bem o nick antes de confirmar.`)) return;
+        await conta.redefinirSenha(alvo.chave, senha.value, true);
+      }
       navigator.clipboard?.writeText(senha.value).catch(() => {});
       aviso(`Senha de ${alvo.nick} redefinida (e copiada). Passe a senha provisória para ele em particular.`, "ok", 9000);
       feito.replaceChildren(`✅ A senha de ${alvo.nick} agora é `, el("code", "", senha.value), " (copiada). Passe exatamente assim (maiúscula e minúscula fazem diferença).");
@@ -702,6 +721,7 @@ function formRedefinirSenha(p = null) {
       aviso(erro.message, "erro");
     } finally {
       botao.disabled = false;
+      botao.textContent = "Redefinir";
     }
   });
   return form;
@@ -1197,8 +1217,29 @@ function receberChatGlobal(msg) {
   if (msg) adicionarMensagemGlobal(msg, true);
 }
 
+// ADM limpou o chat: some tudo o que veio antes (só vale com a assinatura do ADM)
+async function limparChat(msg) {
+  if (!(await adm.verificarMsg(msg)) || msg.t <= (s.limpoEm || 0)) return;
+  s.limpoEm = msg.t;
+  s.ultimaLimpeza = msg;
+  const aba = s.abas.get("global");
+  aba.itens = aba.itens.filter((i) => (i.t || 0) > msg.t);
+  const linha = { id: `limpo-${msg.id}`, tipo: "sistema", texto: `🧹 O chat foi limpo pelo ADM ${msg.de.nick}.`, t: msg.t };
+  if (!s.vistos.has(linha.id)) {
+    s.vistos.add(linha.id);
+    aba.itens.unshift(linha);
+  }
+  if (s.abaAtual === "global") desenharMensagens();
+}
+
 function adicionarMensagemGlobal(msg, nova) {
   if (!msg.id || s.vistos.has(msg.id)) return;
+  if (msg.tipo === "limpar") {
+    s.vistos.add(msg.id);
+    limparChat(msg);
+    return;
+  }
+  if ((msg.t || 0) < (s.limpoEm || 0)) return; // mensagem de antes da limpeza
   if (msg.tipo !== "sistema" && (!msg.de || typeof msg.texto !== "string")) return;
   s.vistos.add(msg.id);
   const item = { ...msg, texto: String(msg.texto).slice(0, 300) };
@@ -1256,7 +1297,8 @@ function enviarGlobal(msg) {
   // Atualiza o histórico retido (últimas 40)
   const anteriores = s.abas.get("global").itens.filter((i) => ["msg", "sistema", "mesa", "aviso"].includes(i.tipo)).slice(-39)
     .map(({ admOk, ...resto }) => resto);
-  publicar(T.historico, [...anteriores, msg], { reter: true });
+  // a marca da última limpeza vai junto: quem carregar o histórico descarta o que é mais antigo
+  publicar(T.historico, [...(s.ultimaLimpeza ? [s.ultimaLimpeza] : []), ...anteriores, msg], { reter: true });
 }
 
 function enviarDM(chave, dados) {

@@ -33,6 +33,17 @@ export const PREMIOS = {
   },
 };
 
+// Prêmios tirados (testes, entregas repetidas). Como o perfil de cada jogador junta tudo o que
+// ele já recebeu, apagar a mensagem do servidor não basta: o jogo de todo mundo ignora estes
+// ids e o perfil do dono se limpa sozinho na próxima vez que ele entrar.
+const REMOVIDOS = new Set([
+  // MenonFIRE: ouro e relíquia repetidos dos torneios de teste "Copa teste" e "copa teste 2"
+  "0pdoh3okvhjf", "1swn1n019yyz", "6l8m690k0vl7", "qojh1hh3opvt",
+  // MenonICE: pratas dos mesmos torneios de teste
+  "v9drrh0mb6p4", "5jqq6utuymwt",
+]);
+export const premioRemovido = (id) => REMOVIDOS.has(id);
+
 export const ehReliquia = (item) => PREMIOS[item]?.tipo === "reliquia";
 export const ehTrofeu = (item) => PREMIOS[item]?.tipo === "trofeu";
 

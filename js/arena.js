@@ -15,14 +15,14 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610022151";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610022151";
-import { el, esperar, aviso } from "./util.js?v=202610022151";
-import { tocar } from "./som.js?v=202610022151";
-import { abrirDetalhes } from "./catalogo.js?v=202610022151";
-import * as adm from "./admin.js?v=202610022151";
-import { PREMIOS } from "./premios.js?v=202610022151";
-import { usuarioAtual } from "./conta.js?v=202610022151";
+} from "./motor.js?v=202610022246";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610022246";
+import { el, esperar, aviso } from "./util.js?v=202610022246";
+import { tocar } from "./som.js?v=202610022246";
+import { abrirDetalhes } from "./catalogo.js?v=202610022246";
+import * as adm from "./admin.js?v=202610022246";
+import { PREMIOS } from "./premios.js?v=202610022246";
+import { usuarioAtual } from "./conta.js?v=202610022246";
 
 const raiz = document.querySelector("#arena");
 

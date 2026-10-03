@@ -10,22 +10,24 @@
 
    Tópicos:  torneio/atual                       (retido, assinado pelo ADM)
              torneio/inscricao/<torneio>/<chave> (retido, pedido do jogador)
+             torneio/historico/<torneio>         (retido, cópia assinada de cada torneio que terminou)
    ========================================================================== */
 
-import { PREFIXO, publicar, assinar, lerRetido } from "./rede.js?v=202610022151";
-import * as conta from "./conta.js?v=202610022151";
-import * as adm from "./admin.js?v=202610022151";
-import * as T from "./torneio.js?v=202610022151";
-import { PREMIOS, ehReliquia } from "./premios.js?v=202610022151";
-import { novoDuelo, problemaDoDeck } from "./motor.js?v=202610022151";
-import { paraLista } from "./deck.js?v=202610022151";
-import { topicosDuelo } from "./sessao.js?v=202610022151";
-import { arenaAtiva, sessaoAtual, fecharArena } from "./arena.js?v=202610022151";
-import { el, gerarId, aviso, nivelDoXp } from "./util.js?v=202610022151";
-import { tocar } from "./som.js?v=202610022151";
+import { PREFIXO, publicar, assinar, lerRetido } from "./rede.js?v=202610022246";
+import * as conta from "./conta.js?v=202610022246";
+import * as adm from "./admin.js?v=202610022246";
+import * as T from "./torneio.js?v=202610022246";
+import { PREMIOS, ehReliquia } from "./premios.js?v=202610022246";
+import { novoDuelo, problemaDoDeck } from "./motor.js?v=202610022246";
+import { paraLista } from "./deck.js?v=202610022246";
+import { topicosDuelo } from "./sessao.js?v=202610022246";
+import { arenaAtiva, sessaoAtual, fecharArena } from "./arena.js?v=202610022246";
+import { el, gerarId, aviso, nivelDoXp } from "./util.js?v=202610022246";
+import { tocar } from "./som.js?v=202610022246";
 
 const TOPICO = `${PREFIXO}/torneio/atual`;
 const topicoInscricao = (id, chave) => `${PREFIXO}/torneio/inscricao/${id}/${chave}`;
+const topicoHistorico = (id) => `${PREFIXO}/torneio/historico/${id}`;
 
 let deps = null;          // { SID, entrarNoDuelo, avisarChat, perfis, entregarPremio }
 let torneio = null;       // último estado conferido (assinado pelo ADM)
@@ -33,6 +35,8 @@ let fila = Promise.resolve(); // mudanças do juiz, uma de cada vez
 const entrei = new Set(); // duelos do torneio em que eu já entrei
 const entregues = new Set(); // prêmios do pódio já entregues nesta sessão ("torneio|chave|item")
 const juiz = { torneio: null, cancelarInscricoes: null, duelos: new Map() };
+const historico = new Map(); // torneios que já terminaram (id -> estado final assinado)
+const abertos = new Set();   // torneios do histórico com a chave aberta na tela
 
 const $ = (sel) => document.querySelector(sel);
 const eu = () => conta.usuarioAtual();
@@ -43,6 +47,7 @@ export function iniciarTorneio(dependencias) {
   if (deps) return;
   deps = dependencias;
   assinar(TOPICO, receberTorneio);
+  assinar(`${PREFIXO}/torneio/historico/+`, receberHistorico);
   // saiu de um duelo: se o próximo jogo do torneio já começou, entra nele
   document.addEventListener("arena-mudou", () => setTimeout(entrarNoMeuJogo, 300));
   $("#botao-torneio")?.addEventListener("click", () => {
@@ -72,6 +77,23 @@ async function receberTorneio(dados) {
   desenhar();
   avisarJogador(anterior);
   entrarNoMeuJogo();
+}
+
+// Histórico: só entra torneio encerrado e com a assinatura do ADM que organizou
+async function receberHistorico(dados, topico) {
+  const id = topico.split("/").pop();
+  if (!dados) {
+    if (historico.delete(id)) desenhar();
+    return;
+  }
+  if (dados.id !== id || dados.status !== "encerrado" || !(await adm.verificarTorneio(dados))) return;
+  historico.set(id, dados);
+  desenhar();
+}
+
+// O torneio já vem assinado pelo ADM, então a cópia no histórico continua valendo
+function guardarNoHistorico(t) {
+  publicar(topicoHistorico(t.id), t, { reter: true });
 }
 
 
@@ -178,6 +200,7 @@ function mudar(fn, depois) {
     if (fn(novo) === false) return;
     const assinado = await adm.assinarTorneio(novo);
     publicar(TOPICO, assinado, { reter: true });
+    if (antes.status !== "encerrado" && assinado.status === "encerrado") guardarNoHistorico(assinado);
     torneio = assinado;
     ligarJuiz();
     desenhar();
@@ -240,6 +263,11 @@ function desenhar() {
   const corpo = $("#torneio-corpo");
   if (!corpo) return;
   corpo.replaceChildren();
+  desenharAtual(corpo);
+  corpo.append(secaoHistorico());
+}
+
+function desenharAtual(corpo) {
   const u = eu();
   if (!torneio || torneio.status === "cancelado") {
     corpo.append(el("p", "torneio__vazio", torneio?.status === "cancelado" ? `O torneio ${torneio.nome} foi cancelado.` : "Nenhum torneio no momento. Fique de olho no chat!"));
@@ -321,19 +349,21 @@ function telaInscricoes() {
   return sec;
 }
 
-function telaChave() {
+// ver = true: só mostra (torneio do histórico), sem os botões do organizador
+function telaChave(t = torneio, ver = false) {
   const sec = el("section", "torneio__chave");
-  const rodadas = [...torneio.rodadas.map((lista, r) => [r, lista]), ...(torneio.terceiro ? [["terceiro", [torneio.terceiro]]] : [])];
+  const rodadas = [...t.rodadas.map((lista, r) => [r, lista]), ...(t.terceiro ? [["terceiro", [t.terceiro]]] : [])];
   for (const [r, lista] of rodadas) {
     const col = el("div", "torneio__rodada");
-    col.append(el("h4", "torneio__titulo", T.nomeRodada(torneio, r)));
-    for (const p of lista) col.append(cartaoPartida(p));
+    col.append(el("h4", "torneio__titulo", T.nomeRodada(t, r)));
+    for (const p of lista) col.append(cartaoPartida(p, t, ver));
     sec.append(col);
   }
   return sec;
 }
 
-function cartaoPartida(p) {
+function cartaoPartida(p, t = torneio, ver = false) {
+  const organiza = !ver && souOrganizador();
   const u = eu();
   const minha = u && (p.a?.chave === u.chave || p.b?.chave === u.chave);
   const c = el("div", "torneio__partida" + (minha ? " torneio__partida--minha" : "") + (p.jogando ? " torneio__partida--jogando" : ""));
@@ -345,14 +375,14 @@ function cartaoPartida(p) {
   c.append(linha(p.a, p.va), linha(p.b, p.vb));
   let estado;
   if (p.bye) estado = p.rodada === "terceiro" ? "Bronze direto" : "Passou direto";
-  else if (p.wo && p.vencedor) estado = `W.O.: ${T.nickNoTorneio(torneio, p.vencedor)}`;
-  else if (p.vencedor) estado = `Venceu: ${T.nickNoTorneio(torneio, p.vencedor)}`;
+  else if (p.wo && p.vencedor) estado = `W.O.: ${T.nickNoTorneio(t, p.vencedor)}`;
+  else if (p.vencedor) estado = `Venceu: ${T.nickNoTorneio(t, p.vencedor)}`;
   else if (p.jogando) estado = `⚔️ Jogo ${p.jogos.length + 1} em andamento`;
-  else if (p.a && p.b) estado = souOrganizador() ? `Pronta para o jogo ${p.jogos.length + 1}` : `Aguardando o ADM iniciar o jogo ${p.jogos.length + 1}`;
+  else if (p.a && p.b) estado = organiza ? `Pronta para o jogo ${p.jogos.length + 1}` : `Aguardando o ADM iniciar o jogo ${p.jogos.length + 1}`;
   else estado = "Esperando os adversários";
   c.append(el("div", "torneio__estado", estado));
 
-  if (souOrganizador() && torneio.status === "andamento" && !p.vencedor && p.a && p.b) {
+  if (organiza && t.status === "andamento" && !p.vencedor && p.a && p.b) {
     const acoes = el("div", "torneio__acoes");
     const botao = (texto, classe, fn) => {
       const b = el("button", `btn btn-sm ${classe}`, texto);
@@ -447,4 +477,86 @@ function botoesOrganizador() {
   }
   painel.append(botoes);
   return painel;
+}
+
+
+/* ---------- Histórico de torneios ---------- */
+
+function secaoHistorico() {
+  const lista = [...historico.values()].sort((a, b) => (b.atualizado || 0) - (a.atualizado || 0));
+  const sec = el("section", "torneio-historico");
+  sec.append(el("h4", "torneio-historico__titulo", `📚 Histórico de torneios (${lista.length})`));
+  // ADM: um torneio que terminou antes do histórico existir (ou cuja cópia sumiu) pode ser guardado à mão
+  const u = eu();
+  if (u && adm.souAdm(u.chave) && torneio?.status === "encerrado" && !historico.has(torneio.id)) {
+    const guardar = el("button", "btn btn-sm btn-outline-light torneio-historico__guardar", `📚 Guardar "${torneio.nome}" no histórico`);
+    guardar.type = "button";
+    guardar.addEventListener("click", () => guardarNoHistorico(torneio));
+    sec.append(guardar);
+  }
+  if (!lista.length) sec.append(el("p", "torneio__vazio", "Nenhum torneio terminado ainda. Cada torneio que acabar fica guardado aqui."));
+  for (const t of lista) sec.append(itemHistorico(t));
+  return sec;
+}
+
+function itemHistorico(t) {
+  const item = el("article", "torneio-historico__item");
+  const topo = el("div", "torneio-historico__topo");
+  const quando = new Date(t.atualizado || t.criadoEm).toLocaleDateString("pt-BR");
+  topo.append(
+    el("strong", "torneio-historico__nome", `🏆 ${t.nome}`),
+    el("span", "torneio-historico__info", `${quando} · ${t.inscritos.length} duelistas · ADM ${t.organizadorNick || t.organizador}`),
+  );
+  item.append(topo);
+
+  const podio = el("div", "torneio-historico__podio");
+  for (const lugar of ["ouro", "prata", "bronze"]) {
+    const chave = t.podio?.[lugar];
+    if (!chave) continue;
+    const d = el("span", `torneio-historico__lugar torneio-historico__lugar--${lugar}`);
+    const img = el("img");
+    img.src = PREMIOS[lugar].imagem;
+    img.alt = "";
+    d.append(img, el("span", "torneio-historico__posicao", PREMIOS[lugar].posicao), el("strong", "", T.nickNoTorneio(t, chave)));
+    podio.append(d);
+  }
+  item.append(podio);
+
+  const acoes = el("div", "torneio-historico__acoes");
+  let chave = abertos.has(t.id) ? telaChave(t, true) : null;
+  const ver = el("button", "btn btn-sm btn-outline-light");
+  ver.type = "button";
+  const rotular = () => {
+    ver.textContent = chave ? "Esconder a chave" : "Ver a chave";
+    ver.setAttribute("aria-expanded", String(Boolean(chave)));
+  };
+  rotular();
+  // abre e fecha sem redesenhar a janela (a rolagem fica onde está)
+  ver.addEventListener("click", () => {
+    if (chave) {
+      chave.remove();
+      chave = null;
+      abertos.delete(t.id);
+    } else {
+      chave = telaChave(t, true);
+      item.append(chave);
+      abertos.add(t.id);
+    }
+    rotular();
+  });
+  acoes.append(ver);
+  const u = eu();
+  if (u && adm.souAdm(u.chave)) {
+    const tirar = el("button", "btn btn-sm btn-outline-danger", "🗑 Tirar do histórico");
+    tirar.type = "button";
+    tirar.addEventListener("click", () => {
+      if (confirm(`Tirar o torneio "${t.nome}" do histórico? Os troféus que já foram entregues continuam nos perfis.`)) {
+        publicar(topicoHistorico(t.id), null, { reter: true });
+      }
+    });
+    acoes.append(tirar);
+  }
+  item.append(acoes);
+  if (chave) item.append(chave);
+  return item;
 }

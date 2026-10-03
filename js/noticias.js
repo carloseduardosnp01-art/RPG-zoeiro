@@ -4,7 +4,7 @@
    As notícias ficam em data/noticias.json (a mais nova aparece primeiro).
    ========================================================================== */
 
-import { el } from "./util.js?v=202610031607";
+import { el } from "./util.js?v=202610032015";
 
 const DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
@@ -34,10 +34,13 @@ function contagem(texto) {
   return { texto: "Já aconteceu", classe: "passou" };
 }
 
+// "encerrado": o evento já terminou (ex.: torneio do dia que já acabou)
+const situacao = (noticia) => (noticia.encerrado ? { texto: "✅ Encerrado", classe: "passou" } : contagem(noticia.evento));
+
 function seloEvento(noticia) {
   const selo = el("p", "noticia__evento");
   selo.append(el("span", "noticia__data", `📅 ${dataComDia(noticia.evento)}`));
-  const falta = contagem(noticia.evento);
+  const falta = situacao(noticia);
   selo.append(el("span", `noticia__contagem noticia__contagem--${falta.classe}`, falta.texto));
   return selo;
 }
@@ -93,7 +96,7 @@ function destaqueNoticia(noticia) {
   corpo.append(el("span", "noticia-faixa__rotulo", "📰 Última notícia"));
   corpo.append(el("strong", "noticia-faixa__titulo", noticia.titulo));
   if (noticia.evento) {
-    const falta = contagem(noticia.evento);
+    const falta = situacao(noticia);
     corpo.append(el("span", "noticia-faixa__data", `📅 ${dataComDia(noticia.evento)} · ${falta.texto}`));
   }
   corpo.append(el("span", "noticia-faixa__mais", "Ler a notícia →"));

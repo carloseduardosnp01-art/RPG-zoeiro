@@ -13,11 +13,11 @@
    antiga é levado para o banco na hora, com a mesma senha.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610031607";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610031607";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610031607";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610031607";
-import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610031607";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610032015";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610032015";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610032015";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610032015";
+import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610032015";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -372,10 +372,15 @@ export function mesclarPerfis(a, b) {
   const deckDe = (b.deckAtualizado || 0) > (a.deckAtualizado || 0) || (!a.deck && b.deck) ? b : a;
   perfil.deck = deckDe.deck;
   perfil.deckAtualizado = deckDe.deckAtualizado;
-  perfil.vitorias = Math.max(a.vitorias || 0, b.vitorias || 0);
-  perfil.derrotas = Math.max(a.derrotas || 0, b.derrotas || 0);
-  perfil.xp = Math.max(a.xp || 0, b.xp || 0);
-  perfil.coinsGanhas = Math.max(a.coinsGanhas || 0, b.coinsGanhas || 0);
+  // Duelos que só uma das cópias conhece (jogados em aparelhos diferentes, ou gravados ao
+  // mesmo tempo): somam, em vez de valer só o maior número
+  const soA = duelosSoDe(a, b);
+  const soB = duelosSoDe(b, a);
+  const juntar = (campo, conta) => Math.max((a[campo] || 0) + conta(soB), (b[campo] || 0) + conta(soA));
+  perfil.vitorias = juntar("vitorias", (ds) => ds.filter((d) => d.tipo !== "bot" && d.venceu).length);
+  perfil.derrotas = juntar("derrotas", (ds) => ds.filter((d) => d.tipo !== "bot" && !d.venceu).length);
+  perfil.xp = juntar("xp", (ds) => ds.reduce((t, d) => t + (Number(d.xp) || 0), 0));
+  perfil.coinsGanhas = juntar("coinsGanhas", (ds) => ds.reduce((t, d) => t + (Number(d.coins) || 0), 0));
   perfil.coinsGastas = Math.max(a.coinsGastas || 0, b.coinsGastas || 0);
   perfil.atualizado = Math.max(a.atualizado || 0, b.atualizado || 0);
   perfil.historico = juntarHistoricos(a.historico, b.historico);
@@ -438,6 +443,20 @@ function juntarComRemoto(local, remotoLimpo) {
 }
 
 export const HISTORICO_MAX = 10;
+
+// Duelos do histórico de "a" que "b" não tem, dentro do período que o histórico de "b"
+// cobre. Um duelo mais antigo que o histórico de "b" provavelmente já está somado em "b"
+// (o histórico guarda só os últimos). Se "b" tem pontos mas nenhum histórico, não dá para
+// saber: nada é somado (vale o maior número).
+function duelosSoDe(a, b) {
+  const deA = (a.historico || []).filter((d) => d && d.id);
+  const deB = (b.historico || []).filter((d) => d && d.id);
+  if (!deA.length) return [];
+  if (!deB.length && ((b.xp || 0) > 0 || (b.vitorias || 0) + (b.derrotas || 0) > 0)) return [];
+  const idsB = new Set(deB.map((d) => d.id));
+  const inicioB = deB.length ? Math.min(...deB.map((d) => d.t || 0)) : -Infinity;
+  return deA.filter((d) => !idsB.has(d.id) && (d.t || 0) > inicioB);
+}
 
 // Últimos duelos das duas cópias, sem repetir, do mais novo para o mais antigo
 function juntarHistoricos(a = [], b = []) {

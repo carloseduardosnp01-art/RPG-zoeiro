@@ -348,6 +348,7 @@ O **motor** é independente da tela: dá para rodar partidas inteiras no Node (f
    - `categoria` (ex.: `"🏆 Torneio"`), `titulo`, `texto` (use `
 ` para pular linha), `imagem`, `largura`, `altura` e `alt` (descrição do cartaz);
    - `botao` (opcional): `{ "texto": "...", "href": "#salao" }`.
+   - `encerrado` (opcional): `true` quando o evento já terminou (o selo vira "Encerrado").
 3. Rode `python ferramentas/nova-versao.py` e publique. A mais nova (pela data `publicada`) vira a faixa da página inicial.
 
 ---

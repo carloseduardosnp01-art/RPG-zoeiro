@@ -4,20 +4,20 @@
    pelo endereço (#inicio, #catalogo, #deck, #regras, #salao, #arena).
    ========================================================================== */
 
-import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610031607";
-import { iniciarCatalogo } from "./catalogo.js?v=202610031607";
-import { iniciarEditorDeck } from "./editor-deck.js?v=202610031607";
-import { deckAtual } from "./deck.js?v=202610031607";
-import { iniciarSalao, ativarSalao } from "./salao.js?v=202610031607";
-import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610031607";
-import { criarSessaoBot } from "./sessao.js?v=202610031607";
-import * as conta from "./conta.js?v=202610031607";
-import { alternarSom, somLigado } from "./som.js?v=202610031607";
-import { aviso } from "./util.js?v=202610031607";
-import { iniciarNoticias } from "./noticias.js?v=202610031607";
+import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610032015";
+import { iniciarCatalogo } from "./catalogo.js?v=202610032015";
+import { iniciarEditorDeck } from "./editor-deck.js?v=202610032015";
+import { deckAtual } from "./deck.js?v=202610032015";
+import { iniciarSalao, ativarSalao } from "./salao.js?v=202610032015";
+import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610032015";
+import { criarSessaoBot } from "./sessao.js?v=202610032015";
+import * as conta from "./conta.js?v=202610032015";
+import { alternarSom, somLigado } from "./som.js?v=202610032015";
+import { aviso } from "./util.js?v=202610032015";
+import { iniciarNoticias } from "./noticias.js?v=202610032015";
 
 // Número da versão (atualizado por ferramentas/nova-versao.py a cada envio)
-const VERSAO = "202610031607";
+const VERSAO = "202610032015";
 
 const TELAS = ["inicio", "noticias", "catalogo", "deck", "regras", "salao", "arena"];
 

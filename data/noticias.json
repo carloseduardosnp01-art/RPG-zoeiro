@@ -1,5 +1,20 @@
 [
   {
+    "id": "resultado-torneio-reliquias-1",
+    "publicada": "2026-10-03",
+    "categoria": "🏆 Torneio",
+    "titulo": "Resultado oficial: 1ª Edição do Torneio Relíquias do Milênio",
+    "imagem": "img/noticias/resultado-torneio-reliquias-1.webp",
+    "largura": 900,
+    "altura": 1125,
+    "alt": "Cartaz do resultado oficial da 1ª Edição do Torneio Relíquias do Milênio: campeão Nobara, que venceu a Careca do Milênio; 2º lugar Agente W; 3º lugar MenonICE.",
+    "texto": "🏆 RESULTADO OFICIAL! 🏆\nTerminou a 1ª Edição do Torneio Relíquias do Milênio do Duelo da Zoeira! ⚔️🃏\n👑 Campeão: Nobara, que levou o Troféu de Ouro e a lendária Careca do Milênio, com a habilidade especial \"Compra do Destino\" ✨\n🥈 2º lugar: Agente W\n🥉 3º lugar: MenonICE\nParabéns aos duelistas do pódio e a todo mundo que encarou a chave! 🔥\nA próxima Relíquia do Milênio está esperando um dono. Quem será? 👀",
+    "botao": {
+      "texto": "⚔️ Ir para o Salão Online",
+      "href": "#salao"
+    }
+  },
+  {
     "id": "torneio-reliquias-do-milenio-1",
     "publicada": "2026-10-02",
     "evento": "2026-10-03",
@@ -10,6 +25,10 @@
     "altura": 986,
     "alt": "Cartaz do torneio: Torneio amanhã. Top 3 recebem troféu exclusivo no perfil (prata, ouro e bronze) e o campeão recebe o Enigma do Milênio, com a habilidade especial Compra do Destino.",
     "texto": "🔥 ATENÇÃO, DUELISTAS!🔥\nEstá chegando a 1ª Edição do Torneio Relíquias do Milênio do Duelo da Zoeira! ⚔️🃏\nPrepare seu melhor deck e venha disputar esse torneio especial!\n🥇🥈🥉 TOP 3 recebem troféu exclusivo no perfil\n👑 O campeão recebe o Enigma do Milênio, com a habilidade especial \"Compra do Destino Carecal\" ✨\nMonte sua estratégia, confie no coração das cartas e mostre quem merece carregar uma das lendárias Relíquias do Milênio! 🔥\nQuem será o primeiro campeão? 👀🏆",
-    "botao": { "texto": "⚔️ Ir para o Salão Online", "href": "#salao" }
+    "botao": {
+      "texto": "⚔️ Ir para o Salão Online",
+      "href": "#salao"
+    },
+    "encerrado": true
   }
 ]

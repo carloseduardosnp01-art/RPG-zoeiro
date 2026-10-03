@@ -1813,6 +1813,22 @@ a:hover {
   margin: 0;
 }
 
+.painel-adm__feito {
+  margin: .3rem 0 0;
+  color: #6dff9a;
+  font-size: .85rem;
+}
+
+.painel-adm__feito code {
+  padding: .05rem .35rem;
+  color: #fff;
+  font-size: .95rem;
+  letter-spacing: .06em;
+  background: rgba(0, 0, 0, .4);
+  border-radius: .3rem;
+  user-select: all;
+}
+
 .painel-adm__linha--senha {
   grid-template-columns: 1fr auto auto;
 }

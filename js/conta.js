@@ -9,10 +9,10 @@
    Uma cópia fica no navegador; se o broker "esquecer", o login republica.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610031107";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610031107";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610031107";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610031107";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610031119";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610031119";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610031119";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610031119";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -60,6 +60,16 @@ async function hashSenha(senha, sal) {
   );
   return Array.from(new Uint8Array(bits), (b) => b.toString(16).padStart(2, "0")).join("");
 }
+
+// Confere a senha. Se não bater, tenta sem os espaços das pontas (sobram ao copiar e colar)
+async function senhaConfere(senha, conta) {
+  if ((await hashSenha(senha, conta.sal)) === conta.hash) return true;
+  const limpa = senha.trim();
+  return limpa !== senha && limpa.length > 0 && (await hashSenha(limpa, conta.sal)) === conta.hash;
+}
+
+// Quanto esperar o servidor ao ler uma conta (a do celular pode demorar)
+const ESPERA_CONTA = 5000;
 
 function novoSal() {
   return Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
@@ -110,13 +120,18 @@ export async function entrar({ nick, senha, lembrar = true }) {
   const chave = chaveDoNick(nick);
   if (!chave) throw new Error("Digite o seu nick.");
   const local = contasLocais()[chave];
-  let conta = await lerRetido(topicoConta(chave));
-  if (!conta && local) {
-    conta = local.conta;
-    publicar(topicoConta(chave), conta, { reter: true }); // o broker perdeu: republica
-  }
+  // Espera o servidor com folga: no celular a resposta pode demorar, e a cópia guardada
+  // neste aparelho pode estar velha (ex.: um ADM acabou de trocar a senha)
+  let conta = await lerRetido(topicoConta(chave), ESPERA_CONTA);
+  const doServidor = Boolean(conta);
+  if (!conta && local) conta = local.conta;
   if (!conta) throw new Error("Conta não encontrada. Confira o nick ou crie uma conta.");
-  if ((await hashSenha(senha, conta.sal)) !== conta.hash) throw new Error("Senha incorreta.");
+  if (!(await senhaConfere(senha, conta))) {
+    throw new Error(doServidor ? "Senha incorreta." : "Senha incorreta, ou o servidor demorou para responder. Confira a internet e tente de novo.");
+  }
+  // o broker perdeu a conta: devolve a cópia daqui (só depois de a senha conferir,
+  // para uma tentativa errada nunca desfazer uma senha nova)
+  if (!doServidor) publicar(topicoConta(chave), conta, { reter: true });
   senhaProvisoria = Boolean(conta.provisoria);
 
   // Junta o perfil do broker com o do navegador (o deck mais recente e as estatísticas maiores)
@@ -169,8 +184,9 @@ function iniciarSessao(perfil, lembrar) {
    para o dono em particular; no login o jogo avisa para trocar por uma nova. */
 
 export async function redefinirSenha(chave, novaSenha) {
+  novaSenha = novaSenha.trim();
   if (novaSenha.length < 4) throw new Error("A senha precisa ter pelo menos 4 caracteres.");
-  const existe = (await lerRetido(topicoConta(chave))) || (await lerRetido(topicoPerfil(chave)));
+  const existe = (await lerRetido(topicoConta(chave), ESPERA_CONTA)) || (await lerRetido(topicoPerfil(chave), ESPERA_CONTA));
   if (!existe) throw new Error("Conta não encontrada no servidor.");
   const sal = novoSal();
   publicar(topicoConta(chave), { chave, sal, hash: await hashSenha(novaSenha, sal), provisoria: true }, { reter: true });
@@ -178,10 +194,11 @@ export async function redefinirSenha(chave, novaSenha) {
 
 export async function trocarSenha(senhaAtual, novaSenha) {
   if (!usuario) throw new Error("Entre na sua conta primeiro.");
+  novaSenha = novaSenha.trim();
   if (novaSenha.length < 4) throw new Error("A senha nova precisa ter pelo menos 4 caracteres.");
   const chave = usuario.chave;
-  const atual = (await lerRetido(topicoConta(chave))) || contasLocais()[chave]?.conta;
-  if (!atual || (await hashSenha(senhaAtual, atual.sal)) !== atual.hash) throw new Error("A senha atual não confere.");
+  const atual = (await lerRetido(topicoConta(chave), ESPERA_CONTA)) || contasLocais()[chave]?.conta;
+  if (!atual || !(await senhaConfere(senhaAtual, atual))) throw new Error("A senha atual não confere.");
   const sal = novoSal();
   const conta = { chave, sal, hash: await hashSenha(novaSenha, sal) };
   publicar(topicoConta(chave), conta, { reter: true });

@@ -12,18 +12,18 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031107";
-import * as conta from "./conta.js?v=202610031107";
-import * as adm from "./admin.js?v=202610031107";
-import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610031107";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031107";
-import { abrirPremio } from "./visor-premio.js?v=202610031107";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031107";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031107";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031107";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031107";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031107";
-import { tocar } from "./som.js?v=202610031107";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031119";
+import * as conta from "./conta.js?v=202610031119";
+import * as adm from "./admin.js?v=202610031119";
+import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610031119";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031119";
+import { abrirPremio } from "./visor-premio.js?v=202610031119";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031119";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031119";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031119";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031119";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031119";
+import { tocar } from "./som.js?v=202610031119";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -602,6 +602,8 @@ function formRedefinirSenha(p = null) {
     nick.placeholder = "Nick do duelista (ex.: ReiCorRed)";
     nick.setAttribute("aria-label", "Nick do duelista");
     nick.autocomplete = "off";
+    nick.setAttribute("autocapitalize", "none");
+    nick.setAttribute("autocorrect", "off");
     form.append(nick);
   }
   const linha = el("div", "painel-adm__linha painel-adm__linha--senha");
@@ -611,6 +613,9 @@ function formRedefinirSenha(p = null) {
   senha.maxLength = 40;
   senha.autocomplete = "off";
   senha.spellcheck = false;
+  // o celular não pode trocar a primeira letra por maiúscula nem "corrigir" a senha
+  senha.setAttribute("autocapitalize", "none");
+  senha.setAttribute("autocorrect", "off");
   senha.value = senhaAleatoria();
   senha.setAttribute("aria-label", "Senha provisória");
   const gerar = el("button", "btn btn-sm btn-outline-light", "🎲");
@@ -621,11 +626,15 @@ function formRedefinirSenha(p = null) {
   const botao = el("button", "btn btn-sm btn-ouro", "Redefinir");
   botao.type = "submit";
   linha.append(senha, gerar, botao);
-  form.append(linha);
+  const feito = el("p", "painel-adm__feito");
+  feito.setAttribute("role", "status");
+  feito.hidden = true;
+  form.append(linha, feito);
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const u = conta.usuarioAtual();
     if (!u || !adm.souAdm(u.chave)) return;
+    senha.value = senha.value.trim();
     const alvo = p || { chave: chaveDoNick(nick.value), nick: nick.value.trim() };
     if (!alvo.chave) return;
     if (alvo.chave === u.chave) {
@@ -638,6 +647,8 @@ function formRedefinirSenha(p = null) {
       await conta.redefinirSenha(alvo.chave, senha.value);
       navigator.clipboard?.writeText(senha.value).catch(() => {});
       aviso(`Senha de ${alvo.nick} redefinida (e copiada). Passe a senha provisória para ele em particular.`, "ok", 9000);
+      feito.replaceChildren(`✅ A senha de ${alvo.nick} agora é `, el("code", "", senha.value), " (copiada). Passe exatamente assim (maiúscula e minúscula fazem diferença).");
+      feito.hidden = false;
     } catch (erro) {
       aviso(erro.message, "erro");
     } finally {

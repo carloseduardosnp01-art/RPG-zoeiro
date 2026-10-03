@@ -38,7 +38,7 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
   - **Deck padrão** (Deck Careca Supremo): mesa com as pilhas de cópias e o resumo (40 cartas: 22 monstros, 12 magias, 6 armadilhas). É o deck de quem ainda não montou o seu e o deck do Bot Careca.
 - **Regras** em acordeão.
 - **Salão online** (igual ao chat do site de referência):
-  - criar conta (nick, senha, clã e avatar) e entrar;
+  - criar conta (nick, senha, clã e avatar) e entrar; **🔒 Trocar senha** no próprio perfil;
   - chat global com histórico, emojis e mensagens do sistema ("🏆 Fulano zerou os LP de Ciclano na Arena!");
   - lista de duelistas online com nível, clã e busca;
   - **botão direito** (ou toque) no duelista → *Desafiar para duelo* / *Mensagem privada*;
@@ -150,6 +150,7 @@ Tópicos (todos começam com `rpgdazoeira/v1/`):
 
 - O broker é **público**: qualquer pessoa que conheça os tópicos consegue ler as mensagens. Não mande nada sério pelo chat.
 - A senha nunca sai do navegador: vai só um hash **PBKDF2 (150 mil iterações, com sal)**. Mesmo assim, **use uma senha só para o jogo**.
+- **Esqueceu a senha?** Ninguém consegue ver a senha (nem os ADMs), só trocar. No **Painel do ADM** (ou no perfil do jogador), o ADM digita o nick e define uma **senha provisória**, que passa para o dono em particular. No login com ela, o jogo avisa e já abre o "🔒 Trocar senha". As estatísticas, moedas e prêmios da conta não mudam.
 - Não há um servidor juiz, então um espertinho com o console aberto consegue trapacear. Jogue com amigos.
 - Brokers públicos podem limpar mensagens retidas. Por isso cada navegador guarda uma cópia da conta e do perfil e republica ao entrar.
 - Se um dia quiser contas "de verdade", dá para trocar `js/rede.js` e `js/conta.js` por um serviço como Firebase ou Supabase: o resto do jogo só conversa com essas duas partes.

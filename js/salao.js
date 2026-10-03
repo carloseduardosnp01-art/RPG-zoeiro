@@ -12,18 +12,18 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610030033";
-import * as conta from "./conta.js?v=202610030033";
-import * as adm from "./admin.js?v=202610030033";
-import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610030033";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610030033";
-import { abrirPremio } from "./visor-premio.js?v=202610030033";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610030033";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610030033";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610030033";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610030033";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel } from "./util.js?v=202610030033";
-import { tocar } from "./som.js?v=202610030033";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031107";
+import * as conta from "./conta.js?v=202610031107";
+import * as adm from "./admin.js?v=202610031107";
+import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610031107";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031107";
+import { abrirPremio } from "./visor-premio.js?v=202610031107";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031107";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031107";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031107";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031107";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031107";
+import { tocar } from "./som.js?v=202610031107";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -217,6 +217,7 @@ function ligarFormularios() {
       e.target.reset();
       $("#entrar-lembrar").checked = true;
       tocar("turno");
+      if (conta.temSenhaProvisoria()) aviso("🔑 Você entrou com a senha provisória do ADM. Troque agora por uma sua: no seu perfil, em \"🔒 Trocar senha\".", "info", 15000);
     } catch (erro) {
       msg.className = "mensagem-form";
       msg.textContent = erro.message;
@@ -343,7 +344,7 @@ function desenharPerfil() {
     publicar(T.presenca(SID), null, { reter: true });
     conta.sair();
   });
-  botoes.append(treino, sair);
+  botoes.append(treino, formTrocarSenha(), sair);
 
   const lista = deckAtual();
   const deck = el("p", "perfil__deck", `🃏 Seu deck: ${lista.length} cartas (${ehDeckPadrao(lista) ? "padrão" : "personalizado"}) · `);
@@ -440,7 +441,7 @@ function painelAdm(u) {
   });
   const botoes = el("div", "d-grid gap-2");
   botoes.append(avisar, sair);
-  painel.append(botoes);
+  painel.append(botoes, formRedefinirSenha());
   return painel;
 }
 
@@ -527,6 +528,123 @@ function secaoPremios(p, meu) {
     }
   });
   return sec;
+}
+
+// Meu perfil: trocar a senha (aberto sozinho se entrei com a senha provisória do ADM)
+function formTrocarSenha() {
+  const caixa = el("div", "trocar-senha");
+  const provisoria = conta.temSenhaProvisoria();
+  const abrir = el("button", provisoria ? "btn btn-sm btn-ouro" : "btn btn-sm btn-outline-light", "🔒 Trocar senha");
+  abrir.type = "button";
+  const form = el("form", "trocar-senha__form");
+  form.hidden = !provisoria;
+  abrir.setAttribute("aria-expanded", String(!form.hidden));
+  if (provisoria) form.append(el("p", "trocar-senha__aviso", "Você entrou com a senha provisória que o ADM passou. Escolha uma senha nova só sua."));
+  const campo = (rotulo, auto) => {
+    const i = el("input", "form-control form-control-sm");
+    i.type = "password";
+    i.required = true;
+    i.autocomplete = auto;
+    i.placeholder = rotulo;
+    i.setAttribute("aria-label", rotulo);
+    form.append(i);
+    return i;
+  };
+  const atual = campo(provisoria ? "Senha provisória (a do ADM)" : "Senha atual", "current-password");
+  const nova = campo("Senha nova (mínimo 4)", "new-password");
+  const repetir = campo("Repita a senha nova", "new-password");
+  nova.minLength = 4;
+  const salvar = el("button", "btn btn-sm btn-ouro", "Salvar senha nova");
+  salvar.type = "submit";
+  const msg = el("p", "mensagem-form");
+  msg.setAttribute("role", "status");
+  form.append(salvar, msg);
+  abrir.addEventListener("click", () => {
+    form.hidden = !form.hidden;
+    abrir.setAttribute("aria-expanded", String(!form.hidden));
+    if (!form.hidden) atual.focus();
+  });
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    msg.className = "mensagem-form";
+    if (nova.value !== repetir.value) {
+      msg.textContent = "As duas senhas novas não são iguais.";
+      return;
+    }
+    salvar.disabled = true;
+    try {
+      await conta.trocarSenha(atual.value, nova.value);
+      aviso("🔒 Senha trocada! Use a nova no próximo login.", "ok");
+    } catch (erro) {
+      msg.textContent = erro.message;
+    } finally {
+      salvar.disabled = false;
+    }
+  });
+  caixa.append(abrir, form);
+  return caixa;
+}
+
+// ADM: quem esqueceu a senha ganha uma provisória (a antiga para de valer na hora)
+const LETRAS_SENHA = "abcdefghjkmnpqrstuvwxyz23456789";
+const senhaAleatoria = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => LETRAS_SENHA[b % LETRAS_SENHA.length]).join("");
+
+// p: o duelista (no perfil dele); sem p (no Painel do ADM), o ADM digita o nick
+function formRedefinirSenha(p = null) {
+  const form = el("form", p ? "painel-adm painel-adm--presente" : "painel-adm__senha");
+  form.append(el("h4", "painel-adm__titulo", p ? `🔑 ${p.nick} esqueceu a senha?` : "🔑 Duelista esqueceu a senha?"));
+  form.append(el("p", "painel-adm__dica", "Ninguém consegue ver a senha de ninguém (o jogo só guarda um código dela). Aqui você troca por uma senha provisória e passa para o dono em particular, nunca no chat. No login, o jogo pede para ele trocar."));
+  let nick = null;
+  if (!p) {
+    nick = el("input", "form-control form-control-sm painel-adm__nick");
+    nick.required = true;
+    nick.maxLength = 16;
+    nick.placeholder = "Nick do duelista (ex.: ReiCorRed)";
+    nick.setAttribute("aria-label", "Nick do duelista");
+    nick.autocomplete = "off";
+    form.append(nick);
+  }
+  const linha = el("div", "painel-adm__linha painel-adm__linha--senha");
+  const senha = el("input", "form-control form-control-sm");
+  senha.required = true;
+  senha.minLength = 4;
+  senha.maxLength = 40;
+  senha.autocomplete = "off";
+  senha.spellcheck = false;
+  senha.value = senhaAleatoria();
+  senha.setAttribute("aria-label", "Senha provisória");
+  const gerar = el("button", "btn btn-sm btn-outline-light", "🎲");
+  gerar.type = "button";
+  gerar.title = "Sortear outra senha";
+  gerar.setAttribute("aria-label", "Sortear outra senha provisória");
+  gerar.addEventListener("click", () => (senha.value = senhaAleatoria()));
+  const botao = el("button", "btn btn-sm btn-ouro", "Redefinir");
+  botao.type = "submit";
+  linha.append(senha, gerar, botao);
+  form.append(linha);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const u = conta.usuarioAtual();
+    if (!u || !adm.souAdm(u.chave)) return;
+    const alvo = p || { chave: chaveDoNick(nick.value), nick: nick.value.trim() };
+    if (!alvo.chave) return;
+    if (alvo.chave === u.chave) {
+      aviso("Para a sua própria conta, use \"🔒 Trocar senha\".", "erro");
+      return;
+    }
+    if (!confirm(`Redefinir a senha de ${alvo.nick}?\n\nA senha antiga para de funcionar na hora. Só faça isso se tiver certeza de que é o dono da conta pedindo.`)) return;
+    botao.disabled = true;
+    try {
+      await conta.redefinirSenha(alvo.chave, senha.value);
+      navigator.clipboard?.writeText(senha.value).catch(() => {});
+      aviso(`Senha de ${alvo.nick} redefinida (e copiada). Passe a senha provisória para ele em particular.`, "ok", 9000);
+    } catch (erro) {
+      aviso(erro.message, "erro");
+    } finally {
+      botao.disabled = false;
+    }
+  });
+  return form;
 }
 
 // ADM: entregar troféu ou relíquia (prêmio assinado; o jogo do jogador confere e guarda)
@@ -785,6 +903,7 @@ function abrirPerfil(cartao) {
 
   corpo.append(topo, stats, secaoPremios(p, false), historico);
   if (u && adm.souAdm(u.chave)) corpo.append(formPremio(p), formPresente(p));
+  if (u && adm.souAdm(u.chave) && p.chave !== u.chave) corpo.append(formRedefinirSenha(p));
 
   const botaoDesafiar = $("#perfil-jogador-desafiar");
   const souEu = u && p.chave === u.chave;

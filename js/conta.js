@@ -9,10 +9,10 @@
    Uma cópia fica no navegador; se o broker "esquecer", o login republica.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610030033";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610030033";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610030033";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610030033";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610031107";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610031107";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610031107";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610031107";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -22,6 +22,7 @@ const topicoConta = (chave) => `${PREFIXO}/contas/${chave}`;
 export const topicoPerfil = (chave) => `${PREFIXO}/perfis/${chave}`;
 
 let usuario = null; // perfil do usuário logado
+let senhaProvisoria = false; // entrou com a senha provisória que um ADM passou
 const ouvintes = new Set();
 
 export function aoMudarUsuario(fn) {
@@ -34,6 +35,7 @@ function avisar() {
 }
 
 export const usuarioAtual = () => usuario;
+export const temSenhaProvisoria = () => Boolean(usuario) && senhaProvisoria;
 
 
 /* ---------- ID do jogador ---------- */
@@ -115,6 +117,7 @@ export async function entrar({ nick, senha, lembrar = true }) {
   }
   if (!conta) throw new Error("Conta não encontrada. Confira o nick ou crie uma conta.");
   if ((await hashSenha(senha, conta.sal)) !== conta.hash) throw new Error("Senha incorreta.");
+  senhaProvisoria = Boolean(conta.provisoria);
 
   // Junta o perfil do broker com o do navegador (o deck mais recente e as estatísticas maiores)
   const remoto = await lerRetido(topicoPerfil(chave));
@@ -130,6 +133,7 @@ export async function entrar({ nick, senha, lembrar = true }) {
 
 export function sair() {
   usuario = null;
+  senhaProvisoria = false;
   guardar.apagar(CHAVE_SESSAO);
   guardar.apagar(CHAVE_SESSAO, true);
   avisar();
@@ -155,6 +159,34 @@ function iniciarSessao(perfil, lembrar) {
   guardar.gravar(CHAVE_SESSAO, perfil, true);
   if (lembrar) guardar.gravar(CHAVE_SESSAO, perfil);
   else guardar.apagar(CHAVE_SESSAO);
+  avisar();
+}
+
+
+/* ---------- Esqueci a senha / trocar a senha ----------
+   A senha nunca fica guardada (só o hash), então ninguém consegue "ver" a senha de
+   ninguém. Quem esquece pede para um ADM: ele troca por uma senha provisória e passa
+   para o dono em particular; no login o jogo avisa para trocar por uma nova. */
+
+export async function redefinirSenha(chave, novaSenha) {
+  if (novaSenha.length < 4) throw new Error("A senha precisa ter pelo menos 4 caracteres.");
+  const existe = (await lerRetido(topicoConta(chave))) || (await lerRetido(topicoPerfil(chave)));
+  if (!existe) throw new Error("Conta não encontrada no servidor.");
+  const sal = novoSal();
+  publicar(topicoConta(chave), { chave, sal, hash: await hashSenha(novaSenha, sal), provisoria: true }, { reter: true });
+}
+
+export async function trocarSenha(senhaAtual, novaSenha) {
+  if (!usuario) throw new Error("Entre na sua conta primeiro.");
+  if (novaSenha.length < 4) throw new Error("A senha nova precisa ter pelo menos 4 caracteres.");
+  const chave = usuario.chave;
+  const atual = (await lerRetido(topicoConta(chave))) || contasLocais()[chave]?.conta;
+  if (!atual || (await hashSenha(senhaAtual, atual.sal)) !== atual.hash) throw new Error("A senha atual não confere.");
+  const sal = novoSal();
+  const conta = { chave, sal, hash: await hashSenha(novaSenha, sal) };
+  publicar(topicoConta(chave), conta, { reter: true });
+  salvarContaLocal(conta, usuario);
+  senhaProvisoria = false;
   avisar();
 }
 

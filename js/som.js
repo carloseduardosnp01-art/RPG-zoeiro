@@ -3,7 +3,7 @@
    Efeitos sonoros sintetizados com Web Audio (nenhum arquivo de áudio).
    ========================================================================== */
 
-import { guardar } from "./util.js?v=202610030033";
+import { guardar } from "./util.js?v=202610031107";
 
 let contexto = null;
 let ligado = guardar.ler("zoeira-som", true);

@@ -1800,6 +1800,57 @@ a:hover {
   gap: .4rem;
 }
 
+.painel-adm__senha {
+  display: grid;
+  gap: .4rem;
+  margin-top: .8rem;
+  padding-top: .7rem;
+  border-top: 1px dashed rgba(255, 110, 90, .45);
+}
+
+.painel-adm__senha .painel-adm__titulo,
+.painel-adm__senha .painel-adm__dica {
+  margin: 0;
+}
+
+.painel-adm__linha--senha {
+  grid-template-columns: 1fr auto auto;
+}
+
+.painel-adm__linha--senha input {
+  font-family: ui-monospace, Consolas, monospace;
+  letter-spacing: .06em;
+}
+
+/* Meu perfil: trocar a senha */
+.trocar-senha {
+  display: grid;
+  gap: .4rem;
+}
+
+.trocar-senha__form {
+  display: grid;
+  gap: .4rem;
+  padding: .6rem;
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid var(--borda);
+  border-radius: .6rem;
+}
+
+.trocar-senha__form[hidden] {
+  display: none;
+}
+
+.trocar-senha__aviso {
+  margin: 0;
+  color: var(--ouro-claro);
+  font-size: .82rem;
+}
+
+.trocar-senha__form .mensagem-form:empty {
+  display: none;
+}
+
 .linha-id {
   display: block;
   margin-top: .2rem;

@@ -12,19 +12,19 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031538";
-import * as conta from "./conta.js?v=202610031538";
-import { bancoLigado, chamar } from "./banco.js?v=202610031538";
-import * as adm from "./admin.js?v=202610031538";
-import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610031538";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031538";
-import { abrirPremio } from "./visor-premio.js?v=202610031538";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031538";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031538";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031538";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031538";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031538";
-import { tocar } from "./som.js?v=202610031538";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031544";
+import * as conta from "./conta.js?v=202610031544";
+import { bancoLigado, chamar } from "./banco.js?v=202610031544";
+import * as adm from "./admin.js?v=202610031544";
+import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610031544";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031544";
+import { abrirPremio } from "./visor-premio.js?v=202610031544";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031544";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031544";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031544";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031544";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031544";
+import { tocar } from "./som.js?v=202610031544";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -465,10 +465,56 @@ function painelAdm(u) {
     desenharOnline();
     publicarPresenca();
   });
+  const backup = el("button", "btn btn-sm btn-outline-light", "💾 Baixar backup do jogo");
+  backup.type = "button";
+  const ultimo = el("p", "painel-adm__dica painel-adm__backup");
+  const mostrarUltimo = () => {
+    const t = guardar.ler(CHAVE_ULTIMO_BACKUP, null);
+    ultimo.textContent = t
+      ? `Último backup neste aparelho: ${new Date(t).toLocaleDateString("pt-BR")} às ${hora(t)}. Faça um por semana.`
+      : "Nenhum backup feito neste aparelho ainda. Faça um por semana e guarde o arquivo.";
+  };
+  mostrarUltimo();
+  backup.addEventListener("click", () => baixarBackup(backup).then(mostrarUltimo));
   const botoes = el("div", "d-grid gap-2");
-  botoes.append(avisar, limpar, sair);
+  botoes.append(avisar, limpar, backup, ultimo, sair);
   painel.append(botoes, formRedefinirSenha());
   return painel;
+}
+
+// ADM: cópia de segurança do que o banco guarda (perfis sem senhas, torneios). O arquivo
+// .json fica no aparelho do ADM; se um dia precisar, dá para devolver os dados ao banco.
+const CHAVE_ULTIMO_BACKUP = "zoeira-ultimo-backup";
+
+async function baixarBackup(botao) {
+  botao.disabled = true;
+  try {
+    const [jogadores, torneios] = await Promise.all([chamar("perfis_publicos"), chamar("torneios_encerrados")]);
+    const agora = new Date();
+    const dados = {
+      jogo: "Duelo da Zoeira",
+      tipo: "backup",
+      geradoEm: agora.toISOString(),
+      geradoPor: conta.usuarioAtual()?.nick || null,
+      jogadores: Array.isArray(jogadores) ? jogadores : [],
+      torneios: Array.isArray(torneios) ? torneios : [],
+      torneioAtual: torneioAtual() || null,
+    };
+    const arquivo = new Blob([JSON.stringify(dados, null, 1)], { type: "application/json" });
+    const link = el("a");
+    link.href = URL.createObjectURL(arquivo);
+    link.download = `duelo-da-zoeira-backup-${agora.toISOString().slice(0, 10)}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+    guardar.gravar(CHAVE_ULTIMO_BACKUP, agora.getTime());
+    aviso(`💾 Backup baixado: ${dados.jogadores.length} jogadores e ${dados.torneios.length} torneios.`, "ok", 8000);
+  } catch {
+    aviso("Não foi possível falar com o banco do jogo agora. Tente de novo em instantes.", "erro");
+  } finally {
+    botao.disabled = false;
+  }
 }
 
 // Selo vermelho de ADM ao lado do nome

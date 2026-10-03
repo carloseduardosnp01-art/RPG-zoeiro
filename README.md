@@ -143,6 +143,8 @@ select zoeira.definir_senha('menonfire', 'a senha que você usa no jogo');
 - Quem **já estava conectado** é levado sem digitar nada; o jogo pede para ele escolher uma senha ("🔒 Escolher minha senha", pode ser a de sempre).
 - Se o banco não responder (sem internet, projeto pausado), o jogo segue no modo antigo, pelo broker.
 
+**Backup:** no Painel do ADM, **💾 Baixar backup do jogo** baixa um `.json` com todos os perfis (sem senhas), o histórico de torneios e o torneio em andamento. Faça um por semana e guarde o arquivo.
+
 **ADM no banco:** redefinir senha (mesmo de quem ainda não veio para o banco), dar troféus e moedas (ficam guardados no perfil do jogador, mesmo offline), guardar torneios e **apagar uma conta** (para quem registrou o nick de outro jogador). Senha de ADM só pelo SQL Editor.
 
 **Plano gratuito:** o projeto "dorme" se ninguém usar por 7 dias. Os dados não se perdem; é só abrir o painel do Supabase e clicar em **Restore**.

@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosDaCarta, validar, alvosDeAtaque, paresDeFusao,
-} from "./motor.js?v=202610031538";
+} from "./motor.js?v=202610031544";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 

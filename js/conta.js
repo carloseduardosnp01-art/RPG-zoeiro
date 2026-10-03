@@ -9,10 +9,10 @@
    Uma cópia fica no navegador; se o broker "esquecer", o login republica.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610031119";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610031119";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610031119";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610031119";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610031126";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610031126";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610031126";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610031126";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -183,11 +183,12 @@ function iniciarSessao(perfil, lembrar) {
    ninguém. Quem esquece pede para um ADM: ele troca por uma senha provisória e passa
    para o dono em particular; no login o jogo avisa para trocar por uma nova. */
 
-export async function redefinirSenha(chave, novaSenha) {
+// conhecida: o salão já tem o perfil desse duelista (não precisa perguntar ao servidor se existe)
+export async function redefinirSenha(chave, novaSenha, conhecida = false) {
   novaSenha = novaSenha.trim();
   if (novaSenha.length < 4) throw new Error("A senha precisa ter pelo menos 4 caracteres.");
-  const existe = (await lerRetido(topicoConta(chave), ESPERA_CONTA)) || (await lerRetido(topicoPerfil(chave), ESPERA_CONTA));
-  if (!existe) throw new Error("Conta não encontrada no servidor.");
+  const existe = conhecida || (await lerRetido(topicoConta(chave), ESPERA_CONTA)) || (await lerRetido(topicoPerfil(chave), ESPERA_CONTA));
+  if (!existe) throw new Error("Conta não encontrada no servidor. Confira o nick (só o nick, sem a tag do clã).");
   const sal = novoSal();
   publicar(topicoConta(chave), { chave, sal, hash: await hashSenha(novaSenha, sal), provisoria: true }, { reter: true });
 }

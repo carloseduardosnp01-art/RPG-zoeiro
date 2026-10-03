@@ -12,18 +12,18 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031119";
-import * as conta from "./conta.js?v=202610031119";
-import * as adm from "./admin.js?v=202610031119";
-import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610031119";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031119";
-import { abrirPremio } from "./visor-premio.js?v=202610031119";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031119";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031119";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031119";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031119";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031119";
-import { tocar } from "./som.js?v=202610031119";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610031126";
+import * as conta from "./conta.js?v=202610031126";
+import * as adm from "./admin.js?v=202610031126";
+import { iniciarTorneio, atualizarTorneio } from "./torneio-ui.js?v=202610031126";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610031126";
+import { abrirPremio } from "./visor-premio.js?v=202610031126";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610031126";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610031126";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610031126";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610031126";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610031126";
+import { tocar } from "./som.js?v=202610031126";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -589,6 +589,18 @@ function formTrocarSenha() {
 const LETRAS_SENHA = "abcdefghjkmnpqrstuvwxyz23456789";
 const senhaAleatoria = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => LETRAS_SENHA[b % LETRAS_SENHA.length]).join("");
 
+// Acha o duelista pelo que o ADM digitou: ignora a tag do clã ("[CDZ] Nick"),
+// maiúsculas e acentos. Devolve o perfil (se o salão conhece) e nicks parecidos.
+function acharDuelista(texto) {
+  const limpo = texto.replace(/^\s*\[[^\]]*\]\s*/, "").trim();
+  const chave = chaveDoNick(limpo);
+  const perfil = chave ? s.perfis.get(chave) || null : null;
+  const parecidos = chave && !perfil
+    ? [...s.perfis.values()].filter((x) => x.chave && (x.chave.includes(chave) || chave.includes(x.chave) || x.chave.slice(0, 3) === chave.slice(0, 3))).slice(0, 5)
+    : [];
+  return { limpo, chave, perfil, parecidos };
+}
+
 // p: o duelista (no perfil dele); sem p (no Painel do ADM), o ADM digita o nick
 function formRedefinirSenha(p = null) {
   const form = el("form", p ? "painel-adm painel-adm--presente" : "painel-adm__senha");
@@ -598,13 +610,49 @@ function formRedefinirSenha(p = null) {
   if (!p) {
     nick = el("input", "form-control form-control-sm painel-adm__nick");
     nick.required = true;
-    nick.maxLength = 16;
-    nick.placeholder = "Nick do duelista (ex.: ReiCorRed)";
+    nick.maxLength = 30;
+    nick.placeholder = "Nick do duelista, sem a tag do clã (ex.: ReiCorRed)";
     nick.setAttribute("aria-label", "Nick do duelista");
     nick.autocomplete = "off";
     nick.setAttribute("autocapitalize", "none");
     nick.setAttribute("autocorrect", "off");
-    form.append(nick);
+    // sugestões com os nicks que o salão conhece
+    const lista = el("datalist");
+    lista.id = `nicks-adm-${gerarId(6)}`;
+    nick.setAttribute("list", lista.id);
+    const achado = el("p", "painel-adm__achado");
+    achado.setAttribute("aria-live", "polite");
+    const conferir = () => {
+      const { limpo, perfil, parecidos } = acharDuelista(nick.value);
+      achado.replaceChildren();
+      achado.className = "painel-adm__achado";
+      if (!limpo) return;
+      if (perfil) {
+        achado.classList.add("painel-adm__achado--ok");
+        achado.append(`✔ Encontrado: ${perfil.tag ? `[${perfil.tag}] ` : ""}${perfil.nick} · Nv ${nivelDoXp(perfil.xp || 0)} · ${perfil.vitorias || 0}V ${perfil.derrotas || 0}D`);
+        return;
+      }
+      achado.classList.add("painel-adm__achado--erro");
+      achado.append(parecidos.length ? "Não achei esse nick. Parecidos: " : "Não achei esse nick entre os duelistas do salão. Confira a grafia (sem a tag do clã).");
+      for (const x of parecidos) {
+        const b = el("button", "painel-adm__parecido", x.nick);
+        b.type = "button";
+        b.addEventListener("click", () => {
+          nick.value = x.nick;
+          conferir();
+        });
+        achado.append(b);
+      }
+    };
+    nick.addEventListener("focus", () => {
+      lista.replaceChildren(...[...s.perfis.values()].filter((x) => x.nick).sort((a, b) => a.nick.localeCompare(b.nick)).map((x) => {
+        const o = el("option");
+        o.value = x.nick;
+        return o;
+      }));
+    });
+    nick.addEventListener("input", conferir);
+    form.append(nick, lista, achado);
   }
   const linha = el("div", "painel-adm__linha painel-adm__linha--senha");
   const senha = el("input", "form-control form-control-sm");
@@ -635,7 +683,8 @@ function formRedefinirSenha(p = null) {
     const u = conta.usuarioAtual();
     if (!u || !adm.souAdm(u.chave)) return;
     senha.value = senha.value.trim();
-    const alvo = p || { chave: chaveDoNick(nick.value), nick: nick.value.trim() };
+    const busca = p ? null : acharDuelista(nick.value);
+    const alvo = p || busca.perfil || { chave: busca.chave, nick: busca.limpo };
     if (!alvo.chave) return;
     if (alvo.chave === u.chave) {
       aviso("Para a sua própria conta, use \"🔒 Trocar senha\".", "erro");
@@ -644,7 +693,7 @@ function formRedefinirSenha(p = null) {
     if (!confirm(`Redefinir a senha de ${alvo.nick}?\n\nA senha antiga para de funcionar na hora. Só faça isso se tiver certeza de que é o dono da conta pedindo.`)) return;
     botao.disabled = true;
     try {
-      await conta.redefinirSenha(alvo.chave, senha.value);
+      await conta.redefinirSenha(alvo.chave, senha.value, Boolean(p || busca.perfil));
       navigator.clipboard?.writeText(senha.value).catch(() => {});
       aviso(`Senha de ${alvo.nick} redefinida (e copiada). Passe a senha provisória para ele em particular.`, "ok", 9000);
       feito.replaceChildren(`✅ A senha de ${alvo.nick} agora é `, el("code", "", senha.value), " (copiada). Passe exatamente assim (maiúscula e minúscula fazem diferença).");

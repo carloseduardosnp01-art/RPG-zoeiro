@@ -1813,6 +1813,39 @@ a:hover {
   margin: 0;
 }
 
+.painel-adm__achado {
+  margin: 0;
+  font-size: .82rem;
+}
+
+.painel-adm__achado:empty {
+  display: none;
+}
+
+.painel-adm__achado--ok {
+  color: #6dff9a;
+}
+
+.painel-adm__achado--erro {
+  color: #ffb09a;
+}
+
+.painel-adm__parecido {
+  margin: .15rem .25rem 0 0;
+  padding: .05rem .5rem;
+  color: var(--texto);
+  font-size: .8rem;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid var(--borda);
+  border-radius: 1rem;
+}
+
+.painel-adm__parecido:hover,
+.painel-adm__parecido:focus-visible {
+  color: #1b1208;
+  background: var(--ouro);
+}
+
 .painel-adm__feito {
   margin: .3rem 0 0;
   color: #6dff9a;

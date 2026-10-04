@@ -166,23 +166,29 @@ select zoeira.definir_senha('menonfire', 'a senha que você usa no jogo');
 
 ## Como o online funciona
 
-Como não há servidor próprio, o site usa um **broker MQTT público** por WebSocket seguro (`wss://broker.emqx.io`, com `broker.hivemq.com` de reserva), através da biblioteca [MQTT.js](https://github.com/mqttjs/MQTT.js). O broker só repassa mensagens entre os navegadores; toda a regra do jogo roda no navegador de cada jogador.
+O ao vivo (chat, quem está online, desafios, duelos, mesas de Tag e torneio) passa pelo **Realtime do Supabase**, no mesmo projeto do banco (`js/rede.js`, biblioteca [supabase-js](https://github.com/supabase/supabase-js) fixada na versão 2.117.2, com hash de integridade no `index.html`). Desde 04/10/2026; antes era um broker MQTT público, que caiu (o EMQX parou de responder e o HiveMQ passou a recusar conexões por excesso). Ninguém precisa de servidor próprio: o Realtime só repassa mensagens, e toda a regra do jogo roda no navegador de cada jogador.
 
-Tópicos (todos começam com `rpgdazoeira/v1/`):
+- **Canais separados**, para gastar pouco (o plano grátis tem 2 milhões de mensagens por mês, e uma mensagem para N pessoas conta N+1): `geral` (chat, mesas, torneio, ranking ao vivo), um por duelo (`duelo-<id>`: só quem joga recebe as jogadas) e um por jogador (`jogador-<nick>`: mensagens privadas, desafios, presentes e prêmios). Mensagem para um canal em que a aba não está vai pela API (`httpSend`).
+- **Quem está online:** pela Presença do Realtime, que só manda mensagem quando alguém entra, sai ou muda (nick, status, nível); quem fecha a aba ou cai sai sozinho da lista. O salão continua mandando a presença a cada 25 s, mas a `rede.js` só repassa quando ela muda.
+- **Mensagens guardadas** ("retidas", a última mensagem de cada tópico para quem chega depois: histórico do chat, torneio, mesas, estado dos duelos, prêmios): ficam na tabela `zoeira.retidas` do banco, gravadas e lidas pelas funções `gravar_retida` e `ler_retidas` (`supabase/banco.sql`). Contas, presença e perfis não vão para lá; duelos e mesas esquecidos há mais de 3 dias somem sozinhos.
+- **Reserva:** se o Supabase não responder (ou o `banco.sql` novo ainda não tiver rodado), o jogo volta para o broker MQTT público (`wss://broker.emqx.io`, com `broker.hivemq.com` de reserva). Todo mundo precisa estar no mesmo para se ver. `?rede=mqtt` força o MQTT e `?rede=local` usa as abas do mesmo navegador (testes sem internet). Com `?banco=local` o Realtime é o de verdade, mas os canais ganham `teste-` no nome.
+
+Tópicos (todos começam com `rpgdazoeira/v1/`; são os mesmos no Supabase e no MQTT):
 
 | Tópico | Para quê |
 |---|---|
-| `presenca/<sessão>` | quem está online (mensagem retida; o broker apaga sozinho quando a aba cai) |
+| `presenca/<sessão>` | quem está online (no Supabase, pela Presença; no MQTT, mensagem retida que o broker apaga quando a aba cai) |
 | `chat/global` e `chat/historico` | chat global e as últimas 40 mensagens |
 | `dm/<nick>` | mensagens privadas e desafios |
-| `contas/<nick>` e `perfis/<nick>` | conta (só o hash da senha) e perfil público |
+| `perfis/<nick>` | aviso de que um perfil mudou (o perfil de verdade vem do banco) |
 | `duelo/<id>/estado` e `duelo/<id>/sinal` | o duelo em si e os "estou aqui"/chat do duelo |
+| `mesas/<id>`, `torneio/...`, `presentes/...`, `premios/...` | mesas de Tag 2vs2, torneio, presentes e prêmios de ADM |
 
-**O duelo:** quem desafiou cria a partida com o próprio deck e o deck que o oponente mandou junto com o "aceito" (o motor confere se os dois valem; se não, usa o padrão), embaralha com uma semente e sorteia quem começa. Só age quem está na vez (as armadilhas são automáticas, então o oponente nunca precisa decidir nada no turno do outro). Quem joga aplica a jogada no próprio navegador e publica o **estado inteiro** no tópico do duelo; o outro só substitui o dele. Como o estado fica retido no broker, quem recarregar a página volta para a partida.
+**O duelo:** quem desafiou cria a partida com o próprio deck e o deck que o oponente mandou junto com o "aceito" (o motor confere se os dois valem; se não, usa o padrão), embaralha com uma semente e sorteia quem começa. Só age quem está na vez (as armadilhas são automáticas, então o oponente nunca precisa decidir nada no turno do outro). Quem joga aplica a jogada no próprio navegador e publica o **estado inteiro** no tópico do duelo; o outro só substitui o dele. Como o estado fica guardado (no banco, ou retido no broker), quem recarregar a página volta para a partida.
 
-**Ressincronização:** se uma mensagem se perder (celular que saiu do app, internet que caiu uns segundos), quem está esperando pede o estado guardado de novo sozinho: a cada 5 s sem novidades, quando a aba volta a ficar visível e quando a conexão volta. Só estados com `seq` maior são aplicados, então isso nunca desfaz jogada. (O MQTT.js ignora um "subscribe" repetido de um tópico já assinado, por isso `pedirRetido` em `rede.js` sai e entra de novo no tópico para o broker reenviar o valor retido.)
+**Ressincronização:** se uma mensagem se perder (celular que saiu do app, internet que caiu uns segundos), quem está esperando pede o estado guardado de novo sozinho: a cada 5 s sem novidades, quando a aba volta a ficar visível e quando a conexão volta. Só estados com `seq` maior são aplicados, então isso nunca desfaz jogada. (No Supabase, `pedirRetido` lê do banco. No MQTT, o MQTT.js ignora um "subscribe" repetido de um tópico já assinado, por isso `pedirRetido` sai e entra de novo no tópico para o broker reenviar o valor retido.)
 
-**Ausência:** cada navegador manda um sinal a cada 5 s. Se o oponente sumir por 20 s aparece um aviso; depois de 60 s dá para **reivindicar vitória por W.O.** Se o tempo da ação (60 s) acabar, o turno passa sozinho.
+**Ausência:** cada navegador manda um sinal a cada 8 s no Supabase (5 s no MQTT). Se o oponente sumir por 20 s aparece um aviso; depois de 60 s dá para **reivindicar vitória por W.O.** Se o tempo da ação (60 s) acabar, o turno passa sozinho.
 
 ### Deck e versões do site
 
@@ -344,7 +350,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── salao.js          # Salão: presença, chat, desafios, perfil e ranking
 │   ├── conta.js          # Cadastro, login, sessão no banco e estatísticas
 │   ├── banco.js          # Chamadas ao banco de dados (Supabase)
-│   ├── rede.js           # Conexão MQTT (ou rede local entre abas)
+│   ├── rede.js           # Tempo real: Realtime do Supabase (ou MQTT público de reserva, ou abas locais)
 │   ├── catalogo.js       # Catálogo, modal, leque e mesa do deck padrão
 │   ├── noticias.js       # Página de notícias e faixa da última notícia no início
 │   ├── loja.js           # Loja da Zoeira (cartas compradas com Careca Coins)

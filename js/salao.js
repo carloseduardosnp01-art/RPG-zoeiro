@@ -12,20 +12,20 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610041215";
-import * as conta from "./conta.js?v=202610041215";
-import { bancoLigado, chamar } from "./banco.js?v=202610041215";
-import * as adm from "./admin.js?v=202610041215";
-import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610041215";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610041215";
-import { abrirPremio } from "./visor-premio.js?v=202610041215";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610041215";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610041215";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610041215";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610041215";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610041215";
-import { tocar } from "./som.js?v=202610041215";
-import { comMoldura, visualDe } from "./cosmeticos.js?v=202610041215";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede, presencaGerenciada } from "./rede.js?v=202610041602";
+import * as conta from "./conta.js?v=202610041602";
+import { bancoLigado, chamar } from "./banco.js?v=202610041602";
+import * as adm from "./admin.js?v=202610041602";
+import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610041602";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610041602";
+import { abrirPremio } from "./visor-premio.js?v=202610041602";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610041602";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610041602";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610041602";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610041602";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610041602";
+import { tocar } from "./som.js?v=202610041602";
+import { comMoldura, visualDe } from "./cosmeticos.js?v=202610041602";
 
 const SID = gerarId(12); // identifica esta aba
 
@@ -1304,7 +1304,7 @@ function duelistasOnline() {
   const agora = Date.now();
   const porChave = new Map();
   for (const p of s.online.values()) {
-    if (agora - p.t > PRESENCA_VALIDA) continue;
+    if (!presencaGerenciada() && agora - p.t > PRESENCA_VALIDA) continue; // no Supabase, quem cai sai sozinho
     const atual = porChave.get(p.chave);
     if (!atual || p.t > atual.t || p.status === "duelando") porChave.set(p.chave, p);
   }

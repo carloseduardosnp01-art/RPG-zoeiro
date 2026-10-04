@@ -25,6 +25,10 @@ const BASE = pedido === "local" ? URL_LOCAL
 
 export const bancoLigado = () => Boolean(BASE);
 
+// Tempo real (chat, online, duelos): sempre o Realtime do Supabase de verdade (não existe um
+// local). Com ?banco=local os canais ganham "teste-" no nome, para não misturar com o jogo.
+export const configTempoReal = () => (BASE ? { url: URL_SUPABASE, chave: CHAVE_PUBLICA, prefixo: pedido === "local" ? "zoeira-teste-" : "zoeira-" } : null);
+
 // O banco não respondeu (sem internet, projeto pausado, banco desligado...)
 export class ErroBanco extends Error {}
 

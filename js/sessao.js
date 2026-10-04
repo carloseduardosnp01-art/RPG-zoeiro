@@ -17,10 +17,10 @@
    duas jogadas ao mesmo tempo.
    ========================================================================== */
 
-import { novoDuelo, aplicar, quemAge, carta, ErroJogada, membroAtivo } from "./motor.js?v=202610041215";
-import { jogadaDoBot } from "./bot.js?v=202610041215";
-import { PREFIXO, publicar, assinar, pedirRetido, aoStatus } from "./rede.js?v=202610041215";
-import { esperar, gerarId } from "./util.js?v=202610041215";
+import { novoDuelo, aplicar, quemAge, carta, ErroJogada, membroAtivo } from "./motor.js?v=202610041602";
+import { jogadaDoBot } from "./bot.js?v=202610041602";
+import { PREFIXO, publicar, assinar, pedirRetido, aoStatus, intervaloDoSinal } from "./rede.js?v=202610041602";
+import { esperar, gerarId } from "./util.js?v=202610041602";
 
 export const SEM_SINAL_AVISO = 20;  // segundos sem sinal do oponente para avisar
 export const SEM_SINAL_WO = 60;     // segundos sem sinal para poder pedir W.O.
@@ -194,7 +194,7 @@ export function criarSessaoOnline({ estado, eventos = [], minha }) {
       cancelamentos.push(assinar(topicos.estado, receberEstado));
       cancelamentos.push(assinar(topicos.sinal, receberSinal));
       mandarSinal("ping");
-      intervalos.push(setInterval(() => mandarSinal("ping"), 5000));
+      intervalos.push(setInterval(() => mandarSinal("ping"), intervaloDoSinal()));
       intervalos.push(setInterval(verificarOponente, 1000));
       cancelamentos.push(ressinc.iniciar());
     },
@@ -336,7 +336,7 @@ export function criarSessaoTag({ estado, eventos = [], minha }) {
       cancelamentos.push(assinar(topicos.estado, receberEstado));
       cancelamentos.push(assinar(topicos.sinal, receberSinal));
       mandarSinal("ping");
-      intervalos.push(setInterval(() => mandarSinal("ping"), 5000));
+      intervalos.push(setInterval(() => mandarSinal("ping"), intervaloDoSinal()));
       intervalos.push(setInterval(verificarQuemJoga, 1000));
       cancelamentos.push(ressinc.iniciar());
     },

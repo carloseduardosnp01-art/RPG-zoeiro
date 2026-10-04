@@ -82,6 +82,18 @@ alter table zoeira.admins     enable row level security;
 alter table zoeira.torneios   enable row level security;
 alter table zoeira.roleta     enable row level security;
 
+-- Tempo real: o que antes ficava "retido" no servidor público de mensagens (histórico do
+-- chat, torneio, mesas de Tag, estado dos duelos, prêmios...). O ao vivo passa pelo Realtime
+-- do Supabase e o que precisa ficar guardado fica aqui. Qualquer jogador grava e lê (como era
+-- no servidor público); contas, presença e perfis NÃO vêm para cá.
+create table if not exists zoeira.retidas (
+  topico     text primary key,
+  texto      text not null,
+  atualizado timestamptz not null default now()
+);
+create index if not exists retidas_por_data on zoeira.retidas (atualizado);
+alter table zoeira.retidas    enable row level security;
+
 -- As contas dos ADMs já nascem reservadas: ninguém consegue "pegar" esses nicks.
 -- A senha delas é definida aqui no SQL Editor (veja zoeira.definir_senha no fim).
 insert into zoeira.admins (chave) values ('menonice'), ('menonfire') on conflict do nothing;
@@ -353,6 +365,61 @@ $$;
 create or replace function public.perfil_publico(p_chave text)
 returns jsonb language sql stable security definer set search_path = '' as $$
   select j.perfil from zoeira.jogadores j where j.chave = p_chave and j.perfil ? 'avatar'
+$$;
+
+
+/* ---------- Tempo real: mensagens guardadas ---------- */
+
+-- Tópico que pode ser guardado: rpgdazoeira/v1/... só com letras, números, "_" e "-" (sem
+-- curingas); contas (senhas do modo antigo), presença e perfis ficam de fora
+create or replace function zoeira.topico_aceito(p_topico text) returns boolean
+language sql immutable set search_path = '' as $$
+  select p_topico is not null and char_length(p_topico) <= 200
+     and p_topico ~ '^rpgdazoeira/v1(/[A-Za-z0-9_-]+)+$'
+     and p_topico !~ '^rpgdazoeira/v1/(contas|presenca|perfis)/'
+$$;
+
+-- Filtro como no MQTT: "+" vale um nível e "#" (no fim) vale o resto
+create or replace function zoeira.filtro_aceito(p_filtro text) returns boolean
+language sql immutable set search_path = '' as $$
+  select p_filtro is not null and char_length(p_filtro) <= 200
+     and p_filtro ~ '^rpgdazoeira/v1(/([A-Za-z0-9_-]+|[+]))*(/#)?$'
+$$;
+
+create or replace function zoeira.filtro_regex(p_filtro text) returns text
+language sql immutable set search_path = '' as $$
+  select '^' || replace(replace(p_filtro, '+', '[^/]+'), '/#', '(/.*)?') || '$'
+$$;
+
+-- Grava (ou apaga, com texto vazio) a mensagem guardada de um tópico
+create or replace function public.gravar_retida(p_topico text, p_texto text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+begin
+  if not zoeira.topico_aceito(p_topico) then
+    return jsonb_build_object('erro', 'topico');
+  end if;
+  if p_texto is null or p_texto = '' then
+    delete from zoeira.retidas where topico = p_topico;
+    return jsonb_build_object('ok', true);
+  end if;
+  if octet_length(p_texto) > 120000 then
+    return jsonb_build_object('erro', 'grande');
+  end if;
+  insert into zoeira.retidas (topico, texto, atualizado) values (p_topico, p_texto, now())
+  on conflict (topico) do update set texto = excluded.texto, atualizado = now();
+  -- faxina: duelos e mesas de Tag esquecidos há mais de 3 dias
+  delete from zoeira.retidas
+   where atualizado < now() - interval '3 days' and topico ~ '^rpgdazoeira/v1/(duelo|mesas)/';
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- As mensagens guardadas dos tópicos que casam com o filtro: [{ topico, texto }]
+create or replace function public.ler_retidas(p_filtro text)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_agg(jsonb_build_object('topico', x.topico, 'texto', x.texto)), '[]'::jsonb)
+    from (select r.topico, r.texto from zoeira.retidas r
+           where zoeira.filtro_aceito(p_filtro) and r.topico ~ zoeira.filtro_regex(p_filtro)
+           order by r.atualizado desc limit 300) x
 $$;
 
 
@@ -737,7 +804,9 @@ declare
     'public.apagar_torneio(text, text)',
     'public.torneios_encerrados()',
     'public.roleta_hoje(text)',
-    'public.girar_roleta(text)'
+    'public.girar_roleta(text)',
+    'public.gravar_retida(text, text)',
+    'public.ler_retidas(text)'
   ];
 begin
   foreach f in array funcoes loop

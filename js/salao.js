@@ -12,19 +12,19 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610032015";
-import * as conta from "./conta.js?v=202610032015";
-import { bancoLigado, chamar } from "./banco.js?v=202610032015";
-import * as adm from "./admin.js?v=202610032015";
-import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610032015";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610032015";
-import { abrirPremio } from "./visor-premio.js?v=202610032015";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610032015";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610032015";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610032015";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610032015";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610032015";
-import { tocar } from "./som.js?v=202610032015";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610040138";
+import * as conta from "./conta.js?v=202610040138";
+import { bancoLigado, chamar } from "./banco.js?v=202610040138";
+import * as adm from "./admin.js?v=202610040138";
+import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610040138";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610040138";
+import { abrirPremio } from "./visor-premio.js?v=202610040138";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610040138";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610040138";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610040138";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610040138";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610040138";
+import { tocar } from "./som.js?v=202610040138";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -1005,7 +1005,10 @@ function atalhosDoMeuPerfil(u) {
   const painel = el("button", "btn btn-sm btn-outline-light", "⚙️ Meu painel (foto, senha, deck)");
   painel.type = "button";
   painel.addEventListener("click", () => irParaSalao("perfil"));
-  botoes.append(ranking, painel);
+  const loja = el("button", "btn btn-sm btn-loja", "🛒 Loja");
+  loja.type = "button";
+  loja.dataset.abrirLoja = "";
+  botoes.append(ranking, painel, loja);
   caixa.append(botoes);
   return caixa;
 }

@@ -4,20 +4,21 @@
    pelo endereço (#inicio, #catalogo, #deck, #regras, #salao, #arena).
    ========================================================================== */
 
-import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610032015";
-import { iniciarCatalogo } from "./catalogo.js?v=202610032015";
-import { iniciarEditorDeck } from "./editor-deck.js?v=202610032015";
-import { deckAtual } from "./deck.js?v=202610032015";
-import { iniciarSalao, ativarSalao } from "./salao.js?v=202610032015";
-import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610032015";
-import { criarSessaoBot } from "./sessao.js?v=202610032015";
-import * as conta from "./conta.js?v=202610032015";
-import { alternarSom, somLigado } from "./som.js?v=202610032015";
-import { aviso } from "./util.js?v=202610032015";
-import { iniciarNoticias } from "./noticias.js?v=202610032015";
+import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610040138";
+import { iniciarCatalogo } from "./catalogo.js?v=202610040138";
+import { iniciarEditorDeck } from "./editor-deck.js?v=202610040138";
+import { deckAtual } from "./deck.js?v=202610040138";
+import { iniciarSalao, ativarSalao } from "./salao.js?v=202610040138";
+import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610040138";
+import { criarSessaoBot } from "./sessao.js?v=202610040138";
+import * as conta from "./conta.js?v=202610040138";
+import { alternarSom, somLigado } from "./som.js?v=202610040138";
+import { aviso } from "./util.js?v=202610040138";
+import { iniciarNoticias } from "./noticias.js?v=202610040138";
+import { iniciarLoja } from "./loja.js?v=202610040138";
 
 // Número da versão (atualizado por ferramentas/nova-versao.py a cada envio)
-const VERSAO = "202610032015";
+const VERSAO = "202610040138";
 
 const TELAS = ["inicio", "noticias", "catalogo", "deck", "regras", "salao", "arena"];
 
@@ -64,6 +65,7 @@ async function iniciar() {
   iniciarSalao({ cartas });
   iniciarEditorDeck(cartas);
   iniciarNoticias(VERSAO);
+  iniciarLoja(cartas);
   ligarBotoes();
   addEventListener("hashchange", mostrarTela);
   document.addEventListener("arena-mudou", atualizarFaixa);

@@ -20,16 +20,16 @@
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
         crossorigin="anonymous">
 
-  <link rel="stylesheet" href="css/estilo.css?v=202610032015">
-  <link rel="stylesheet" href="css/carta.css?v=202610032015">
-  <link rel="stylesheet" href="css/arena.css?v=202610032015">
+  <link rel="stylesheet" href="css/estilo.css?v=202610040138">
+  <link rel="stylesheet" href="css/carta.css?v=202610040138">
+  <link rel="stylesheet" href="css/arena.css?v=202610040138">
 
   <!-- Bootstrap (JS) e MQTT.js (conexão em tempo real para o modo online) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
           integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
           crossorigin="anonymous" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js" defer></script>
-  <script type="module" src="js/app.js?v=202610032015"></script>
+  <script type="module" src="js/app.js?v=202610040138"></script>
 </head>
 <body>
   <a class="visually-hidden-focusable pular-link" href="#conteudo">Pular para o conteúdo</a>
@@ -236,6 +236,7 @@
                 <button type="button" class="btn btn-ouro" id="deck-salvar">💾 Salvar deck</button>
                 <button type="button" class="btn btn-outline-light" id="deck-desfazer">↩️ Desfazer</button>
                 <button type="button" class="btn btn-outline-secondary" id="deck-padrao">📦 Voltar ao padrão</button>
+                <button type="button" class="btn btn-loja" data-abrir-loja>🛒 Loja</button>
               </div>
             </div>
             <p class="ajuda-deck">Clique numa carta da <strong>coleção</strong> para colocar uma cópia no deck e numa carta do <strong>seu deck</strong> para tirar uma cópia. Pode tirar à vontade enquanto monta, mas o deck só pode ser <strong>salvo</strong> com 40 a 60 cartas.</p>
@@ -489,6 +490,7 @@
                 <span class="status-conexao" id="status-conexao" data-status="desconectado">desconectado</span>
                 <div class="ms-auto d-flex gap-2 align-items-center">
                   <button type="button" class="btn btn-sm btn-torneio" id="botao-torneio" title="Torneio">🏆 Torneio</button>
+                  <button type="button" class="btn btn-sm btn-loja" data-abrir-loja title="Loja da Zoeira: cartas por Careca Coins">🛒 Loja</button>
                   <button type="button" class="btn btn-sm btn-tag" id="botao-mesa-tag" title="Abrir uma mesa de Tag da Zoeira 2vs2">👥 Tag 2vs2</button>
                   <a class="btn-redondo" href="#regras" title="Regras" aria-label="Regras">📖</a>
                   <button type="button" class="btn-redondo" data-treino title="Treinar contra o Bot" aria-label="Treinar contra o Bot">🤖</button>
@@ -584,6 +586,7 @@
                 <p id="detalhe-como"></p>
               </section>
               <blockquote class="citacao-carta"><p id="detalhe-frase"></p></blockquote>
+              <button type="button" class="btn btn-sm btn-loja" id="detalhe-loja" data-abrir-loja hidden>🛒 Ver na Loja</button>
             </div>
           </div>
         </div>
@@ -625,6 +628,19 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
         <div class="modal-body" id="torneio-corpo"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loja da Zoeira -->
+  <div class="modal fade" id="modal-loja" tabindex="-1" aria-labelledby="titulo-loja" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="titulo-loja">🛒 Loja da Zoeira</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body" id="loja-corpo"></div>
       </div>
     </div>
   </div>

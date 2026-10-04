@@ -4,8 +4,8 @@
    leque de cartas do início e a mesa do deck.
    ========================================================================== */
 
-import { criarCarta, nomeCategoria, nomeSubtipo, atributoDaCarta, chaveRaridade, moldura } from "./cartas-ui.js?v=202610032015";
-import { el, normalizar } from "./util.js?v=202610032015";
+import { criarCarta, nomeCategoria, nomeSubtipo, atributoDaCarta, chaveRaridade, moldura } from "./cartas-ui.js?v=202610040138";
+import { el, normalizar } from "./util.js?v=202610040138";
 
 const CARTAS_POR_PAGINA = 12;
 const ORDEM_RARIDADE = ["Comum", "Rara", "Super Rara", "Ultra Rara", "Lendária da Zoeira"];
@@ -129,7 +129,8 @@ function criarItemCatalogo(c) {
   botao.addEventListener("click", () => abrirDetalhes(c.id, estado.resultado));
 
   const info = el("div", "item-catalogo__info");
-  info.append(el("span", "", c.copias ? `${c.codigo} · ${c.copias}x no deck padrão` : `${c.codigo} · carta extra`));
+  info.append(el("span", "", c.copias ? `${c.codigo} · ${c.copias}x no deck padrão` : c.loja ? `${c.codigo} · carta da Loja` : `${c.codigo} · carta extra`));
+  if (c.loja) info.append(el("span", "selo-loja", `🛒 ${c.loja}`));
   if (c.limite !== undefined && c.limite < 3) info.append(el("span", "selo-limite", c.limite === 0 ? "Banida" : `Limitada a ${c.limite}`));
   const selo = el("span", "selo-raridade", c.raridade);
   selo.dataset.raridade = chaveRaridade(c);
@@ -209,6 +210,12 @@ function preencherDetalhes() {
   linha("Raridade", c.raridade);
   if (c.limite !== undefined && c.limite < 3) linha("Limite", c.limite === 0 ? "Banida" : `${c.limite} cópia${c.limite > 1 ? "s" : ""} por deck`);
   linha("Deck padrão", c.copias ? `${c.copias} cópia${c.copias > 1 ? "s" : ""}` : "Não está (use no seu deck)");
+  if (c.loja) linha("Loja", `${c.loja} Careca Coins`);
+  const loja = document.querySelector("#detalhe-loja");
+  if (loja) {
+    loja.hidden = !c.loja;
+    loja.dataset.abrirLoja = c.loja ? c.id : "";
+  }
 
   document.querySelector("#detalhe-texto").textContent = c.texto;
   document.querySelector("#detalhe-como").textContent = c.comoFunciona;

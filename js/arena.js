@@ -15,14 +15,14 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610032015";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610032015";
-import { el, esperar, aviso } from "./util.js?v=202610032015";
-import { tocar } from "./som.js?v=202610032015";
-import { abrirDetalhes } from "./catalogo.js?v=202610032015";
-import * as adm from "./admin.js?v=202610032015";
-import { PREMIOS } from "./premios.js?v=202610032015";
-import { usuarioAtual } from "./conta.js?v=202610032015";
+} from "./motor.js?v=202610040138";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610040138";
+import { el, esperar, aviso } from "./util.js?v=202610040138";
+import { tocar } from "./som.js?v=202610040138";
+import { abrirDetalhes } from "./catalogo.js?v=202610040138";
+import * as adm from "./admin.js?v=202610040138";
+import { PREMIOS } from "./premios.js?v=202610040138";
+import { usuarioAtual } from "./conta.js?v=202610040138";
 
 const raiz = document.querySelector("#arena");
 
@@ -40,6 +40,10 @@ const FASES_UI = [
 ];
 
 const FRASES = {
+  "chaos-kelvor": "CAOS TOTAL!",
+  "black-luster": "ENVIADO DO HOSPÍCIO!",
+  "mago-dragao": "O SONHO DO BIG!",
+  "miro-sulista": "JULGAMENTO CALVO!",
   vapo: "VAPO!",
   "forca-careca": "FORÇA CARECA!",
   "armadilha-big": "CAIU NA ARMADILHA DO BIG!",
@@ -831,7 +835,9 @@ function descreverEvento(estado, ev) {
     case "aoExtra": return { texto: `↩️ ${nome(ev.iid)} voltou para o Deck Adicional de ${quem(ev.j)}.`, classe: "log--armadilha" };
     case "reliquia": return { texto: `🔺 ${quem(ev.j)} usou a relíquia ${PREMIOS[ev.item]?.nome || ""}: Compra do Destino!`, classe: "log--armadilha" };
     case "destino": return { texto: ev.j === eu ? `🔺 ${nome(ev.iid)} foi para o topo do seu deck.` : `🔺 ${quem(ev.j)} colocou uma carta no topo do deck.`, classe: minha };
-    case "negada": return { texto: `⛔ ${nome(ev.iid)} foi negada e destruída!`, classe: "log--armadilha" };
+    case "negada": return { texto: `⛔ ${nome(ev.iid)} foi negada e ${ev.banida ? "banida" : "destruída"}!`, classe: "log--armadilha" };
+    case "ataqueNegado": return { texto: `🛡️ O ataque de ${nome(ev.iid)} foi negado!`, classe: "log--armadilha" };
+    case "enviada": return { texto: `🪦 ${nome(ev.iid)} foi mandado para o Cemitério.`, classe: "log--destruida" };
     case "parasita": return { texto: `🐛 ${nome(ev.iid)} foi embaralhado com a face para cima no deck de ${quem(ev.j)}!`, classe: "log--armadilha" };
     case "indestrutivel": return { texto: `🛡️ ${nome(ev.iid)} não pode ser destruído em batalha.`, classe: "log--armadilha" };
     case "controle": return { texto: `🧠 ${quem(ev.j)} tomou o controle de ${nome(ev.iid)} até a Fase Final!`, classe: "log--armadilha" };
@@ -952,6 +958,8 @@ async function executarOpcao(op) {
   const estado = sessao.estado;
   const eu = sessao.eu;
   const acao = { ...op.acao };
+  // efeitos que levam tudo junto (Chaos Kelvor, Miro Sulista): confirma antes
+  if (op.confirmar && !confirm(op.confirmar)) return;
 
   if (op.tributos) {
     const meus = estado.jogadores[eu].monstros.filter(Boolean).map((m) => m.iid);

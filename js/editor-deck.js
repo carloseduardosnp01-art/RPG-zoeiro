@@ -4,13 +4,13 @@
    deck para tirar. Regras: de 40 a 60 cartas e até 3 cópias de cada.
    ========================================================================== */
 
-import { montarDeck, DECK_MIN, DECK_MAX, EXTRA_MAX, ehFusao, limiteDaCarta, excessoDeLimite } from "./motor.js?v=202610032015";
-import { criarCarta } from "./cartas-ui.js?v=202610032015";
-import { deckAtual, salvarDeck, paraMapa, paraLista, totalDoMapa, ehDeckPadrao } from "./deck.js?v=202610032015";
-import { abrirDetalhes } from "./catalogo.js?v=202610032015";
-import * as conta from "./conta.js?v=202610032015";
-import { el, aviso } from "./util.js?v=202610032015";
-import { tocar } from "./som.js?v=202610032015";
+import { montarDeck, DECK_MIN, DECK_MAX, EXTRA_MAX, ehFusao, limiteDaCarta, excessoDeLimite, precoNaLoja } from "./motor.js?v=202610040138";
+import { criarCarta } from "./cartas-ui.js?v=202610040138";
+import { deckAtual, salvarDeck, paraMapa, paraLista, totalDoMapa, ehDeckPadrao } from "./deck.js?v=202610040138";
+import { abrirDetalhes } from "./catalogo.js?v=202610040138";
+import * as conta from "./conta.js?v=202610040138";
+import { el, aviso } from "./util.js?v=202610040138";
+import { tocar } from "./som.js?v=202610040138";
 
 const ORDEM_CATEGORIA = { monstro: 0, magia: 1, armadilha: 2 };
 
@@ -42,6 +42,7 @@ export function iniciarEditorDeck(lista) {
   // Entrou ou saiu da conta: recarrega o deck (se não houver nada por salvar)
   conta.aoMudarUsuario(() => {
     if (!temAlteracoes()) carregar();
+    else desenhar(); // comprou na loja: a carta destranca
   });
   carregar();
 }
@@ -63,7 +64,11 @@ function temAlteracoes() {
   return [...ids].some((id) => (salvo[id] || 0) !== (rascunho[id] || 0));
 }
 
+// Carta da Loja que o jogador ainda não comprou
+const trancada = (id) => Boolean(precoNaLoja(id)) && !conta.cartasCompradas().has(id);
+
 function motivoParaNaoColocar(id) {
+  if (trancada(id)) return `Carta da Loja: compre por ${precoNaLoja(id)} Careca Coins (botão 🛒 Loja).`;
   if (ehFusaoId(id) && totalExtra() >= EXTRA_MAX) return `O Deck Adicional já tem ${EXTRA_MAX} Monstros de Fusão, o máximo.`;
   if (!ehFusaoId(id) && total() >= DECK_MAX) return `O deck já tem ${DECK_MAX} cartas, o máximo. Tire uma antes de colocar outra.`;
   const limite = limiteDaCarta(id);
@@ -154,6 +159,16 @@ function desenhar() {
   const colecao = $("#editor-colecao");
   colecao.replaceChildren();
   for (const c of cartas) {
+    if (trancada(c.id)) {
+      colecao.append(itemEditor(c, {
+        qtd: `🔒 ${precoNaLoja(c.id)}`,
+        ativo: false,
+        rotulo: `${c.nome}: carta da Loja (${precoNaLoja(c.id)} Careca Coins). Abrir a loja`,
+        dica: "🛒 comprar",
+        aoClicar: () => document.dispatchEvent(new CustomEvent("abrir-loja", { detail: c.id })),
+      }));
+      continue;
+    }
     colecao.append(itemEditor(c, {
       qtd: `${copias(c.id)}/${limiteDaCarta(c.id)}`,
       ativo: !motivoParaNaoColocar(c.id),

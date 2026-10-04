@@ -7,9 +7,9 @@
    Formato guardado: { "id-da-carta": cópias, ... }
    ========================================================================== */
 
-import { montarDeck, problemaDoDeck } from "./motor.js?v=202610032015";
-import * as conta from "./conta.js?v=202610032015";
-import { guardar } from "./util.js?v=202610032015";
+import { montarDeck, problemaDoDeck, precoNaLoja, cartaPorId, ehFusao } from "./motor.js?v=202610040138";
+import * as conta from "./conta.js?v=202610040138";
+import { guardar } from "./util.js?v=202610040138";
 
 const CHAVE = "zoeira-deck";
 
@@ -25,11 +25,20 @@ export function paraLista(mapa) {
 
 export const totalDoMapa = (mapa) => Object.values(mapa || {}).reduce((t, n) => t + n, 0);
 
+// Cartas da Loja só valem para quem comprou: a que não foi comprada vira Careca Feijão
+// (como as cópias acima do limite), e a de Fusão sai do Deck Adicional
+function soAsMinhas(lista) {
+  const minhas = conta.cartasCompradas();
+  return lista
+    .map((id) => (!precoNaLoja(id) || minhas.has(id) ? id : ehFusao(cartaPorId(id)) ? null : "careca-feijao"))
+    .filter(Boolean);
+}
+
 // Deck que o jogador usa nos duelos (sempre válido)
 export function deckAtual() {
-  const doPerfil = paraLista(conta.usuarioAtual()?.deck);
+  const doPerfil = soAsMinhas(paraLista(conta.usuarioAtual()?.deck));
   if (doPerfil.length && !problemaDoDeck(doPerfil, { comLimite: false })) return doPerfil;
-  const local = paraLista(guardar.ler(CHAVE));
+  const local = soAsMinhas(paraLista(guardar.ler(CHAVE)));
   if (local.length && !problemaDoDeck(local, { comLimite: false })) return local;
   return montarDeck();
 }

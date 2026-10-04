@@ -2218,6 +2218,121 @@ a:hover {
 }
 
 /* Torneio */
+.btn-loja {
+  color: #1b1208;
+  font-weight: 800;
+  background: linear-gradient(180deg, #7ee0b0, #2fae73);
+  border: 1px solid #1f8a59;
+}
+
+.btn-loja:hover,
+.btn-loja:focus-visible {
+  color: #1b1208;
+  background: linear-gradient(180deg, #a3f0c9, #3cc585);
+}
+
+.selo-loja {
+  padding: .05rem .45rem;
+  color: #0f3d27;
+  font-size: .72rem;
+  font-weight: 800;
+  background: #7ee0b0;
+  border-radius: 1rem;
+}
+
+#detalhe-loja {
+  margin-top: .4rem;
+}
+
+/* Loja da Zoeira */
+.loja__topo {
+  margin-bottom: 1rem;
+}
+
+.loja__saldo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem;
+  margin: 0 0 .3rem;
+  font-size: 1.05rem;
+}
+
+.loja__saldo strong {
+  color: var(--ouro-claro);
+  font-size: 1.25rem;
+}
+
+.loja__dica {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: .85rem;
+}
+
+.loja__grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 1rem;
+}
+
+.loja__item {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: .6rem;
+  background: linear-gradient(180deg, rgba(36, 26, 19, .9), rgba(18, 13, 10, .9));
+  border: 1px solid var(--borda);
+  border-radius: .8rem;
+}
+
+.loja__item--minha {
+  border-color: rgba(31, 191, 117, .6);
+}
+
+.loja__item--destaque {
+  box-shadow: 0 0 0 2px var(--ouro), 0 0 18px rgba(224, 180, 74, .4);
+}
+
+.loja__carta {
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: zoom-in;
+}
+
+.loja__info {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: .3rem;
+  text-align: center;
+}
+
+.loja__nome {
+  color: var(--ouro-claro);
+  font-size: .9rem;
+  line-height: 1.2;
+}
+
+.loja__preco {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .3rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.loja__tenho {
+  color: #6dff9a;
+  font-weight: 700;
+}
+
+.loja__falta {
+  color: var(--texto-suave);
+  font-size: .78rem;
+}
+
 .btn-torneio {
   position: relative;
   color: #1b1208;

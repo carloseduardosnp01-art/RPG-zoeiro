@@ -13,11 +13,12 @@
    antiga é levado para o banco na hora, com a mesma senha.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610032015";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610032015";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610032015";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610032015";
-import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610032015";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610040138";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610040138";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610040138";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610040138";
+import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610040138";
+import { precoNaLoja } from "./motor.js?v=202610040138";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -393,6 +394,10 @@ export function mesclarPerfis(a, b) {
   const premios = new Map();
   for (const x of [...premiosDe(a), ...premiosDe(b)]) premios.set(x.id, x);
   perfil.premios = [...premios.values()].sort((x, y) => (x.t || 0) - (y.t || 0)).slice(-60);
+  // compras: a mesma carta comprada nos dois aparelhos conta uma vez só
+  const compras = new Map();
+  for (const x of [...comprasDe(a), ...comprasDe(b)]) if (!compras.has(x.carta)) compras.set(x.carta, x);
+  perfil.compras = [...compras.values()];
   return perfil;
 }
 
@@ -430,6 +435,8 @@ async function limparRemoto(remoto, temLocal) {
     premios,
     // sem cópia local (primeiro login neste aparelho) não há outra fonte para os presentes antigos
     presentesContados: temLocal ? [] : contadosDe(remoto),
+    // ninguém "compra" pelos outros no servidor público (gastaria as moedas deles)
+    compras: temLocal ? [] : comprasDe(remoto),
   };
 }
 
@@ -658,7 +665,27 @@ export const FATOR_BOT = 0.3; // contra o bot: 30% do XP de uma partida online
 export const COINS_VITORIA = 5;
 export const COINS_VITORIA_BOT = 1;
 export const saldoCoins = (p) =>
-  Math.max(0, (p?.coinsGanhas || 0) + presentesDe(p).reduce((t, x) => t + x.coins, 0) - (p?.coinsGastas || 0));
+  Math.max(0, (p?.coinsGanhas || 0) + presentesDe(p).reduce((t, x) => t + x.coins, 0) - (p?.coinsGastas || 0)
+    - comprasDe(p).reduce((t, x) => t + x.preco, 0));
+
+/* ---------- Loja: cartas compradas com Careca Coins ---------- */
+
+// Cada compra fica no perfil ({ carta, preco, t }) e nunca some: a carta é do jogador para sempre
+const comprasDe = (p) => (p?.compras || []).filter((x) => x && typeof x === "object" && typeof x.carta === "string" && Number.isInteger(x.preco) && x.preco > 0);
+export const cartasCompradas = (p = usuario) => new Set(comprasDe(p).map((x) => x.carta));
+
+export function comprarCarta(id) {
+  if (!usuario) throw new Error("Entre na sua conta (Salão Online) para comprar.");
+  const preco = precoNaLoja(id);
+  if (!preco) throw new Error("Essa carta não está à venda.");
+  if (cartasCompradas().has(id)) throw new Error("Você já tem essa carta.");
+  const saldo = saldoCoins(usuario);
+  if (saldo < preco) throw new Error(`Faltam ${preco - saldo} Careca Coins.`);
+  usuario = { ...usuario, compras: [...comprasDe(usuario), { carta: id, preco, t: Date.now() }], atualizado: Date.now() };
+  publicarPerfil();
+  guardarLocalmente();
+  avisar();
+}
 
 // Soma o resultado de um duelo (uma vez por duelo). Devolve { xp, coins } ganhos.
 // contraBot: vale só 30% do XP e não conta vitória/derrota (o ranking de vitórias é só online)

@@ -104,7 +104,9 @@ function tamanhoTexto(texto) {
   if (n < 330) return "2.45cqw";
   if (n < 440) return "2.2cqw";
   if (n < 500) return "2.05cqw";
-  return "1.95cqw";
+  if (n < 560) return "1.95cqw";
+  // Mago Dragão Sonho do BIG: o maior texto do jogo
+  return "1.75cqw";
 }
 
 function el(tag, classe, texto) {

@@ -6,11 +6,11 @@
    data-abrir-loja="id-da-carta" já mostra aquela carta em destaque.
    ========================================================================== */
 
-import * as conta from "./conta.js?v=202610040148";
-import { criarCarta } from "./cartas-ui.js?v=202610040148";
-import { abrirDetalhes } from "./catalogo.js?v=202610040148";
-import { el, aviso } from "./util.js?v=202610040148";
-import { tocar } from "./som.js?v=202610040148";
+import * as conta from "./conta.js?v=202610040150";
+import { criarCarta } from "./cartas-ui.js?v=202610040150";
+import { abrirDetalhes } from "./catalogo.js?v=202610040150";
+import { el, aviso } from "./util.js?v=202610040150";
+import { tocar } from "./som.js?v=202610040150";
 
 let cartas = [];
 let modal = null;

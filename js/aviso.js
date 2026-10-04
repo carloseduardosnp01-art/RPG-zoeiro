@@ -6,8 +6,8 @@
    antes do aviso) vê a janela uma vez e confirma; a confirmação fica no perfil.
    ========================================================================== */
 
-import * as conta from "./conta.js?v=202610040148";
-import { aviso } from "./util.js?v=202610040148";
+import * as conta from "./conta.js?v=202610040150";
+import { aviso } from "./util.js?v=202610040150";
 
 let modal = null;
 let pediuNestaVisita = false;

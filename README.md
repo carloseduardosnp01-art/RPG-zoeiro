@@ -391,7 +391,7 @@ O mesmo texto da janela **📜 Aviso** do site:
 - **Paródia feita por fãs.** As regras são inspiradas em *Yu-Gi-Oh!*, marca da Konami. O jogo não tem ligação com a Konami nem com nenhuma outra empresa. As cartas, artes, nomes e textos são paródias feitas pela turma.
 - **Nome e imagem na zoeira.** O jogo usa apelidos, nomes e fotos dos participantes em cartas, artes, notícias, troféus e brincadeiras. Quem cria uma conta e joga está ciente e de acordo que seu nick, seu nome, sua imagem e seus resultados (ranking, troféus, histórico de duelos e mensagens no chat) podem aparecer no jogo e ser usados para fazer parte da zoeira, sempre sem fins comerciais.
 - **Zoeira com respeito.** É brincadeira entre amigos: nada de ofensa de verdade, preconceito ou humilhação. Os ADMs podem limpar o chat, mudar cartas e apagar contas que passem do limite.
-- **Quer sair da zoeira?** Quem não quiser mais o nome ou a imagem no jogo fala com um ADM (MenonICE ou MenonFIRE): a conta pode ser apagada e as cartas com a pessoa podem ser mudadas ou retiradas.
+- **Quer sair da zoeira?** Quem não quiser mais o nome ou a imagem no jogo fala com um ADM do jogo: a conta pode ser apagada e as cartas com a pessoa podem ser mudadas ou retiradas.
 - **Dados.** O jogo guarda só o que precisa para funcionar: nick, clã, avatar, progresso (XP, vitórias, moedas, troféus e deck) e a senha protegida (ninguém vê a senha, nem os ADMs). O chat e os duelos passam por um servidor público de mensagens, então ninguém deve escrever dados pessoais no chat.
 
 ---

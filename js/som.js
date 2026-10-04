@@ -3,7 +3,7 @@
    Efeitos sonoros sintetizados com Web Audio (nenhum arquivo de áudio).
    ========================================================================== */
 
-import { guardar } from "./util.js?v=202610040157";
+import { guardar } from "./util.js?v=202610040222";
 
 let contexto = null;
 let ligado = guardar.ler("zoeira-som", true);
@@ -78,6 +78,12 @@ const EFEITOS = {
   derrota: () => [392, 349, 311, 262].forEach((f, i) => tom({ freq: f, dur: 0.35, tipo: "sawtooth", vol: 0.06, atraso: i * 0.22 })),
   mensagem: () => tom({ freq: 1200, fim: 1500, dur: 0.07, tipo: "sine", vol: 0.05 }),
   desafio: () => [660, 880, 660, 880].forEach((f, i) => tom({ freq: f, dur: 0.12, tipo: "square", vol: 0.05, atraso: i * 0.14 })),
+  lendaria: () => {
+    tom({ freq: 90, fim: 260, dur: 0.5, tipo: "sawtooth", vol: 0.05 });
+    ruido({ dur: 0.6, vol: 0.18, atraso: 0.4, grave: true });
+    [523, 659, 784, 1046, 1318, 1568].forEach((f, i) => tom({ freq: f, dur: 0.3, tipo: "triangle", vol: 0.08, atraso: 0.42 + i * 0.07 }));
+    [1046, 1318, 1568].forEach((f) => tom({ freq: f, dur: 1.1, tipo: "sine", vol: 0.045, atraso: 0.9 }));
+  },
   vapo: () => {
     tom({ freq: 1400, fim: 40, dur: 0.9, tipo: "sawtooth", vol: 0.08 });
     ruido({ dur: 0.9, vol: 0.3, atraso: 0.05, grave: true });

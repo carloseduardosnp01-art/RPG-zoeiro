@@ -109,6 +109,20 @@ function tamanhoTexto(texto) {
   return "1.75cqw";
 }
 
+// Nome muito comprido: em vez de encolher demais numa linha só, quebra em duas
+// (no espaço que deixa as duas linhas mais parecidas)
+function linhasDoNome(nome) {
+  if (nome.length <= 26) return null;
+  let melhor = null;
+  for (let i = nome.indexOf(" "); i > 0; i = nome.indexOf(" ", i + 1)) {
+    const a = nome.slice(0, i).trim();
+    const b = nome.slice(i + 1).trim();
+    const maior = Math.max(a.length, b.length);
+    if (a && b && (!melhor || maior < melhor.maior)) melhor = { a, b, maior };
+  }
+  return melhor;
+}
+
 function el(tag, classe, texto) {
   const e = document.createElement(tag);
   if (classe) e.className = classe;
@@ -132,7 +146,13 @@ export function criarCarta(c, opcoes = {}) {
   // Nome e atributo
   const topo = el("div", "carta__topo");
   const nome = el("span", "carta__nome", c.nome);
-  nome.style.setProperty("--letras", Math.max(c.nome.length, 11));
+  const linhas = linhasDoNome(c.nome);
+  if (linhas) {
+    nome.textContent = `${linhas.a}
+${linhas.b}`;
+    nome.classList.add("carta__nome--duas-linhas");
+  }
+  nome.style.setProperty("--letras", Math.max(linhas ? linhas.maior : c.nome.length, 11));
   const attr = atributoDaCarta(c);
   const icone = el("span", "carta__atributo");
   icone.dataset.atributo = attr.chave;

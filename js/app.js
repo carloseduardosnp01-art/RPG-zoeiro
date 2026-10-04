@@ -4,22 +4,22 @@
    pelo endereço (#inicio, #catalogo, #deck, #regras, #salao, #arena).
    ========================================================================== */
 
-import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610040157";
-import { iniciarCatalogo } from "./catalogo.js?v=202610040157";
-import { iniciarEditorDeck } from "./editor-deck.js?v=202610040157";
-import { deckAtual } from "./deck.js?v=202610040157";
-import { iniciarSalao, ativarSalao } from "./salao.js?v=202610040157";
-import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610040157";
-import { criarSessaoBot } from "./sessao.js?v=202610040157";
-import * as conta from "./conta.js?v=202610040157";
-import { alternarSom, somLigado } from "./som.js?v=202610040157";
-import { aviso } from "./util.js?v=202610040157";
-import { iniciarNoticias } from "./noticias.js?v=202610040157";
-import { iniciarLoja } from "./loja.js?v=202610040157";
-import { iniciarAviso } from "./aviso.js?v=202610040157";
+import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610040222";
+import { iniciarCatalogo } from "./catalogo.js?v=202610040222";
+import { iniciarEditorDeck } from "./editor-deck.js?v=202610040222";
+import { deckAtual } from "./deck.js?v=202610040222";
+import { iniciarSalao, ativarSalao } from "./salao.js?v=202610040222";
+import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610040222";
+import { criarSessaoBot } from "./sessao.js?v=202610040222";
+import * as conta from "./conta.js?v=202610040222";
+import { alternarSom, somLigado } from "./som.js?v=202610040222";
+import { aviso } from "./util.js?v=202610040222";
+import { iniciarNoticias } from "./noticias.js?v=202610040222";
+import { iniciarLoja } from "./loja.js?v=202610040222";
+import { iniciarAviso } from "./aviso.js?v=202610040222";
 
 // Número da versão (atualizado por ferramentas/nova-versao.py a cada envio)
-const VERSAO = "202610040157";
+const VERSAO = "202610040222";
 
 const TELAS = ["inicio", "noticias", "catalogo", "deck", "regras", "salao", "arena"];
 

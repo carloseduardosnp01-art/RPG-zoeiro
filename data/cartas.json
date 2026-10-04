@@ -243,7 +243,7 @@
     "texto": "Ganha 300 de ATK para cada \"Grande Mestre\" nos Cemitérios.",
     "comoFunciona": "Precisa de 1 tributo. Conta os Grandes Mestres dos DOIS Cemitérios, o seu e o do oponente. O bônus é atualizado na hora, sempre que um Mestre cair.",
     "frase": "Batom vermelho, barba alinhada e mais forte a cada Mestre que tomba.",
-    "raridade": "Lendária da Zoeira",
+    "raridade": "Ultra Rara",
     "copias": 3,
     "imagem": "img/cartas/feiticeira-careca.webp"
   },
@@ -439,7 +439,7 @@
     "texto": "Você pode descartar 2 outros monstros GELO; Invoque esta carta por Invocação-Especial da sua mão. Você pode Tributar 1 outro monstro GELO em Posição de Ataque; neste turno, esta carta pode atacar duas vezes.",
     "comoFunciona": "Na mão: com 2 outros monstros GELO na mão, use \"Invocação-Especial (descartar 2 GELO)\" e ele entra sem gastar a Invocação-Normal. No campo, na Fase Principal 1 (antes de ir para a Batalha): toque nele e use o botão \"Efeito\" para tributar outro monstro GELO seu em Posição de Ataque; ele ataca duas vezes neste turno. Na Fase de Batalha o efeito não pode ser usado (não dá para atacar com o outro GELO e depois tributá-lo).",
     "frase": "Perdeu o cabelo no frio, ganhou um tridente.",
-    "raridade": "Lendária da Zoeira",
+    "raridade": "Ultra Rara",
     "copias": 0,
     "imagem": "img/cartas/manoel-do-gelo-careca.webp"
   },
@@ -743,7 +743,7 @@
     "texto": "Não pode ser Invocada por Invocação-Normal/Baixada. Deve primeiro ser Invocada por Invocação-Especial com \"Egoísmo Puro\".",
     "comoFunciona": "Não pode ser Invocado por Invocação-Normal nem Baixado: a primeira vez, só entra pela Magia \"Egoísmo Puro\" (da mão ou direto do deck). Depois de ter entrado assim, ele também pode voltar do Cemitério pelo Lamento Prematuro. O John Animal não consegue chamá-lo. O nome desta carta é tratado como \"Animal\" (conta para os efeitos que falam de monstros \"Animal\").",
     "frase": "Os irmãos chegaram de óculos de natação. A piscina é deles agora.",
-    "raridade": "Lendária da Zoeira",
+    "raridade": "Ultra Rara",
     "def": 2100,
     "imagem": "img/cartas/irmaos-animal.webp"
   },
@@ -840,7 +840,7 @@
     "texto": "Durante sua Fase Principal 2, se este card foi Invocado por Invocação-Normal ou Invocação-Especial neste turno: você pode escolher 1 Magia no seu Cemitério; adicione-a à sua mão. Você só pode usar este efeito de \"Grande Mestre do Caos\" uma vez por turno. Se este card destruir um monstro do oponente em batalha, após o cálculo de dano: bana aquele monstro do oponente. Se este card com a face para cima fosse deixar o campo, bana-o em vez disso.",
     "comoFunciona": "Precisa de 2 tributos (ou de um efeito de Invocação-Especial, como o Lamento Prematuro). No turno em que ele entrou, passe pela Batalha e vá para a Fase Principal 2: toque nele e use o botão \"Efeito\" para pegar 1 Magia do seu Cemitério (1 vez por turno; Invocação-Flip não conta). Todo monstro que ele destruir em batalha, atacando ou defendendo, é banido em vez de ficar no Cemitério. E se ele sair do campo com a face para cima (destruído, tributado, devolvido para a mão...), ele é que vai banido. Com ele em campo, \"As Mil Facas do Mestre\" funciona.",
     "frase": "O Grande Mestre virou a chave: agora é caos com lança.",
-    "raridade": "Lendária da Zoeira",
+    "raridade": "Ultra Rara",
     "def": 2600,
     "copias": 0,
     "imagem": "img/cartas/grande-mestre-do-caos.webp"
@@ -1010,7 +1010,7 @@
     "texto": "Não pode ser Invocado por Invocação-Normal/Baixado. Deve primeiro ser Invocado por Invocação-Especial (da sua mão) ao banir 1 monstro de LUZ e 1 monstro de TREVAS do seu Cemitério. Uma vez por turno: você pode escolher 1 monstro com a face para cima no campo; bana esse alvo. Este card não pode atacar no turno em que você ativar este efeito.",
     "comoFunciona": "Limitada a 1. Na mão, com 1 monstro de LUZ e 1 de TREVAS no seu Cemitério, aparece a opção de Invocação-Especial: você escolhe os dois e eles são banidos. Depois de entrar assim, ele também pode voltar pelo Lamento Prematuro. Em campo, uma vez por turno (na Fase Principal, antes de atacar), use o botão \"Efeito\" para banir 1 monstro com a face para cima de qualquer lado; nesse turno ele não ataca.",
     "frase": "O cabelo ainda resiste. O caos, não.",
-    "raridade": "Lendária da Zoeira",
+    "raridade": "Ultra Rara",
     "def": 2000,
     "copias": 0,
     "imagem": "img/cartas/daiki-chaos-calvo.webp"
@@ -1144,7 +1144,7 @@
     "texto": "Requer 3 Tributos para Invocação-Normal (não pode ser Baixado). A Invocação-Normal deste card não pode ser negada. Quando Invocado por Invocação-Normal, cards e efeitos não podem ser ativados. Nenhum dos jogadores pode escolher este card como alvo de efeitos de card. Uma vez por turno, durante a Fase Final, se este card foi Invocado por Invocação-Especial: envie-o para o Cemitério. Você pode Tributar 2 monstros; destrua todos os monstros que seu oponente controla. Este card não pode declarar um ataque no turno em que este efeito for ativado.",
     "comoFunciona": "Limitada a 1. Precisa de 3 tributos e não pode ser baixado. Quando ele entra por Invocação-Normal, nenhuma Armadilha responde (nem Armadilha do Big, nem ADM Ditador). Efeitos que escolhem alvo não pegam ele (Careca do PT, Controle Carecal, Daiki, Sai Daqui, Armadura de Gelo, equipamentos...); efeitos que pegam todos (Vapo!, Força Careca, Mil Facas) pegam. Se ele voltar por Invocação-Especial (Lamento Prematuro), vai para o Cemitério na Fase Final. Botão \"Efeito\": tribute 2 outros monstros seus e destrua todos os monstros do oponente; nesse turno ele não ataca.",
     "frase": "O punho do deus imenso não pede licença.",
-    "raridade": "Lendária da Zoeira",
+    "raridade": "Ultra Rara",
     "def": 4000,
     "copias": 0,
     "imagem": "img/cartas/obelisco-o-imenso.webp"
@@ -1207,7 +1207,7 @@
     "texto": "\"Grande Mestre\" + \"Dragão Sulista Safado Olhos Nada Azuis\". O nome deste card se torna \"Grande Mestre\" enquanto ele estiver no campo. Seu oponente não pode escolher Magias/Armadilhas que você controla como alvo de efeitos de card e, além disso, elas não podem ser destruídas pelos efeitos de card do seu oponente.",
     "comoFunciona": "Limitada a 1. Monstro de Fusão: fica no Deck Adicional e entra pela \"Suruba\", com 1 \"Grande Mestre\" e 1 \"Dragão Sulista Safado Olhos Nada Azuis\" (da mão ou do campo). No campo ele se chama \"Grande Mestre\" (vale para As Mil Facas do Mestre e para a Berinjela do Imenso). Com ele de face para cima, o oponente não consegue mirar nem destruir com efeitos as suas Magias e Armadilhas (Soco do Big, Sugadão, Zoológico, W — Hackeando...). Se fosse voltar para a mão, volta para o Deck Adicional.",
     "frase": "Três cabeças, uma sela e o bigode mais respeitado do céu.",
-    "raridade": "Lendária da Zoeira",
+    "raridade": "Ultra Rara",
     "def": 2500,
     "copias": 0,
     "imagem": "img/cartas/miro-adestrador-de-dragoes.webp"

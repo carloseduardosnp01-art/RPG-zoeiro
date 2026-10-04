@@ -1051,6 +1051,107 @@ button.fase:not(:disabled):hover {
   100% { opacity: 0; transform: scale(1.15); }
 }
 
+/* ---------- Entrada de carta Lendária da Zoeira ---------- */
+.corte[data-tipo="lendaria"] {
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 50%, rgba(130, 70, 210, .55), rgba(10, 4, 24, .93));
+}
+
+.corte[data-tipo="lendaria"] .corte__conteudo {
+  position: relative;
+  animation-name: lendaria-entrada;
+}
+
+.lendaria__raios {
+  position: absolute;
+  inset: -60%;
+  background: repeating-conic-gradient(from 0deg,
+    rgba(255, 122, 122, .3) 0 5deg, transparent 5deg 12deg,
+    rgba(255, 224, 102, .34) 12deg 17deg, transparent 17deg 24deg,
+    rgba(111, 224, 255, .3) 24deg 29deg, transparent 29deg 36deg);
+  animation: lendaria-raios var(--dur, 2.4s) linear forwards;
+}
+
+.lendaria__faiscas {
+  position: absolute;
+  inset: 0;
+}
+
+.lendaria__faiscas span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(11px, 1.9vmin);
+  height: max(11px, 1.9vmin);
+  background: #fffbe6;
+  border-radius: 50%;
+  box-shadow: 0 0 12px 4px rgba(255, 215, 90, .95), 0 0 24px 6px rgba(255, 140, 220, .5);
+  opacity: 0;
+  animation: lendaria-faisca 1.5s cubic-bezier(.15, .7, .3, 1) forwards;
+  animation-delay: calc(.4s + var(--atraso, 0s));
+}
+
+.lendaria__selo {
+  padding: 0 .5rem;
+  color: transparent;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(.95rem, 3.4vw, 1.45rem);
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-align: center;
+  background: linear-gradient(90deg, #ff7a7a, #ffe066, #7dffa8, #6fe0ff, #d79bff, #ff7a7a) 0 0 / 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 2px 0 #000) drop-shadow(0 0 10px rgba(255, 215, 90, .8));
+  animation: lendaria-arco-iris 1.5s linear infinite;
+}
+
+.corte__carta.lendaria__carta {
+  width: min(270px, 62vw);
+  border-radius: .9rem;
+  animation: lendaria-aura 1.1s ease-in-out infinite alternate;
+}
+
+@keyframes lendaria-entrada {
+  0% { opacity: 0; transform: translateY(-45vh) scale(.5) rotate(-12deg); filter: brightness(3); }
+  17% { opacity: 1; transform: translateY(0) scale(1.12) rotate(2deg); filter: brightness(2); }
+  27% { transform: scale(.97); filter: brightness(1); }
+  33%, 85% { opacity: 1; transform: scale(1) rotate(0); filter: brightness(1); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+
+@keyframes lendaria-raios {
+  0% { opacity: 0; transform: rotate(0) scale(.6); }
+  16% { opacity: 1; }
+  82% { opacity: .9; }
+  100% { opacity: 0; transform: rotate(70deg) scale(1.1); }
+}
+
+@keyframes lendaria-faisca {
+  0% { opacity: 1; transform: rotate(var(--ang)) translateX(4vmin) scale(1.6); }
+  65% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--ang)) translateX(var(--dist)) scale(.4); }
+}
+
+@keyframes lendaria-arco-iris {
+  to { background-position: 200% 0; }
+}
+
+@keyframes lendaria-aura {
+  from { box-shadow: 0 0 0 3px rgba(255, 228, 140, .95), 0 0 30px 10px rgba(255, 215, 90, .9), 0 0 80px 24px rgba(190, 110, 255, .6); }
+  to { box-shadow: 0 0 0 3px rgba(200, 245, 255, .95), 0 0 40px 14px rgba(111, 224, 255, .9), 0 0 100px 30px rgba(255, 110, 200, .6); }
+}
+
+/* Lendária em campo: aura arco-íris pulsando em volta da carta */
+.no-campo .carta[data-raridade="lendaria"] {
+  animation: lendaria-campo 2.6s ease-in-out infinite;
+}
+
+@keyframes lendaria-campo {
+  0%, 100% { box-shadow: 0 0 5px 1px rgba(255, 215, 90, .75), 0 0 12px 3px rgba(190, 110, 255, .45); }
+  50% { box-shadow: 0 0 8px 2px rgba(111, 224, 255, .85), 0 0 18px 5px rgba(255, 110, 200, .5); }
+}
+
 /* Efeitos especiais da zoeira */
 .flash-branco {
   position: fixed;
@@ -1801,8 +1902,16 @@ button.fase:not(:disabled):hover {
   .corte__conteudo,
   .banner-turno,
   .raios-luz,
-  .flash-branco {
+  .flash-branco,
+  .lendaria__raios,
+  .lendaria__faiscas span {
     animation-duration: .01ms !important;
+  }
+
+  .lendaria__selo,
+  .lendaria__carta,
+  .no-campo .carta[data-raridade="lendaria"] {
+    animation: none !important;
   }
 }
 

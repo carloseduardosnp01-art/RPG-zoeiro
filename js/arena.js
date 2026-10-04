@@ -15,14 +15,14 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610040157";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria } from "./cartas-ui.js?v=202610040157";
-import { el, esperar, aviso } from "./util.js?v=202610040157";
-import { tocar } from "./som.js?v=202610040157";
-import { abrirDetalhes } from "./catalogo.js?v=202610040157";
-import * as adm from "./admin.js?v=202610040157";
-import { PREMIOS } from "./premios.js?v=202610040157";
-import { usuarioAtual } from "./conta.js?v=202610040157";
+} from "./motor.js?v=202610040222";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610040222";
+import { el, esperar, aviso } from "./util.js?v=202610040222";
+import { tocar } from "./som.js?v=202610040222";
+import { abrirDetalhes } from "./catalogo.js?v=202610040222";
+import * as adm from "./admin.js?v=202610040222";
+import { PREMIOS } from "./premios.js?v=202610040222";
+import { usuarioAtual } from "./conta.js?v=202610040222";
 
 const raiz = document.querySelector("#arena");
 
@@ -38,6 +38,14 @@ const FASES_UI = [
   ["principal2", "MP2", "Fase Principal 2"],
   ["final", "END", "Fase Final (passar o turno)"],
 ];
+
+// Frase da entrada especial das cartas Lendárias da Zoeira (as exclusivas da Loja)
+const ENTRADAS_LENDARIAS = {
+  "chaos-kelvor-prodigio": "O PRODÍGIO DO CAOS CHEGOU!",
+  "black-luster-daiki": "RECEBEU ALTA DO HOSPÍCIO!",
+  "mago-dragao-sonho-do-big": "O SONHO DO BIG VIROU REALIDADE!",
+  "miro-sulista-calvo": "O SULISTA CALVO DESCEU DO CÉU!",
+};
 
 const FRASES = {
   "chaos-kelvor": "CAOS TOTAL!",
@@ -1225,6 +1233,10 @@ async function tocarEventos(eventos, estadoNovo) {
         break;
       case "invocacao": {
         const c = carta(estadoNovo, ev.iid);
+        if (chaveRaridade(c) === "lendaria") {
+          await entradaLendaria(estadoNovo, ev);
+          break;
+        }
         tocar("invocacao");
         const frase = ev.modo === "fusao" ? "INVOCAÇÃO-FUSÃO!" : ev.modo === "tributo" ? "INVOCAÇÃO-TRIBUTO!" : ev.modo === "especial" ? (FRASES[c.efeito] || "INVOCAÇÃO-ESPECIAL!") : ev.modo === "flip" ? "INVOCAÇÃO-FLIP!" : "INVOCAÇÃO!";
         await corte(estadoNovo, ev.iid, ev.j, frase, "invocacao", ev.j === sessao.eu ? 650 : 950);
@@ -1363,6 +1375,42 @@ function corte(estado, iid, j, frase, tipo, duracao) {
   conteudo.append(el("div", "corte__quem", nomeJogador(sessao.estado, j)), cartaEl, el("div", "corte__frase", frase));
   fundo.append(conteudo);
   document.body.append(fundo);
+  return esperar(duracao).then(() => fundo.remove());
+}
+
+// Carta Lendária da Zoeira entrando em campo: desce do céu com raios arco-íris,
+// faíscas, clarão, tremor e fanfarra (mais demorada que uma invocação comum)
+function entradaLendaria(estado, ev) {
+  const c = carta(estado, ev.iid);
+  const duracao = 2400;
+  tocar("lendaria");
+  const fundo = el("div", "corte");
+  fundo.dataset.tipo = "lendaria";
+  fundo.style.setProperty("--dur", `${duracao}ms`);
+  const faiscas = el("div", "lendaria__faiscas");
+  for (let i = 0; i < 28; i++) {
+    const f = el("span");
+    f.style.setProperty("--ang", `${i * (360 / 28) + Math.random() * 10}deg`);
+    f.style.setProperty("--dist", `${32 + Math.random() * 26}vmin`);
+    f.style.setProperty("--atraso", `${(Math.random() * 0.3).toFixed(2)}s`);
+    faiscas.append(f);
+  }
+  const conteudo = el("div", "corte__conteudo");
+  const cartaEl = el("div", "corte__carta lendaria__carta");
+  cartaEl.append(criarCarta(c, { lazy: false }));
+  conteudo.append(
+    el("div", "corte__quem", nomeJogador(sessao.estado, ev.j)),
+    el("div", "lendaria__selo", "★ LENDÁRIA DA ZOEIRA ★"),
+    cartaEl,
+    el("div", "corte__frase", ENTRADAS_LENDARIAS[c.id] || "ENTRADA LENDÁRIA!"),
+  );
+  fundo.append(el("div", "lendaria__raios"), conteudo, faiscas); // faíscas voam por cima da carta
+  document.body.append(fundo);
+  // o pouso da carta
+  setTimeout(() => {
+    flashBranco();
+    tremerTela();
+  }, 400);
   return esperar(duracao).then(() => fundo.remove());
 }
 

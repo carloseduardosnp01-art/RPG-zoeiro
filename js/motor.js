@@ -1989,9 +1989,9 @@ export function efeitoAtivavel(estado, j, iid) {
       // "Você não pode ativar outros cards ou efeitos no turno em que ativar": nem antes, nem depois
       if (!ehFasePrincipal(estado) || usou(estado, j, "kelvor") || p.pl <= 1000 || p.ativouNoTurno === estado.turno) return null;
       return {
-        rotulo: "Efeito: pagar 1000 PV e mandar todas as outras cartas das mãos e do campo para o Cemitério (300 de dano por carta do oponente)",
+        rotulo: "Efeito: pagar 1000 PV e mandar todas as cartas das mãos e do campo para o Cemitério (300 de dano por carta do oponente)",
         alvos: null,
-        confirmar: "Chaos Kelvor: pagar 1000 PV e mandar para o Cemitério todas as OUTRAS cartas das duas mãos e dos dois campos (as suas também; o Kelvor fica)? Depois você não ativa mais nada neste turno.",
+        confirmar: "Chaos Kelvor: pagar 1000 PV e mandar para o Cemitério TODAS as cartas das duas mãos e dos dois campos (as suas também, inclusive o Kelvor)? Depois você não ativa mais nada neste turno.",
       };
     }
     case "miro-sulista": {
@@ -2106,11 +2106,11 @@ function efeitoMonstro(estado, j, { iid, alvos = [] }, ev) {
       p.semAtivar = estado.turno;
       const o = oponente(j);
       let doOponente = 0;
-      // o campo dos dois (menos o próprio Kelvor, que fica) e depois as mãos dos dois
+      // o campo dos dois (o próprio Kelvor vai junto) e depois as mãos dos dois
       for (const k of [j, o]) {
         for (const x of [...monstrosEmCampo(estado, k), ...magiasEmCampo(estado, k)]) {
           // já saiu do campo junto com outra (ex.: equipamento do monstro que foi antes)
-          if (x === iid || !["monstros", "magias", "campo"].includes(localizar(estado, x)?.zona)) continue;
+          if (!["monstros", "magias", "campo"].includes(localizar(estado, x)?.zona)) continue;
           ev.push({ t: "enviada", j: k, iid: x });
           if (removerDoCampo(estado, x, ev, "efeito") === "cemiterio" && donoDe(x) === o) doOponente++;
         }

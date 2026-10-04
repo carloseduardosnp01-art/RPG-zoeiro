@@ -3004,6 +3004,31 @@ a:hover {
   border-top: 1px solid var(--borda);
 }
 
+.rodape a {
+  color: var(--ouro-claro);
+  white-space: nowrap;
+}
+
+/* ---------- Aviso do jogo (sem fins comerciais, nome e imagem) ---------- */
+.aviso-lista {
+  display: grid;
+  gap: .7rem;
+  padding-left: 1.1rem;
+}
+
+.aviso-situacao {
+  padding: .6rem .8rem;
+  font-size: .92rem;
+  background: rgba(31, 191, 117, .1);
+  border: 1px solid rgba(31, 191, 117, .4);
+  border-radius: .5rem;
+}
+
+.aviso-situacao--pendente {
+  background: rgba(224, 180, 74, .1);
+  border-color: var(--borda-forte);
+}
+
 /* ---------- Avisos (toasts) ---------- */
 .aviso {
   min-width: 260px;

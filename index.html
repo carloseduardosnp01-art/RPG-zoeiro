@@ -20,16 +20,16 @@
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
         crossorigin="anonymous">
 
-  <link rel="stylesheet" href="css/estilo.css?v=202610040138">
-  <link rel="stylesheet" href="css/carta.css?v=202610040138">
-  <link rel="stylesheet" href="css/arena.css?v=202610040138">
+  <link rel="stylesheet" href="css/estilo.css?v=202610040148">
+  <link rel="stylesheet" href="css/carta.css?v=202610040148">
+  <link rel="stylesheet" href="css/arena.css?v=202610040148">
 
   <!-- Bootstrap (JS) e MQTT.js (conexão em tempo real para o modo online) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
           integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
           crossorigin="anonymous" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js" defer></script>
-  <script type="module" src="js/app.js?v=202610040138"></script>
+  <script type="module" src="js/app.js?v=202610040148"></script>
 </head>
 <body>
   <a class="visually-hidden-focusable pular-link" href="#conteudo">Pular para o conteúdo</a>
@@ -435,6 +435,7 @@
                       </div>
                       <p class="mensagem-form" id="entrar-mensagem" role="alert"></p>
                       <button type="submit" class="btn btn-ouro w-100">Entrar no salão</button>
+                      <p class="form-text mt-2 mb-0">Ao entrar, você confirma que está ciente do <a href="#" data-abrir-aviso>aviso do jogo</a>.</p>
                     </form>
                   </div>
                   <div class="tab-pane fade" id="form-criar-painel" role="tabpanel" aria-labelledby="aba-criar" tabindex="0">
@@ -462,6 +463,10 @@
                           <legend class="form-label fs-6">Avatar</legend>
                           <div id="escolha-avatar" class="escolha-avatar"></div>
                         </fieldset>
+                      </div>
+                      <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" id="criar-ciente" required>
+                        <label class="form-check-label" for="criar-ciente">Li o <a href="#" data-abrir-aviso>aviso do jogo</a> e estou ciente: é um jogo de fãs, sem fins comerciais, e meu nick, meu nome e minha imagem podem ser usados na zoeira.</label>
                       </div>
                       <p class="mensagem-form mt-3" id="criar-mensagem" role="alert"></p>
                       <button type="submit" class="btn btn-ouro w-100">Criar conta e entrar</button>
@@ -558,7 +563,7 @@
   <footer class="rodape">
     <div class="container-xl d-flex flex-column flex-md-row justify-content-between gap-2">
       <p class="mb-0">Duelo da Zoeira · o card game mais careca do Brasil · 2026</p>
-      <p class="mb-0">Projeto de zoeira entre amigos, inspirado nas regras clássicas de Yu-Gi-Oh!, sem fins comerciais.</p>
+      <p class="mb-0">Feito por fãs, sem fins comerciais e sem ligação com a Konami (Yu-Gi-Oh!). Quem joga está ciente de que nome e imagem entram na zoeira. <a href="#" data-abrir-aviso>📜 Leia o aviso</a></p>
     </div>
   </footer>
 
@@ -641,6 +646,34 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
         </div>
         <div class="modal-body" id="loja-corpo"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== AVISO DO JOGO ===================== -->
+  <div class="modal fade" id="modal-aviso" tabindex="-1" aria-labelledby="titulo-aviso" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="titulo-aviso">📜 Aviso do Duelo da Zoeira</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <p>O Duelo da Zoeira é uma brincadeira entre amigos. Antes de jogar, leia:</p>
+          <ul class="aviso-lista">
+            <li><strong>🚫 Sem fins comerciais.</strong> O jogo é gratuito e feito por fãs: não tem anúncios, não vende nada e ninguém ganha dinheiro com ele. As <strong>Careca Coins</strong> são moeda de brincadeira: não se compram com dinheiro de verdade, não valem dinheiro e não se trocam por nada fora do jogo.</li>
+            <li><strong>🎴 Paródia feita por fãs.</strong> As regras são inspiradas em Yu-Gi-Oh!, marca da Konami. O jogo não tem ligação com a Konami nem com nenhuma outra empresa. As cartas, artes, nomes e textos são paródias feitas pela turma.</li>
+            <li><strong>🧑‍🦲 Seu nome e sua imagem na zoeira.</strong> O jogo usa apelidos, nomes e fotos dos participantes em cartas, artes, notícias, troféus e brincadeiras. <strong>Quem cria uma conta e joga está ciente e de acordo</strong> que seu nick, seu nome, sua imagem e seus resultados (ranking, troféus, histórico de duelos e mensagens no chat) podem aparecer no jogo e ser usados para fazer parte da zoeira, sempre sem fins comerciais.</li>
+            <li><strong>🤝 Zoeira com respeito.</strong> É brincadeira entre amigos: nada de ofensa de verdade, preconceito ou humilhação. Os ADMs podem limpar o chat, mudar cartas e apagar contas que passem do limite.</li>
+            <li><strong>🙋 Quer sair da zoeira?</strong> Se não quiser mais seu nome ou sua imagem no jogo, fale com um ADM (MenonICE ou MenonFIRE): a sua conta pode ser apagada e as cartas com você podem ser mudadas ou retiradas.</li>
+            <li><strong>🔒 Seus dados.</strong> O jogo guarda só o que precisa para funcionar: nick, clã, avatar, progresso (XP, vitórias, moedas, troféus e deck) e a senha protegida (ninguém vê a sua senha, nem os ADMs). O chat e os duelos passam por um servidor público de mensagens: não escreva dados pessoais no chat e use uma senha só para este jogo.</li>
+          </ul>
+          <p class="aviso-situacao mb-0" id="aviso-situacao" hidden></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Fechar</button>
+          <button type="button" class="btn btn-ouro" id="aviso-ciente" hidden>✔ Li e estou ciente</button>
+        </div>
       </div>
     </div>
   </div>

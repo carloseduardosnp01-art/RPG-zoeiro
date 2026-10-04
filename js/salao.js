@@ -12,19 +12,19 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610040138";
-import * as conta from "./conta.js?v=202610040138";
-import { bancoLigado, chamar } from "./banco.js?v=202610040138";
-import * as adm from "./admin.js?v=202610040138";
-import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610040138";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610040138";
-import { abrirPremio } from "./visor-premio.js?v=202610040138";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610040138";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610040138";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610040138";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610040138";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610040138";
-import { tocar } from "./som.js?v=202610040138";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610040148";
+import * as conta from "./conta.js?v=202610040148";
+import { bancoLigado, chamar } from "./banco.js?v=202610040148";
+import * as adm from "./admin.js?v=202610040148";
+import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610040148";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610040148";
+import { abrirPremio } from "./visor-premio.js?v=202610040148";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610040148";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610040148";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610040148";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610040148";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610040148";
+import { tocar } from "./som.js?v=202610040148";
 
 const SID = gerarId(12); // identifica esta aba
 const T = {
@@ -281,13 +281,18 @@ function ligarFormularios() {
       msg.textContent = erroNick;
       return;
     }
+    if (!$("#criar-ciente").checked) {
+      msg.textContent = "Para criar a conta, marque que leu o aviso e está ciente.";
+      $("#criar-ciente").focus();
+      return;
+    }
     msg.className = "mensagem-form info";
     msg.textContent = "Criando a conta...";
     botao.disabled = true;
     try {
       if (!(await garantirConexao())) throw new Error("Sem conexão com o servidor do jogo.");
       const avatar = e.target.querySelector("input[name=avatar]:checked")?.value;
-      await conta.criarConta({ nick: $("#criar-nick").value, senha, tag: $("#criar-tag").value, avatar });
+      await conta.criarConta({ nick: $("#criar-nick").value, senha, tag: $("#criar-tag").value, avatar, ciente: true });
       msg.textContent = "";
       e.target.reset();
       e.target.querySelector("input[name=avatar]").checked = true;

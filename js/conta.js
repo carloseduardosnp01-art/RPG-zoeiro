@@ -13,12 +13,12 @@
    antiga é levado para o banco na hora, com a mesma senha.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610040138";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610040138";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610040138";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610040138";
-import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610040138";
-import { precoNaLoja } from "./motor.js?v=202610040138";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610040148";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610040148";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610040148";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610040148";
+import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610040148";
+import { precoNaLoja } from "./motor.js?v=202610040148";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -121,10 +121,20 @@ function perfilNovo(chave, nick, extra = {}) {
   };
 }
 
+// Aviso do jogo (sem fins comerciais; nome e imagem na zoeira): a versão que o jogador
+// confirmou ter lido fica no perfil. Se o texto mudar de verdade, suba a versão e todos
+// confirmam de novo.
+export const VERSAO_DO_AVISO = 1;
+const cienteAgora = () => ({ versao: VERSAO_DO_AVISO, t: Date.now() });
+export const estaCiente = (p = usuario) => (Number(p?.ciente?.versao) || 0) >= VERSAO_DO_AVISO;
+export function marcarCiente() {
+  if (usuario && !estaCiente()) atualizarPerfil({ ciente: cienteAgora() });
+}
+
 // O perfil que veio do banco tem conteúdo? (conta recriada por um ADM vem só com chave e nick)
 const temConteudo = (p) => Boolean(p && typeof p === "object" && "avatar" in p);
 
-export async function criarConta({ nick, senha, tag, avatar, lembrar = true }) {
+export async function criarConta({ nick, senha, tag, avatar, ciente = false, lembrar = true }) {
   const erro = validarNick(nick);
   if (erro) throw new Error(erro);
   if (senha.length < 4) throw new Error("A senha precisa ter pelo menos 4 caracteres.");
@@ -137,6 +147,7 @@ export async function criarConta({ nick, senha, tag, avatar, lembrar = true }) {
   const perfil = perfilNovo(chave, nick, {
     tag: (tag || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4),
     avatar: avatar || "careca-feijao",
+    ...(ciente ? { ciente: cienteAgora() } : {}),
   });
   if (bancoLigado()) {
     try {
@@ -398,6 +409,9 @@ export function mesclarPerfis(a, b) {
   const compras = new Map();
   for (const x of [...comprasDe(a), ...comprasDe(b)]) if (!compras.has(x.carta)) compras.set(x.carta, x);
   perfil.compras = [...compras.values()];
+  // aviso: vale a confirmação de versão mais nova, seja de qual aparelho for
+  const ciente = [a.ciente, b.ciente].filter((x) => Number(x?.versao) > 0).sort((x, y) => y.versao - x.versao)[0];
+  if (ciente) perfil.ciente = ciente;
   return perfil;
 }
 

@@ -11,6 +11,8 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
 | **Repositório** | [github.com/carloseduardosnp01-art/RPG-zoeiro](https://github.com/carloseduardosnp01-art/RPG-zoeiro) |
 | **Site (GitHub Pages)** | [carloseduardosnp01-art.github.io/RPG-zoeiro](https://carloseduardosnp01-art.github.io/RPG-zoeiro/) |
 
+> **Aviso:** projeto **feito por fãs, sem fins comerciais**, sem anúncios e sem nenhuma ligação com a Konami (dona de *Yu-Gi-Oh!*). As Careca Coins são moeda de brincadeira: não se compram com dinheiro e não valem dinheiro. As cartas e notícias usam nomes, apelidos e fotos da turma: **quem cria uma conta e joga está ciente de que seu nick, seu nome e sua imagem podem ser usados para fazer parte da zoeira**. Quem quiser sair é só falar com um ADM. Veja o [aviso completo](#aviso-do-jogo).
+
 ---
 
 ## Sumário
@@ -23,7 +25,8 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
 7. [Estrutura do código](#estrutura-do-código) · [Banco de dados](#banco-de-dados-supabase)
 8. [Como publicar uma notícia](#como-publicar-uma-notícia)
 9. [Como criar cartas novas](#como-criar-cartas-novas)
-10. [Créditos](#créditos)
+10. [Aviso do jogo](#aviso-do-jogo)
+11. [Créditos](#créditos)
 
 ---
 
@@ -71,6 +74,7 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
   - regras do Tag Duel: cada **time** tem um campo, um cemitério e **8000 PV compartilhados**; cada jogador tem **o próprio deck e a própria mão**. Ordem dos turnos **P1 → P2 → P3 → P4**; o "controlador inimigo atual" (alvo de efeitos como o Midasmon e quem recebe o dano) é o membro do outro time que jogou por último. A arena mostra a **ordem dos confrontos** dos próximos 4 turnos;
   - só o membro da vez joga; o parceiro vê a própria mão esperando. Cartas que voltam para a mão vão para a mão do **dono**. Se o membro da vez sumir, o parceiro pode passar a vez por ele, e o outro time pode pedir W.O. depois de 1 minuto;
   - vitória/derrota contam como online (+100 / +40 XP) e aparecem no histórico como "Tag 2vs2";
+- **📜 Aviso do jogo** (`js/aviso.js`, link no rodapé de todas as páginas): sem fins comerciais, feito por fãs, uso de nome e imagem na zoeira. Para criar conta é preciso marcar que leu e está ciente; quem já tinha conta vê o aviso uma vez e confirma no botão **✔ Li e estou ciente**. A confirmação fica no perfil (`ciente: { versao, t }`, guardada no banco); para pedir uma confirmação nova depois de mudar o texto, suba `VERSAO_DO_AVISO` em `js/conta.js`.
 - **Treino contra o Bot Careca**, sem precisar de conta. O bot joga limpo (não olha cartas viradas nem a sua mão) e ainda zoa no chat.
 - Responsivo (celular, tablet e computador) e com foco visível, rótulos e `aria-live`.
 
@@ -334,6 +338,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── catalogo.js       # Catálogo, modal, leque e mesa do deck padrão
 │   ├── noticias.js       # Página de notícias e faixa da última notícia no início
 │   ├── loja.js           # Loja da Zoeira (cartas compradas com Careca Coins)
+│   ├── aviso.js          # Aviso do jogo (sem fins comerciais, nome e imagem) e confirmação de ciência
 │   ├── deck.js           # Deck do jogador: guardar, validar, usar nos duelos
 │   ├── editor-deck.js    # Tela "Meu deck"
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
@@ -375,6 +380,19 @@ O **motor** é independente da tela: dá para rodar partidas inteiras no Node (f
    Depois dê uma frase de zoeira para ela em `FRASES` (`js/arena.js`) e ensine o bot em `js/bot.js`, se quiser.
 4. Em `"copias"`, coloque quantas cópias entram no deck padrão (0 = só nos decks personalizados).
 5. Para vender a carta na **Loja**, coloque `"loja": preço` (em Careca Coins) e `"copias": 0`. Ela aparece sozinha na Loja e fica trancada no editor para quem não comprou.
+
+---
+
+## Aviso do jogo
+
+O mesmo texto da janela **📜 Aviso** do site:
+
+- **Sem fins comerciais.** O jogo é gratuito e feito por fãs: não tem anúncios, não vende nada e ninguém ganha dinheiro com ele. As Careca Coins são moeda de brincadeira: não se compram com dinheiro de verdade, não valem dinheiro e não se trocam por nada fora do jogo.
+- **Paródia feita por fãs.** As regras são inspiradas em *Yu-Gi-Oh!*, marca da Konami. O jogo não tem ligação com a Konami nem com nenhuma outra empresa. As cartas, artes, nomes e textos são paródias feitas pela turma.
+- **Nome e imagem na zoeira.** O jogo usa apelidos, nomes e fotos dos participantes em cartas, artes, notícias, troféus e brincadeiras. Quem cria uma conta e joga está ciente e de acordo que seu nick, seu nome, sua imagem e seus resultados (ranking, troféus, histórico de duelos e mensagens no chat) podem aparecer no jogo e ser usados para fazer parte da zoeira, sempre sem fins comerciais.
+- **Zoeira com respeito.** É brincadeira entre amigos: nada de ofensa de verdade, preconceito ou humilhação. Os ADMs podem limpar o chat, mudar cartas e apagar contas que passem do limite.
+- **Quer sair da zoeira?** Quem não quiser mais o nome ou a imagem no jogo fala com um ADM (MenonICE ou MenonFIRE): a conta pode ser apagada e as cartas com a pessoa podem ser mudadas ou retiradas.
+- **Dados.** O jogo guarda só o que precisa para funcionar: nick, clã, avatar, progresso (XP, vitórias, moedas, troféus e deck) e a senha protegida (ninguém vê a senha, nem os ADMs). O chat e os duelos passam por um servidor público de mensagens, então ninguém deve escrever dados pessoais no chat.
 
 ---
 

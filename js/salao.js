@@ -12,19 +12,19 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610040222";
-import * as conta from "./conta.js?v=202610040222";
-import { bancoLigado, chamar } from "./banco.js?v=202610040222";
-import * as adm from "./admin.js?v=202610040222";
-import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610040222";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610040222";
-import { abrirPremio } from "./visor-premio.js?v=202610040222";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610040222";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610040222";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610040222";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610040222";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610040222";
-import { tocar } from "./som.js?v=202610040222";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610040308";
+import * as conta from "./conta.js?v=202610040308";
+import { bancoLigado, chamar } from "./banco.js?v=202610040308";
+import * as adm from "./admin.js?v=202610040308";
+import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610040308";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610040308";
+import { abrirPremio } from "./visor-premio.js?v=202610040308";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610040308";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610040308";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610040308";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610040308";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610040308";
+import { tocar } from "./som.js?v=202610040308";
 
 const SID = gerarId(12); // identifica esta aba
 
@@ -92,6 +92,8 @@ export function iniciarSalao({ cartas }) {
 
   conta.aoMudarUsuario(atualizarUsuario);
   ligarAbasDoSalao();
+  // Roleta Diária: o prêmio vai para o chat (carta e relíquia com destaque)
+  document.addEventListener("roleta-girou", (e) => anunciarRoleta(e.detail));
   // o meu avatar lá em cima abre o meu perfil (sem conta, leva para o login)
   for (const botao of [$("#botao-conta"), $("#botao-conta-celular")]) {
     botao.addEventListener("click", (e) => {
@@ -575,9 +577,9 @@ function linhaId(p) {
 // No meu perfil, dá para equipar a relíquia.
 function secaoPremios(p, meu) {
   const sec = el("section", "premios");
-  const lista = conta.premiosDe(p).filter((x) => x.para === p.chave && PREMIOS[x.item]);
+  const lista = conta.todosOsPremios(p).filter((x) => x.para === p.chave && PREMIOS[x.item]);
   if (!lista.length) return sec;
-  Promise.all(lista.map((x) => adm.verificarPremio(x))).then((oks) => {
+  Promise.all(lista.map((x) => conta.premioValido(x))).then((oks) => {
     const validos = lista.filter((_, i) => oks[i]);
     if (!validos.length) return;
     const trofeus = validos.filter((x) => ehTrofeu(x.item)).sort((a, b) => PREMIOS[a.item].ordem - PREMIOS[b.item].ordem || b.t - a.t);
@@ -1018,7 +1020,10 @@ function atalhosDoMeuPerfil(u) {
   const loja = el("button", "btn btn-sm btn-loja", "🛒 Loja");
   loja.type = "button";
   loja.dataset.abrirLoja = "";
-  botoes.append(ranking, painel, loja);
+  const roleta = el("button", "btn btn-sm btn-roleta", "🎡 Roleta Diária");
+  roleta.type = "button";
+  roleta.dataset.abrirRoleta = "";
+  botoes.append(ranking, painel, loja, roleta);
   caixa.append(botoes);
   return caixa;
 }
@@ -1463,6 +1468,8 @@ function desenharMensagens() {
       area.append(caixaDesafio(s.desafios.get(item.id)));
     } else if (item.tipo === "mesa" && item.mesa) {
       area.append(caixaMesa(item.mesa));
+    } else if (item.tipo === "roleta") {
+      area.append(mensagemRoleta(item));
     } else if (item.tipo === "aviso" && item.admOk) {
       // Aviso de ADM (assinatura conferida)
       const d = el("div", "msg msg--aviso");
@@ -1541,6 +1548,35 @@ function adicionarMensagemGlobal(msg, nova) {
     avisarChatNoCelular();
   }
   conferirAdm(item);
+  conferirRoleta(item);
+}
+
+// Prêmio da Roleta Diária no chat. Carta e relíquia só ganham destaque depois que o banco
+// confirma (qualquer um consegue mandar uma mensagem dizendo que ganhou)
+function mensagemRoleta(item) {
+  const destaque = item.raro && item.roletaOk;
+  const d = el("div", "msg msg--roleta" + (destaque ? " msg--roleta-rara" : ""));
+  if (destaque) d.append(el("div", "msg__roleta-titulo", "🎉 PRÊMIO RARO NA ROLETA 🎉"));
+  d.append(el("span", "msg__roleta-texto", item.texto));
+  return d;
+}
+
+function conferirRoleta(item) {
+  if (item.tipo !== "roleta" || !item.raro) return;
+  conta.roletaNoBanco(item.de?.chave, { deNovo: true }).then((r) => {
+    item.roletaOk = Boolean(r && (item.premio === "carta" ? r.cartas.includes(item.carta) : r.reliquias.some((x) => x.id === item.reliquia)));
+    if (item.roletaOk) desenharMensagens();
+  });
+}
+
+function anunciarRoleta({ giro, nomeCarta } = {}) {
+  const u = conta.usuarioAtual();
+  if (!u || !giro || giro.premio === "nada") return;
+  const raro = giro.premio === "carta" || giro.premio === "reliquia";
+  const texto = giro.premio === "carta" ? `🃏 ${u.nick} tirou a carta lendária ${nomeCarta || giro.carta} na Roleta Diária!`
+    : giro.premio === "reliquia" ? `🔺 ${u.nick} ganhou a relíquia Careca do Milênio na Roleta Diária!`
+    : `🎡 ${u.nick} girou a Roleta Diária e ganhou ${giro.valor} Careca Coins.`;
+  enviarGlobal({ id: gerarId(), tipo: "roleta", de: conta.cartaoPublico(), texto, raro, premio: giro.premio, carta: giro.carta || null, reliquia: giro.reliquia || null, t: Date.now() });
 }
 
 // Mensagem que diz ser de ADM: confere a assinatura e redesenha
@@ -1580,8 +1616,8 @@ async function enviarMensagem() {
 function enviarGlobal(msg) {
   publicar(T.chat, msg);
   // Atualiza o histórico retido (últimas 40)
-  const anteriores = s.abas.get("global").itens.filter((i) => ["msg", "sistema", "mesa", "aviso"].includes(i.tipo)).slice(-39)
-    .map(({ admOk, ...resto }) => resto);
+  const anteriores = s.abas.get("global").itens.filter((i) => ["msg", "sistema", "mesa", "aviso", "roleta"].includes(i.tipo)).slice(-39)
+    .map(({ admOk, roletaOk, ...resto }) => resto);
   // a marca da última limpeza vai junto: quem carregar o histórico descarta o que é mais antigo
   publicar(T.historico, [...(s.ultimaLimpeza ? [s.ultimaLimpeza] : []), ...anteriores, msg], { reter: true });
 }
@@ -1752,7 +1788,7 @@ function aceitarDesafio(d) {
 // Quem desafiou cria o duelo: cada um joga com o próprio deck (o motor confere se vale)
 async function comecarComoAnfitriao(d, oponente, deckOponente, reliquia) {
   // a relíquia do oponente só vale com a assinatura do ADM (e tem que ser dele)
-  const reliquiaOponente = reliquia && reliquia.para === oponente.chave && ehReliquia(reliquia.item) && (await adm.verificarPremio(reliquia)) ? reliquia : null;
+  const reliquiaOponente = reliquia && reliquia.para === oponente.chave && ehReliquia(reliquia.item) && (await conta.premioValido(reliquia)) ? reliquia : null;
   if (!Array.isArray(deckOponente) || problemaDoDeck(deckOponente, { comLimite: false })) {
     aviso(`O deck de ${oponente.nick} não veio certo; ele vai jogar com o deck padrão. Se continuar, recarreguem a página.`, "erro", 9000);
   }

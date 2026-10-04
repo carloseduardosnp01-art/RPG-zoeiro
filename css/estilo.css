@@ -2231,6 +2231,238 @@ a:hover {
   background: linear-gradient(180deg, #a3f0c9, #3cc585);
 }
 
+.btn-roleta {
+  color: #fff;
+  font-weight: 800;
+  background: linear-gradient(90deg, #b8322a, #d9a521, #7b3fc4);
+  border: 1px solid rgba(255, 255, 255, .25);
+}
+
+.btn-roleta:hover,
+.btn-roleta:focus-visible {
+  color: #fff;
+  filter: brightness(1.15);
+}
+
+/* ---------- Roleta Diária ---------- */
+.roleta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.2rem;
+  align-items: start;
+}
+
+.roleta__roda-caixa {
+  position: relative;
+  max-width: 340px;
+  width: 100%;
+  margin: 0 auto;
+  padding-top: 14px;
+}
+
+.roleta__ponteiro {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 1;
+  width: 0;
+  height: 0;
+  border-right: 14px solid transparent;
+  border-left: 14px solid transparent;
+  border-top: 28px solid #f6d77c;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .8));
+  transform: translateX(-50%);
+}
+
+.roleta__roda {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 18px rgba(224, 180, 74, .35));
+}
+
+.roleta__fatia {
+  stroke: rgba(0, 0, 0, .45);
+  stroke-width: 1.2;
+}
+
+.roleta__aro {
+  fill: none;
+  stroke: #e0b44a;
+  stroke-width: 5;
+}
+
+.roleta__centro {
+  fill: #1b1410;
+  stroke: #e0b44a;
+  stroke-width: 3;
+}
+
+.roleta__texto,
+.roleta__careca {
+  font-size: 22px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.roleta__careca {
+  font-size: 26px;
+  dominant-baseline: auto;
+}
+
+.roleta__valor {
+  fill: #fff;
+  font-family: var(--fonte-titulo);
+  font-size: 18px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, .7);
+  stroke-width: 3px;
+}
+
+.roleta__lado {
+  display: grid;
+  gap: .7rem;
+}
+
+.roleta__status {
+  margin: 0;
+  font-weight: 600;
+}
+
+.roleta__girar {
+  justify-self: start;
+}
+
+.roleta__resultado:empty {
+  display: none;
+}
+
+.roleta__resultado {
+  padding: .8rem;
+  text-align: center;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid var(--borda);
+  border-radius: .7rem;
+}
+
+.roleta__resultado--raro {
+  border-color: #f6d77c;
+  box-shadow: 0 0 18px rgba(255, 210, 90, .45), inset 0 0 22px rgba(190, 110, 255, .2);
+}
+
+.roleta__premio {
+  margin: 0;
+  color: var(--ouro-claro);
+  font-family: var(--fonte-titulo);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.roleta__premio--nada {
+  color: var(--texto-suave);
+}
+
+.roleta__premio-nome {
+  margin: .2rem 0 .4rem;
+  font-weight: 700;
+}
+
+.roleta__carta {
+  width: min(180px, 60%);
+  margin: .4rem auto;
+}
+
+.roleta__reliquia {
+  width: min(150px, 55%);
+  margin: .4rem auto;
+  border-radius: .6rem;
+  box-shadow: 0 0 22px rgba(255, 210, 80, .7);
+}
+
+.roleta__dica {
+  margin: .3rem 0 0;
+  color: var(--texto-suave);
+  font-size: .9rem;
+}
+
+.roleta__chances summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.roleta__tabela {
+  margin: .4rem 0 .2rem;
+  font-size: .9rem;
+}
+
+.roleta__cor {
+  display: inline-block;
+  width: .8rem;
+  height: .8rem;
+  margin-right: .45rem;
+  vertical-align: -.1rem;
+  border: 1px solid rgba(255, 255, 255, .35);
+  border-radius: 50%;
+}
+
+.roleta__nota,
+.roleta__regras {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: .82rem;
+}
+
+@media (max-width: 767.98px) {
+  .roleta {
+    grid-template-columns: 1fr;
+  }
+
+  .roleta__roda-caixa {
+    max-width: 280px;
+  }
+
+  .roleta__girar {
+    justify-self: stretch;
+  }
+}
+
+/* Botões do cabeçalho do salão: no celular quebram linha em vez de passar da tela */
+@media (max-width: 575.98px) {
+  .salao__cabecalho > .ms-auto {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: .4rem;
+  }
+}
+
+/* Prêmio da roleta no chat */
+.msg--roleta {
+  color: var(--texto-suave);
+  font-style: italic;
+}
+
+.msg--roleta-rara {
+  padding: .5rem .7rem;
+  color: #fff;
+  font-style: normal;
+  font-weight: 700;
+  text-align: center;
+  background: linear-gradient(90deg, rgba(184, 50, 42, .35), rgba(217, 165, 33, .35), rgba(123, 63, 196, .35));
+  border: 1px solid #f6d77c;
+  border-radius: .6rem;
+  box-shadow: 0 0 14px rgba(255, 210, 90, .4);
+}
+
+.msg__roleta-titulo {
+  color: var(--ouro-claro);
+  font-family: var(--fonte-titulo);
+  font-size: .8rem;
+  letter-spacing: .08em;
+}
+
 .selo-loja {
   padding: .05rem .45rem;
   color: #0f3d27;

@@ -15,14 +15,14 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610040222";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610040222";
-import { el, esperar, aviso } from "./util.js?v=202610040222";
-import { tocar } from "./som.js?v=202610040222";
-import { abrirDetalhes } from "./catalogo.js?v=202610040222";
-import * as adm from "./admin.js?v=202610040222";
-import { PREMIOS } from "./premios.js?v=202610040222";
-import { usuarioAtual } from "./conta.js?v=202610040222";
+} from "./motor.js?v=202610040308";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610040308";
+import { el, esperar, aviso } from "./util.js?v=202610040308";
+import { tocar } from "./som.js?v=202610040308";
+import { abrirDetalhes } from "./catalogo.js?v=202610040308";
+import * as adm from "./admin.js?v=202610040308";
+import { PREMIOS } from "./premios.js?v=202610040308";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610040308";
 
 const raiz = document.querySelector("#arena");
 
@@ -442,13 +442,14 @@ function infoJogador(estado, j, lado) {
   return info;
 }
 
-// Relíquia no placar: aparece se a assinatura do ADM conferir (a conferência é guardada)
+// Relíquia no placar: aparece se a assinatura do ADM conferir, ou se for da roleta e o banco
+// confirmar (a conferência é guardada)
 const reliquiasConferidas = new Map();
 function iconeReliquia(r) {
   const chave = `${r.id}|${r.assinatura}`;
   if (!reliquiasConferidas.has(chave)) {
     reliquiasConferidas.set(chave, null);
-    adm.verificarPremio(r).then((ok) => {
+    premioValido(r).then((ok) => {
       reliquiasConferidas.set(chave, ok);
       if (sessao) desenharPlacar(sessao.estado);
     });
@@ -457,7 +458,7 @@ function iconeReliquia(r) {
   const info = PREMIOS[r.item];
   if (ok === false) {
     const alerta = el("span", "msg__falso", " ⚠");
-    alerta.title = "Relíquia sem a assinatura de um ADM";
+    alerta.title = "Relíquia que não foi confirmada (sem assinatura de ADM nem registro da roleta)";
     return alerta;
   }
   const img = el("img", "icone-reliquia");

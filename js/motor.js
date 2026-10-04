@@ -404,7 +404,9 @@ function gatilhoZoologico(estado, j, iid) {
 }
 
 // Irmãos Animal que já entraram direito (pela Egoísmo Puro) podem voltar por outros efeitos
-const liberado = (estado, iid) => (estado.liberadas || []).includes(iid);
+// Carta "só por Invocação-Fusão" (Mago Dragão Sonho do BIG) nunca fica liberada: nem o Lamento
+// Prematuro nem outro efeito a trazem de volta, só a Suruba
+const liberado = (estado, iid) => (estado.liberadas || []).includes(iid) && !carta(estado, iid).somenteFusao;
 
 // Monstros no campo (iids), de um jogador ou dos dois
 export function monstrosEmCampo(estado, j = null) {

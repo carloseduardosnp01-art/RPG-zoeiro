@@ -1301,7 +1301,8 @@
     "efeito": "mago-dragao",
     "limite": 1,
     "somenteEspecial": true,
-    "loja": 300,
+    "somenteFusao": true,
+    "loja": 500,
     "nomeNoCampo": [
       "Grande Mestre",
       "Dragão Sulista Safado Olhos Nada Azuis"
@@ -1315,8 +1316,8 @@
         "varios": true
       }
     ],
-    "texto": "\"Grande Mestre\" + 1 ou mais \"Dragão Sulista Safado Olhos Nada Azuis\". No campo, também se chama \"Grande Mestre\" e \"Dragão Sulista Safado Olhos Nada Azuis\". Seu oponente não escolhe seus monstros com efeitos de monstro. Imune às Armadilhas do oponente. Se deixar o campo: Invoque do Deck Adicional 1 monstro que mencione \"Grande Mestre\" ou \"Dragão Sulista\", ignorando as condições. Vezes por turno = Dragões usados como material: ● efeito da mão ou do Cemitério do oponente: negue e bana (esse nome fica bloqueado enquanto este card estiver no campo); ● ataque do oponente: negue e ganhe PV iguais ao ATK do atacante.",
-    "comoFunciona": "Carta da Loja (300 Careca Coins), limitada a 1. Monstro de Fusão (fica no Deck Adicional e entra pela \"Suruba\"): 1 \"Grande Mestre\" + 1 ou mais \"Dragão Sulista\" (da mão ou do campo). Cada Dragão usado como material dá 1 uso por turno das proteções, que são automáticas como as armadilhas: (1) quando o oponente ativa uma Magia da mão, um efeito da mão (Miqueas Animal, Manoel do Gelo Careca) ou do Cemitério (George, Thangan, Davi), ela é negada e banida, e ele não ativa mais cartas com esse nome enquanto o Mago estiver no campo; (2) quando o oponente declara um ataque, o ataque é negado e você ganha PV iguais ao ATK do atacante. Seus monstros não podem ser alvo de efeitos de monstro do oponente, e as Armadilhas do oponente não pegam o Mago. Se ele sair do campo, o \"Miro, o Adestrador de Dragões\" do seu Deck Adicional entra na hora.",
+    "texto": "\"Grande Mestre\" + 1 ou mais \"Dragão Sulista Safado Olhos Nada Azuis\". Só pode ser Invocado por Invocação-Fusão. No campo, também se chama \"Grande Mestre\" e \"Dragão Sulista\". Seu oponente não escolhe seus monstros com efeitos de monstro. Imune às Armadilhas do oponente. Se deixar o campo: Invoque do Deck Adicional 1 monstro que mencione \"Grande Mestre\" ou \"Dragão Sulista\", ignorando as condições. Vezes por turno = Dragões usados como material: ● efeito da mão ou do Cemitério do oponente: negue e bana (esse nome fica bloqueado enquanto este card estiver no campo); ● ataque do oponente: negue e ganhe PV iguais ao ATK do atacante.",
+    "comoFunciona": "Carta da Loja (500 Careca Coins), limitada a 1. Monstro de Fusão (fica no Deck Adicional e só entra pela \"Suruba\": nem o Lamento Prematuro nem outro efeito trazem ele de volta): 1 \"Grande Mestre\" + 1 ou mais \"Dragão Sulista\" (da mão ou do campo). Cada Dragão usado como material dá 1 uso por turno das proteções, que são automáticas como as armadilhas: (1) quando o oponente ativa uma Magia da mão, um efeito da mão (Miqueas Animal, Manoel do Gelo Careca) ou do Cemitério (George, Thangan, Davi), ela é negada e banida, e ele não ativa mais cartas com esse nome enquanto o Mago estiver no campo; (2) quando o oponente declara um ataque, o ataque é negado e você ganha PV iguais ao ATK do atacante. Seus monstros não podem ser alvo de efeitos de monstro do oponente, e as Armadilhas do oponente não pegam o Mago. Se ele sair do campo, o \"Miro, o Adestrador de Dragões\" do seu Deck Adicional entra na hora.",
     "frase": "O sonho do Big: um mago, um dragão e zero chance pro adversário.",
     "raridade": "Lendária da Zoeira",
     "copias": 0,

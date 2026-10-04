@@ -13,12 +13,12 @@
    antiga é levado para o banco na hora, com a mesma senha.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610040222";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610040222";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610040222";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610040222";
-import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610040222";
-import { precoNaLoja } from "./motor.js?v=202610040222";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610040308";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610040308";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610040308";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610040308";
+import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610040308";
+import { precoNaLoja } from "./motor.js?v=202610040308";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -409,6 +409,8 @@ export function mesclarPerfis(a, b) {
   const compras = new Map();
   for (const x of [...comprasDe(a), ...comprasDe(b)]) if (!compras.has(x.carta)) compras.set(x.carta, x);
   perfil.compras = [...compras.values()];
+  // roleta: o resumo é do servidor; fica a cópia com mais giros
+  if (roletaDe(a).giros || roletaDe(b).giros) perfil.roleta = (roletaDe(b).giros > roletaDe(a).giros ? b : a).roleta;
   // aviso: vale a confirmação de versão mais nova, seja de qual aparelho for
   const ciente = [a.ciente, b.ciente].filter((x) => Number(x?.versao) > 0).sort((x, y) => y.versao - x.versao)[0];
   if (ciente) perfil.ciente = ciente;
@@ -451,6 +453,7 @@ async function limparRemoto(remoto, temLocal) {
     presentesContados: temLocal ? [] : contadosDe(remoto),
     // ninguém "compra" pelos outros no servidor público (gastaria as moedas deles)
     compras: temLocal ? [] : comprasDe(remoto),
+    roleta: temLocal ? undefined : remoto.roleta,
   };
 }
 
@@ -679,14 +682,14 @@ export const FATOR_BOT = 0.3; // contra o bot: 30% do XP de uma partida online
 export const COINS_VITORIA = 5;
 export const COINS_VITORIA_BOT = 1;
 export const saldoCoins = (p) =>
-  Math.max(0, (p?.coinsGanhas || 0) + presentesDe(p).reduce((t, x) => t + x.coins, 0) - (p?.coinsGastas || 0)
+  Math.max(0, (p?.coinsGanhas || 0) + presentesDe(p).reduce((t, x) => t + x.coins, 0) + roletaDe(p).coins - (p?.coinsGastas || 0)
     - comprasDe(p).reduce((t, x) => t + x.preco, 0));
 
 /* ---------- Loja: cartas compradas com Careca Coins ---------- */
 
 // Cada compra fica no perfil ({ carta, preco, t }) e nunca some: a carta é do jogador para sempre
 const comprasDe = (p) => (p?.compras || []).filter((x) => x && typeof x === "object" && typeof x.carta === "string" && Number.isInteger(x.preco) && x.preco > 0);
-export const cartasCompradas = (p = usuario) => new Set(comprasDe(p).map((x) => x.carta));
+export const cartasCompradas = (p = usuario) => new Set([...comprasDe(p).map((x) => x.carta), ...roletaDe(p).cartas]);
 
 export function comprarCarta(id) {
   if (!usuario) throw new Error("Entre na sua conta (Salão Online) para comprar.");
@@ -764,10 +767,71 @@ export function aplicarPremio(p) {
   return true;
 }
 
+/* ---------- Roleta Diária: 1 giro grátis por dia; o sorteio e o prêmio são do servidor ---------- */
+
+// Resumo do que já saiu na roleta. Quem grava é o banco (o que o navegador mandar ali é jogado fora).
+export function roletaDe(p) {
+  const r = p?.roleta && typeof p.roleta === "object" ? p.roleta : {};
+  return {
+    giros: Number.isInteger(r.giros) && r.giros > 0 ? r.giros : 0,
+    coins: Number.isInteger(r.coins) && r.coins > 0 ? r.coins : 0,
+    cartas: Array.isArray(r.cartas) ? r.cartas.filter((x) => typeof x === "string") : [],
+    reliquias: Array.isArray(r.reliquias) ? r.reliquias.filter((x) => x && typeof x.id === "string") : [],
+  };
+}
+
+// Relíquias da roleta no formato dos prêmios. Não têm assinatura de ADM: quem confirma é o banco.
+export const reliquiasDaRoleta = (p) => roletaDe(p).reliquias.map((x) => ({
+  id: x.id, item: "careca-do-milenio", para: p.chave, torneio: "🎡 Roleta Diária", t: x.t, origem: "roleta",
+}));
+export const todosOsPremios = (p) => [...premiosDe(p), ...reliquiasDaRoleta(p)];
+
+// Resumo da roleta de um jogador direto do banco (guardado por 1 minuto)
+const resumosDoBanco = new Map();
+export function roletaNoBanco(chave, { deNovo = false } = {}) {
+  if (!bancoLigado() || typeof chave !== "string") return Promise.resolve(null);
+  if (deNovo) resumosDoBanco.delete(chave);
+  let pedido = resumosDoBanco.get(chave);
+  if (!pedido) {
+    pedido = chamar("perfil_publico", { p_chave: chave }).then((p) => roletaDe(p)).catch(() => null);
+    resumosDoBanco.set(chave, pedido);
+    setTimeout(() => resumosDoBanco.delete(chave), 60000);
+  }
+  return pedido;
+}
+
+// Prêmio de verdade? O do ADM pela assinatura; a relíquia da roleta, pelo resumo no banco.
+export async function premioValido(x) {
+  if (!x || typeof x !== "object") return false;
+  if (x.origem !== "roleta") return verificarPremio(x);
+  if (x.item !== "careca-do-milenio") return false;
+  return Boolean((await roletaNoBanco(x.para))?.reliquias.some((r) => r.id === x.id));
+}
+
+// Já girou hoje? { hoje, giro } (giro: null se ainda não)
+export const roletaDeHoje = () => chamarComSessao("roleta_hoje");
+
+// Gira (o banco sorteia e já grava o prêmio). Devolve { giro } ou { erro }.
+export async function girarRoleta() {
+  const chave = usuario?.chave;
+  const r = await chamarComSessao("girar_roleta");
+  if (r?.ok && usuario?.chave === chave && temConteudo(r.perfil)) {
+    banco.versao = r.versao;
+    guardarBanco();
+    resumosDoBanco.delete(chave);
+    usuario = mesclarPerfis(usuario, r.perfil);
+    guardarLocalmente();
+    publicar(topicoPerfil(chave), usuario, { reter: true }); // ranking ao vivo
+    if (JSON.stringify(usuario) !== JSON.stringify(r.perfil)) salvarNoBanco(0);
+    avisar();
+  }
+  return r;
+}
+
 // Relíquia equipada (o prêmio assinado), ou null
 export function reliquiaEquipada(p = usuario) {
   if (!p || !p.reliquia) return null;
-  return premiosDe(p).find((x) => x.id === p.reliquia && ehReliquia(x.item)) || null;
+  return todosOsPremios(p).find((x) => x.id === p.reliquia && ehReliquia(x.item)) || null;
 }
 
 export function equiparReliquia(id) {

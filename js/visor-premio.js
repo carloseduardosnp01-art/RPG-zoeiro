@@ -4,9 +4,9 @@
    de quem é, de qual torneio, quando e por qual ADM foi entregue.
    ========================================================================== */
 
-import { el } from "./util.js?v=202610040222";
-import { PREMIOS, ehReliquia } from "./premios.js?v=202610040222";
-import { nomeDoAdmin } from "./admin.js?v=202610040222";
+import { el } from "./util.js?v=202610040308";
+import { PREMIOS, ehReliquia } from "./premios.js?v=202610040308";
+import { nomeDoAdmin } from "./admin.js?v=202610040308";
 
 let encerrarAberto = null;
 
@@ -45,12 +45,13 @@ export function abrirPremio(premio, dono, origem) {
 
   const ficha = el("dl", "visor-premio__ficha");
   linha(ficha, "Dono", `${dono.tag ? `[${dono.tag}] ` : ""}${dono.nick}`);
-  linha(ficha, "Torneio", premio.torneio);
-  if (premio.t) linha(ficha, "Entregue em", new Date(premio.t).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }));
-  linha(ficha, "Entregue por", `${nomeDoAdmin(premio.de)} (ADM)`);
+  const daRoleta = premio.origem === "roleta";
+  linha(ficha, daRoleta ? "Origem" : "Torneio", premio.torneio);
+  if (premio.t) linha(ficha, daRoleta ? "Ganha em" : "Entregue em", new Date(premio.t).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }));
+  if (!daRoleta) linha(ficha, "Entregue por", `${nomeDoAdmin(premio.de)} (ADM)`);
   if (reliquia) linha(ficha, "Situação", dono.reliquia === premio.id ? "Equipada: vai junto para os duelos" : "Guardada");
   texto.append(ficha);
-  texto.append(el("p", "visor-premio__selo", "✔ Prêmio autêntico: assinatura do ADM conferida"));
+  texto.append(el("p", "visor-premio__selo", daRoleta ? "✔ Prêmio autêntico: confirmado pelo servidor do jogo" : "✔ Prêmio autêntico: assinatura do ADM conferida"));
 
   const caixa = el("div", "visor-premio__caixa");
   caixa.append(fechar, palco, texto);

@@ -14,18 +14,18 @@
    O histórico também fica no banco do jogo (js/banco.js), que não esquece.
    ========================================================================== */
 
-import { PREFIXO, publicar, assinar, lerRetido } from "./rede.js?v=202610040222";
-import * as conta from "./conta.js?v=202610040222";
-import { bancoLigado, chamar } from "./banco.js?v=202610040222";
-import * as adm from "./admin.js?v=202610040222";
-import * as T from "./torneio.js?v=202610040222";
-import { PREMIOS, ehReliquia } from "./premios.js?v=202610040222";
-import { novoDuelo, problemaDoDeck } from "./motor.js?v=202610040222";
-import { paraLista } from "./deck.js?v=202610040222";
-import { topicosDuelo } from "./sessao.js?v=202610040222";
-import { arenaAtiva, sessaoAtual, fecharArena } from "./arena.js?v=202610040222";
-import { el, gerarId, aviso, nivelDoXp } from "./util.js?v=202610040222";
-import { tocar } from "./som.js?v=202610040222";
+import { PREFIXO, publicar, assinar, lerRetido } from "./rede.js?v=202610040308";
+import * as conta from "./conta.js?v=202610040308";
+import { bancoLigado, chamar } from "./banco.js?v=202610040308";
+import * as adm from "./admin.js?v=202610040308";
+import * as T from "./torneio.js?v=202610040308";
+import { PREMIOS, ehReliquia } from "./premios.js?v=202610040308";
+import { novoDuelo, problemaDoDeck } from "./motor.js?v=202610040308";
+import { paraLista } from "./deck.js?v=202610040308";
+import { topicosDuelo } from "./sessao.js?v=202610040308";
+import { arenaAtiva, sessaoAtual, fecharArena } from "./arena.js?v=202610040308";
+import { el, gerarId, aviso, nivelDoXp } from "./util.js?v=202610040308";
+import { tocar } from "./som.js?v=202610040308";
 
 const TOPICO = `${PREFIXO}/torneio/atual`;
 const topicoInscricao = (id, chave) => `${PREFIXO}/torneio/inscricao/${id}/${chave}`;
@@ -263,8 +263,8 @@ async function criar(nome) {
 
 // Relíquia equipada do jogador (só se a assinatura do ADM conferir)
 async function reliquiaDe(perfil) {
-  const r = perfil?.reliquia ? conta.premiosDe(perfil).find((x) => x.id === perfil.reliquia && ehReliquia(x.item)) : null;
-  return r && r.para === perfil.chave && (await adm.verificarPremio(r)) ? r : null;
+  const r = perfil?.reliquia ? conta.todosOsPremios(perfil).find((x) => x.id === perfil.reliquia && ehReliquia(x.item)) : null;
+  return r && r.para === perfil.chave && (await conta.premioValido(r)) ? r : null;
 }
 
 async function iniciarJogo(p) {

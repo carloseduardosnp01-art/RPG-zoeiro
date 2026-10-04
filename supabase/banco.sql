@@ -62,11 +62,24 @@ create table if not exists zoeira.torneios (
   guardado_em timestamptz not null default now()
 );
 
+-- Roleta Diária: um giro grátis por dia (o sorteio é feito aqui, não no navegador)
+create table if not exists zoeira.roleta (
+  chave  text not null references zoeira.jogadores (chave) on delete cascade,
+  dia    date not null,               -- dia do giro no horário de Brasília
+  faixa  text not null,               -- onde a roleta parou: carta, reliquia, coins30, coins10, nada
+  premio text not null,               -- o que o jogador levou: carta, reliquia, coins, nada
+  valor  integer not null default 0,  -- Careca Coins ganhas
+  carta  text,                        -- carta da Loja ganha
+  quando timestamptz not null default now(),
+  primary key (chave, dia)
+);
+
 alter table zoeira.jogadores  enable row level security;
 alter table zoeira.sessoes    enable row level security;
 alter table zoeira.tentativas enable row level security;
 alter table zoeira.admins     enable row level security;
 alter table zoeira.torneios   enable row level security;
+alter table zoeira.roleta     enable row level security;
 
 -- As contas dos ADMs já nascem reservadas: ninguém consegue "pegar" esses nicks.
 -- A senha delas é definida aqui no SQL Editor (veja zoeira.definir_senha no fim).
@@ -123,10 +136,11 @@ language sql immutable set search_path = '' as $$
               else 0 end
 $$;
 
--- O perfil sempre leva a chave e o nick certos da conta
+-- O perfil sempre leva a chave e o nick certos da conta. O campo "roleta" é do servidor:
+-- o que o navegador mandar ali é jogado fora (salvar_perfil põe o resumo de verdade).
 create or replace function zoeira.perfil_limpo(p jsonb, p_chave text, p_nick text) returns jsonb
 language sql immutable set search_path = '' as $$
-  select (case when jsonb_typeof(p) = 'object' then p else '{}'::jsonb end)
+  select ((case when jsonb_typeof(p) = 'object' then p else '{}'::jsonb end) - 'roleta')
          || jsonb_build_object('chave', p_chave, 'nick', p_nick)
 $$;
 
@@ -269,6 +283,7 @@ declare
   v_chave text := zoeira.chave_da_sessao(p_token);
   j zoeira.jogadores;
   v_perfil jsonb;
+  v_roleta jsonb;
 begin
   if v_chave is null then
     return jsonb_build_object('erro', 'sessao');
@@ -281,6 +296,10 @@ begin
     return jsonb_build_object('erro', 'conflito', 'perfil', j.perfil, 'versao', j.versao);
   end if;
   v_perfil := zoeira.perfil_limpo(p_perfil, j.chave, j.nick);
+  v_roleta := zoeira.resumo_roleta(j.chave);
+  if v_roleta is not null then
+    v_perfil := v_perfil || jsonb_build_object('roleta', v_roleta);
+  end if;
   update zoeira.jogadores
      set perfil = v_perfil, versao = j.versao + 1, atualizado_em = now(),
          xp = zoeira.numero(v_perfil, 'xp'), vitorias = zoeira.numero(v_perfil, 'vitorias'),
@@ -334,6 +353,154 @@ create or replace function public.perfil_publico(p_chave text)
 returns jsonb language sql stable security definer set search_path = '' as $$
   select j.perfil from zoeira.jogadores j where j.chave = p_chave and j.perfil ? 'avatar'
 $$;
+
+
+/* ---------- Roleta Diária ---------- */
+
+-- 1 giro grátis por dia, que volta à meia-noite (horário de Brasília). Não dá para comprar
+-- giro nem mudar as chances. O sorteio e o prêmio são feitos aqui; o perfil recebe só o
+-- resumo (campo "roleta"), que o navegador não consegue alterar.
+-- Chances (em 10000): carta da Loja 500 (5%), relíquia Careca do Milênio 300 (3%),
+-- 30 Careca Coins 1200 (12%), 10 Careca Coins 5000 (50%), nada 3000 (30%).
+-- Carta repetida (já tem todas as da Loja) vira 100 Careca Coins; relíquia repetida, 50.
+
+create or replace function zoeira.hoje() returns date
+language sql stable set search_path = '' as $$
+  select (now() at time zone 'America/Sao_Paulo')::date
+$$;
+
+-- Onde a roleta para, para um número de 0 a 9999
+create or replace function zoeira.faixa_da_roleta(p_numero integer) returns text
+language sql immutable set search_path = '' as $$
+  select case when p_numero < 500 then 'carta'
+              when p_numero < 800 then 'reliquia'
+              when p_numero < 2000 then 'coins30'
+              when p_numero < 7000 then 'coins10'
+              else 'nada' end
+$$;
+
+create or replace function zoeira.id_reliquia_roleta(p_chave text, p_dia date) returns text
+language sql immutable set search_path = '' as $$
+  select 'roleta-' || p_chave || '-' || to_char(p_dia, 'YYYYMMDD')
+$$;
+
+create or replace function zoeira.giro_json(r zoeira.roleta) returns jsonb
+language sql stable set search_path = '' as $$
+  select jsonb_build_object('dia', r.dia, 'faixa', r.faixa, 'premio', r.premio, 'valor', r.valor, 'carta', r.carta,
+                            'reliquia', case when r.premio = 'reliquia' then zoeira.id_reliquia_roleta(r.chave, r.dia) end,
+                            't', (extract(epoch from r.quando) * 1000)::bigint)
+$$;
+
+-- Tudo o que o jogador já ganhou na roleta (vai no perfil, campo "roleta"); null se nunca girou
+create or replace function zoeira.resumo_roleta(p_chave text) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select case when count(*) = 0 then null else jsonb_build_object(
+           'giros', count(*),
+           'coins', coalesce(sum(r.valor), 0),
+           'cartas', coalesce(jsonb_agg(r.carta order by r.dia) filter (where r.premio = 'carta'), '[]'::jsonb),
+           'reliquias', coalesce(jsonb_agg(jsonb_build_object('id', zoeira.id_reliquia_roleta(r.chave, r.dia),
+                                                              't', (extract(epoch from r.quando) * 1000)::bigint)
+                                           order by r.dia) filter (where r.premio = 'reliquia'), '[]'::jsonb)) end
+    from zoeira.roleta r where r.chave = p_chave
+$$;
+
+-- O giro do dia. p_numero (0 a 9999) é sorteado por public.girar_roleta.
+create or replace function zoeira.girar(p_chave text, p_numero integer)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  -- cartas da Loja que a roleta pode dar (quando a Loja ganhar carta nova, acrescente aqui)
+  v_loja text[] := array['chaos-kelvor-prodigio', 'black-luster-daiki', 'mago-dragao-sonho-do-big', 'miro-sulista-calvo'];
+  v_hoje date := zoeira.hoje();
+  v_faixa text := zoeira.faixa_da_roleta(p_numero);
+  j zoeira.jogadores;
+  r zoeira.roleta;
+  v_premio text;
+  v_valor integer := 0;
+  v_carta text;
+  v_faltam text[];
+  v_perfil jsonb;
+  v_versao integer;
+begin
+  select * into j from zoeira.jogadores where chave = p_chave for update;
+  if not found then
+    return jsonb_build_object('erro', 'nao_existe');
+  end if;
+  select * into r from zoeira.roleta where chave = p_chave and dia = v_hoje;
+  if found then
+    return jsonb_build_object('erro', 'ja_girou', 'hoje', v_hoje, 'giro', zoeira.giro_json(r));
+  end if;
+  if v_faixa = 'carta' then
+    -- uma carta da Loja que ele ainda não tem (comprada ou ganha na roleta)
+    v_faltam := array(
+      select c from unnest(v_loja) c
+       where not exists (select 1 from jsonb_array_elements(case when jsonb_typeof(j.perfil -> 'compras') = 'array'
+                                                                 then j.perfil -> 'compras' else '[]'::jsonb end) x
+                          where x ->> 'carta' = c)
+         and not exists (select 1 from zoeira.roleta g where g.chave = p_chave and g.carta = c));
+    if cardinality(v_faltam) > 0 then
+      v_premio := 'carta';
+      v_carta := v_faltam[1 + floor(random() * cardinality(v_faltam))::integer];
+    else
+      v_premio := 'coins';
+      v_valor := 100;
+    end if;
+  elsif v_faixa = 'reliquia' then
+    -- quem já tem a Careca do Milênio (de torneio ou da roleta) leva 50 Careca Coins
+    if exists (select 1 from zoeira.roleta g where g.chave = p_chave and g.premio = 'reliquia')
+       or exists (select 1 from jsonb_array_elements(case when jsonb_typeof(j.perfil -> 'premios') = 'array'
+                                                          then j.perfil -> 'premios' else '[]'::jsonb end) x
+                   where x ->> 'item' = 'careca-do-milenio' and x ->> 'para' = p_chave) then
+      v_premio := 'coins';
+      v_valor := 50;
+    else
+      v_premio := 'reliquia';
+    end if;
+  elsif v_faixa = 'coins30' then
+    v_premio := 'coins';
+    v_valor := 30;
+  elsif v_faixa = 'coins10' then
+    v_premio := 'coins';
+    v_valor := 10;
+  else
+    v_premio := 'nada';
+  end if;
+  insert into zoeira.roleta (chave, dia, faixa, premio, valor, carta)
+  values (p_chave, v_hoje, v_faixa, v_premio, v_valor, v_carta)
+  returning * into r;
+  v_perfil := j.perfil || jsonb_build_object('roleta', zoeira.resumo_roleta(p_chave));
+  update zoeira.jogadores set perfil = v_perfil, versao = versao + 1, atualizado_em = now()
+   where chave = p_chave
+  returning versao into v_versao;
+  return jsonb_build_object('ok', true, 'hoje', v_hoje, 'giro', zoeira.giro_json(r), 'perfil', v_perfil, 'versao', v_versao);
+end $$;
+
+-- Já girou hoje? (e o que saiu)
+create or replace function public.roleta_hoje(p_token text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_chave text := zoeira.chave_da_sessao(p_token);
+  r zoeira.roleta;
+begin
+  if v_chave is null then
+    return jsonb_build_object('erro', 'sessao');
+  end if;
+  select * into r from zoeira.roleta where chave = v_chave and dia = zoeira.hoje();
+  return jsonb_build_object('hoje', zoeira.hoje(), 'giro', case when found then zoeira.giro_json(r) end);
+end $$;
+
+create or replace function public.girar_roleta(p_token text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_chave text := zoeira.chave_da_sessao(p_token);
+begin
+  if v_chave is null then
+    return jsonb_build_object('erro', 'sessao');
+  end if;
+  -- número de 0 a 9999 com bytes aleatórios do pgcrypto
+  return zoeira.girar(v_chave, (('x' || encode(extensions.gen_random_bytes(4), 'hex'))::bit(32)::bigint % 10000)::integer);
+exception when unique_violation then
+  return jsonb_build_object('erro', 'ja_girou'); -- dois cliques ao mesmo tempo
+end $$;
 
 
 /* ---------- Funções de ADM (conferem que quem chamou é ADM) ---------- */
@@ -501,6 +668,16 @@ begin
 end $$;
 
 
+/* ---------- Arrumação (roda toda vez, sem apagar nada) ---------- */
+
+-- O resumo da roleta no perfil de cada um é sempre o que está na tabela
+update zoeira.jogadores j
+   set perfil = case when exists (select 1 from zoeira.roleta r where r.chave = j.chave)
+                     then j.perfil || jsonb_build_object('roleta', zoeira.resumo_roleta(j.chave))
+                     else j.perfil - 'roleta' end
+ where j.perfil ? 'roleta' or exists (select 1 from zoeira.roleta r where r.chave = j.chave);
+
+
 /* ---------- Permissões ---------- */
 
 -- O site (anon/authenticated) não enxerga o esquema zoeira nem as funções internas
@@ -536,7 +713,9 @@ declare
     'public.dar_presente(text, text, jsonb)',
     'public.guardar_torneio(text, jsonb)',
     'public.apagar_torneio(text, text)',
-    'public.torneios_encerrados()'
+    'public.torneios_encerrados()',
+    'public.roleta_hoje(text)',
+    'public.girar_roleta(text)'
   ];
 begin
   foreach f in array funcoes loop

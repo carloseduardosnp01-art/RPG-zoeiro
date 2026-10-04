@@ -289,6 +289,12 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT072 | Black Luster Daiki - Enviado do Hospício **(Loja: 200 🪙, limitada a 1)** | Efeito · LUZ · Guerreiro · Nv 8 · 3000/2500 | – | Entra como o Daiki; botão Efeito (1 vez por turno): bane 1 monstro do campo (nesse turno não ataca); destruiu monstro em batalha → 2º ataque |
 | ZOE-PT073 | Mago Dragão Sonho do BIG **(Loja: 500 🪙, limitada a 1)** | Fusão · LUZ · Mago · Nv 10 · 3750/2900 | – | "Grande Mestre" + 1 ou mais "Dragão Sulista"; **só entra pela Suruba** (nem o Lamento Prematuro traz de volta); usos por turno = Dragões usados: nega e bane efeitos da mão/Cemitério do oponente e nega ataques (ganhando PV); protegido de efeitos de monstro e Armadilhas do oponente; saiu do campo → Miro, o Adestrador entra do Deck Adicional |
 | ZOE-PT074 | Miro, o Sulista Calvo **(Loja: 100 🪙, limitada a 1)** | Efeito · LUZ · Besta Alada · Nv 8 · 3000/2600 | – | Só entra pela mão com 4+ monstros de LUZ de nomes diferentes no Cemitério; botão Efeito: paga 1000 PV e destrói todas as outras cartas do campo; Fase Final: manda 4 cartas do topo do deck para o Cemitério |
+| ZOE-PT075 | Calvo-In | Magia | – | Descarta 1 monstro de Nível 8 da mão e compra 2 cartas |
+| ZOE-PT076 | Miro Metálico Calvo Dragon | Efeito · TREVAS · Dragão · Nv 10 · 2800/2400 | – | Invocação-Especial da mão banindo 1 Dragão seu com a face para cima (1 por turno; também entra com 2 tributos); botão Efeito (1 por turno): Invoca 1 Dragão da mão ou do Cemitério (menos outro Miro Metálico) |
+| ZOE-PT077 | AlexanMiro | Monstro Normal · LUZ · Dragão · Nv 4 · 2000/100 | – | Dragão de alexandrita sem tributo |
+| ZOE-PT078 | Wellyborgue | Monstro Normal · TERRA · Máquina · Nv 4 · 1900/1500 | – | Guerreiro cibernético de escudo e lâmina de plasma |
+| ZOE-PT079 | WI-FI Grátis | Magia de Campo | – | Todos os monstros de INTERNET (com a face para cima, dos dois lados) +500 ATK e −400 DEF |
+| ZOE-PT080 | Espanta Trouxas **(limitada a 1)** | Magia | – | Destrói todos os monstros do oponente |
 
 **Cartas da Loja:** as quatro cartas "Lendária da Zoeira" (ZOE-PT071 a 074) não estão no deck padrão: são compradas com Careca Coins na 🛒 Loja (veja em [Funcionalidades](#funcionalidades)). **Lendária da Zoeira é só para essas exclusivas**, que ninguém tem no começo; as outras cartas fortes vão até Ultra Rara. Detalhes que valem no jogo:
 - **Entrada lendária:** quando uma delas entra em campo, a arena faz uma entrada especial: a carta desce do céu com raios arco-íris, faíscas, clarão, tremor e fanfarra, com o selo "★ LENDÁRIA DA ZOEIRA ★" e uma frase só dela (`ENTRADAS_LENDARIAS` em `js/arena.js`). Em campo, ela fica com uma aura arco-íris pulsando.
@@ -363,7 +369,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
 ├── supabase/banco.sql    # Banco de dados: tabelas, funções e permissões (cole no SQL Editor do Supabase)
-├── data/cartas.json      # As 74 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
+├── data/cartas.json      # As 80 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
 ├── data/noticias.json    # As notícias (a mais nova aparece primeiro)
 ├── img/noticias/         # Cartazes das notícias
 ├── img/cartas/           # Artes recortadas (WebP 640×640)

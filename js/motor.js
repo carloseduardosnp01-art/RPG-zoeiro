@@ -353,6 +353,7 @@ export function atkAtual(estado, iid) {
   const loc = localizar(estado, iid);
   if (loc && loc.zona === "monstros" && loc.obj.marcadores) atk += 300 * loc.obj.marcadores;
   if (loc && loc.zona === "monstros" && tipoAtual(estado, iid) === "Besta Alada") atk += 200 * zoologicosAtivos(estado);
+  if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "INTERNET") atk += 500 * camposAtivos(estado, "wifi");
   if (c.efeito === "wellington-animal" && loc && loc.zona === "monstros") {
     const ventos = estado.jogadores[loc.j].monstros.filter((m) => m && m.face && carta(estado, m.iid).atributo === "VENTO").length;
     atk += 500 * ventos;
@@ -388,8 +389,12 @@ export function defAtual(estado, iid) {
   const loc = localizar(estado, iid);
   let def = c.def;
   if (loc && loc.zona === "monstros" && tipoAtual(estado, iid) === "Besta Alada") def += 200 * zoologicosAtivos(estado);
-  return def;
+  if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "INTERNET") def -= 400 * camposAtivos(estado, "wifi");
+  return Math.max(0, def);
 }
+
+// Quantas Magias de Campo com esse efeito estão ativas (dos dois lados): WI-FI Grátis
+const camposAtivos = (estado, efeito) => estado.jogadores.filter((p) => p.campo && p.campo.face && carta(estado, p.campo.iid).efeito === efeito).length;
 
 // Quantos "Zoológico Animal" com a face para cima existem no campo (dos dois lados)
 function zoologicosAtivos(estado) {
@@ -602,6 +607,7 @@ function executarAcao(estado, j, acao, ev) {
       if (ef === "big-animal") return invocarBig(estado, j, acao, ev);
       if (BANE_LUZ_TREVAS.includes(ef)) return invocarDaiki(estado, j, acao, ev);
       if (ef === "miro-sulista") return invocarMiroSulista(estado, j, acao, ev);
+      if (ef === "miro-metalico") return invocarMiroMetalico(estado, j, acao, ev);
       return invocarPenetra(estado, j, acao, ev);
     }
     case "efeitoMonstro": return efeitoMonstro(estado, j, acao, ev);
@@ -800,6 +806,45 @@ function ativaAlgo(estado, acao) {
   return acao.tipo === "invocarEspecial" && carta(estado, acao.iid)?.efeito === "gelo-careca";
 }
 const marcarAtivacao = (estado, j) => (estado.jogadores[j].ativouNoTurno = estado.turno);
+
+// Miro Metálico Calvo Dragon: Invocação-Especial da mão banindo 1 monstro Dragão com a face para cima
+// que você controla (1 vez por turno desse jeito). Também entra por Invocação-Normal com 2 tributos.
+export function requisitosMiroMetalico(estado, j, iid) {
+  const p = estado.jogadores[j];
+  if (!ehFasePrincipal(estado) || !p.mao.includes(iid) || carta(estado, iid).efeito !== "miro-metalico" || usou(estado, j, "metalico-especial") || bloqueado(estado, j, iid)) return null;
+  const candidatos = p.monstros.filter((m) => m && m.face && tipoAtual(estado, m.iid) === "Dragão").map((m) => m.iid);
+  return candidatos.length
+    ? { candidatos, min: 1, max: 1, titulo: "Miro Metálico Calvo Dragon: bana 1 monstro Dragão com a face para cima que você controla" }
+    : null;
+}
+
+function invocarMiroMetalico(estado, j, { iid, alvos = [] }, ev) {
+  const req = requisitosMiroMetalico(estado, j, iid);
+  if (!req) return "Precisa de um monstro Dragão seu com a face para cima no campo (1 vez por turno).";
+  if (alvos.length !== 1 || !req.candidatos.includes(alvos[0])) return "Escolha 1 monstro Dragão com a face para cima que você controla.";
+  marcarUso(estado, j, "metalico-especial");
+  banir(estado, alvos[0], ev);
+  const p = estado.jogadores[j];
+  const slot = zonaLivre(p.monstros);
+  if (slot < 0) return "Não há zona de monstro livre.";
+  p.mao.splice(p.mao.indexOf(iid), 1);
+  p.monstros[slot] = { iid, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+  ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
+  aposEspecial(estado, j, iid, ev);
+  return null;
+}
+
+// Dragões que o efeito do Miro Metálico pode trazer: da mão ou do Cemitério, menos outro Miro Metálico.
+// Os que só entram de um jeito especial só voltam do Cemitério se já entraram direito antes.
+function dragoesParaMetalico(estado, j) {
+  const p = estado.jogadores[j];
+  const serve = (x, doCemiterio) => {
+    const c = carta(estado, x);
+    return c.categoria === "monstro" && c.tipo === "Dragão" && c.efeito !== "miro-metalico"
+      && (!c.somenteEspecial || (doCemiterio && liberado(estado, x))) && podeControlarMais(estado, j, x);
+  };
+  return [...p.mao.filter((x) => serve(x, false)), ...p.cemiterio.filter((x) => serve(x, true))];
+}
 
 // Daiki, Black Luster Daiki e Chaos Kelvor: Invocação-Especial da mão banindo 1 monstro de LUZ e 1 de TREVAS do seu Cemitério
 export const BANE_LUZ_TREVAS = ["daiki", "black-luster", "chaos-kelvor"];
@@ -1225,7 +1270,16 @@ export function requisitosMagia(estado, j, iid) {
         : null;
     }
     case "zoologico":
+    case "wifi":
       return { alvos: null };
+    case "calvo-in": {
+      const candidatos = p.mao.filter((x) => x !== iid && carta(estado, x).categoria === "monstro" && carta(estado, x).nivel === 8);
+      return candidatos.length && p.deck.length >= 2
+        ? { alvos: { candidatos, min: 1, max: 1, titulo: "Calvo-In: escolha o monstro de Nível 8 da mão para descartar" } }
+        : null;
+    }
+    case "espanta":
+      return monstrosEmCampo(estado, oponente(j)).length ? { alvos: null } : null;
     case "controle": {
       const candidatos = estado.jogadores[oponente(j)].monstros.filter((m) => m && m.face && carta(estado, m.iid).efeito !== "rafaza" && !intocavel(estado, m.iid) && podeControlarMais(estado, j, m.iid)).map((m) => m.iid);
       if (!candidatos.length || zonaLivre(p.monstros) < 0 || p.pl <= 800) return null;
@@ -1421,9 +1475,17 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
       break;
     }
     case "mil-facas":
+    case "espanta":
       for (const alvo of monstrosEmCampo(estado, oponente(j))) destruir(estado, alvo, ev, "efeito");
       mandarProCemiterio(estado, iid, ev);
       break;
+    case "calvo-in":
+      descartar(estado, j, alvos[0], ev);
+      comprar(estado, j, 2, ev);
+      mandarProCemiterio(estado, iid, ev);
+      break;
+    case "wifi":
+      break; // fica na Zona de Campo; o bônus é contínuo
     case "litro":
       p.pl += 2000;
       ev.push({ t: "ganhoPV", j, valor: 2000, pl: p.pl });
@@ -1994,6 +2056,15 @@ export function efeitoAtivavel(estado, j, iid) {
         confirmar: "Chaos Kelvor: pagar 1000 PV e mandar para o Cemitério TODAS as cartas das duas mãos e dos dois campos (as suas também, inclusive o Kelvor)? Depois você não ativa mais nada neste turno.",
       };
     }
+    case "miro-metalico": {
+      if (!ehFasePrincipal(estado) || usou(estado, j, "metalico") || zonaLivre(p.monstros) < 0) return null;
+      const candidatos = dragoesParaMetalico(estado, j);
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: Invocar por Invocação-Especial 1 Dragão da mão ou do Cemitério",
+        alvos: { candidatos, min: 1, max: 1, titulo: "Miro Metálico Calvo Dragon: escolha o Dragão da mão ou do Cemitério que entra" },
+      };
+    }
     case "miro-sulista": {
       if (!ehFasePrincipal(estado) || p.pl <= 1000) return null;
       if (![...monstrosEmCampo(estado), ...magiasEmCampo(estado)].some((x) => x !== iid)) return null;
@@ -2098,6 +2169,18 @@ function efeitoMonstro(estado, j, { iid, alvos = [] }, ev) {
       m.semAtaque = estado.turno;
       banir(estado, alvos[0], ev);
       break;
+    case "miro-metalico": {
+      marcarUso(estado, j, "metalico");
+      const p = estado.jogadores[j];
+      const alvo = alvos[0];
+      const origem = p.mao.includes(alvo) ? p.mao : p.cemiterio;
+      origem.splice(origem.indexOf(alvo), 1);
+      const slot = zonaLivre(p.monstros);
+      p.monstros[slot] = { iid: alvo, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+      ev.push({ t: "invocacao", j, iid: alvo, modo: "especial", slot });
+      aposEspecial(estado, j, alvo, ev);
+      break;
+    }
     case "chaos-kelvor": {
       marcarUso(estado, j, "kelvor");
       const p = estado.jogadores[j];
@@ -2826,6 +2909,10 @@ export function opcoesDaCarta(estado, j, iid) {
       }
       if (podeInvocarMiroSulista(estado, j, iid)) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial (4+ monstros de LUZ de nomes diferentes no Cemitério)", acao: { tipo: "invocarEspecial", iid } });
+      }
+      const metalico = c.efeito === "miro-metalico" && requisitosMiroMetalico(estado, j, iid);
+      if (metalico) {
+        opcoes.push({ id: "especial", rotulo: "Invocação-Especial (banir 1 Dragão seu com a face para cima)", acao: { tipo: "invocarEspecial", iid }, alvos: metalico });
       }
       const gelo = c.efeito === "gelo-careca" && requisitosGeloCareca(estado, j, iid);
       if (gelo) {

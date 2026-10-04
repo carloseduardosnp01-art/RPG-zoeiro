@@ -7,13 +7,13 @@
    Depois do giro, o evento "roleta-girou" avisa o salão (que conta no chat).
    ========================================================================== */
 
-import * as conta from "./conta.js?v=202610041602";
-import { criarCarta } from "./cartas-ui.js?v=202610041602";
-import { PREMIOS } from "./premios.js?v=202610041602";
-import { COSMETICOS, TIPOS } from "./cosmeticos.js?v=202610041602";
-import { previaCosmetico } from "./loja.js?v=202610041602";
-import { el, aviso } from "./util.js?v=202610041602";
-import { tocar } from "./som.js?v=202610041602";
+import * as conta from "./conta.js?v=202610041639";
+import { criarCarta } from "./cartas-ui.js?v=202610041639";
+import { PREMIOS } from "./premios.js?v=202610041639";
+import { COSMETICOS, TIPOS } from "./cosmeticos.js?v=202610041639";
+import { previaCosmetico } from "./loja.js?v=202610041639";
+import { el, aviso } from "./util.js?v=202610041639";
+import { tocar } from "./som.js?v=202610041639";
 
 // As faixas (as mesmas chances do banco.sql)
 const FAIXAS = {

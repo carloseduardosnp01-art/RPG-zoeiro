@@ -238,8 +238,8 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT021 | Wellington, O Guerreiro Mágico | Efeito · Nv 4 · 1600/1600 | – | Entra com 1 Marcador (+300 ATK); botão Efeito gasta o marcador e destrói 1 Magia/Armadilha |
 | ZOE-PT022 | O Alquimista das Farmácias **(limitada a 1)** | Efeito/Virar · Nv 3 · 1500/1300 | – | VIRE: busca 1 Magia do deck (você escolhe no seu turno; sorteada no turno do oponente) |
 | ZOE-PT023 | Miqueas, o Mestre das Lâminas e Punhos **(limitada a 1)** | Efeito · Nv 6 · 2400/2200 | – | Ao ser Invocado pode destruir 1 Magia/Armadilha; botão Efeito (só na Fase Principal 1): descarta 1 carta e ataca 2 vezes |
-| ZOE-PT024 | Manoel do Gelo | Efeito · GELO · Nv 3 · 1500/1200 | – | Destruído: chama outro "Manoel do Gelo" sorteado do deck (1 vez por turno) |
-| ZOE-PT025 | Manoel do Gelo Careca | Efeito · GELO · Nv 7 · 2400/1900 | – | Invocação-Especial descartando 2 GELO; botão Efeito (só na Fase Principal 1): tributa 1 GELO em ataque e ataca 2 vezes |
+| ZOE-PT024 | Manoel do Gelo | Efeito · ÁGUA · Nv 3 · 1500/1200 | – | Destruído: chama outro "Manoel do Gelo" sorteado do deck (1 vez por turno) |
+| ZOE-PT025 | Manoel do Gelo Careca | Efeito · ÁGUA · Nv 7 · 2400/1900 | – | Invocação-Especial descartando 2 de ÁGUA; botão Efeito (só na Fase Principal 1): tributa 1 de ÁGUA em ataque e ataca 2 vezes |
 | ZOE-PT026 | Pote do Gelo | Magia | – | Devolve 2 cartas "gelo" da mão ao deck e compra 3 |
 | ZOE-PT027 | Lamento Prematuro **(limitada a 1)** | Magia de Equipamento | – | Paga 800 PV e traz 1 monstro do seu Cemitério em ataque; se ela for destruída, o monstro vai junto |
 | ZOE-PT028 | Sai Daqui Obeso | Armadilha | – | Oponente atacou → o atacante volta para a mão dele |
@@ -278,7 +278,7 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT061 | Bora Bill **(limitada a 1)** | Magia | – | Se um monstro seu foi do campo para o Cemitério neste turno: Invocação-Especial de 1 monstro com até 1500 de ATK do deck |
 | ZOE-PT062 | Thangan **(limitada a 1)** | Efeito · TREVAS · Demônio · Nv 3 · 1000/600 | – | Saiu do campo para o Cemitério: 1 monstro sorteado com até 1500 de ATK do deck para a mão (os efeitos dele ficam bloqueados no turno) |
 | ZOE-PT063 | W — Hackeando Sistema **(limitada a 1)** | Armadilha | – | Ativa sozinha quando o oponente ativa Magia/Armadilha: descarta 1 carta sorteada, nega e destrói |
-| ZOE-PT064 | W — Guerreiro das Lâminas Gêmeas | Efeito · INTERNET · Ciberso · Nv 4 · 1700/1000 | – | Contra monstro em Defesa: dano perfurante e um 2º ataque (1 vez por Batalha); só 1 dele no seu campo |
+| ZOE-PT064 | W — Guerreiro das Lâminas Gêmeas | Efeito · TERRA · Ciberso · Nv 4 · 1700/1000 | – | Contra monstro em Defesa: dano perfurante e um 2º ataque (1 vez por Batalha); só 1 dele no seu campo |
 | ZOE-PT065 | Armadura de Gelo | Armadilha | – | Ativa sozinha quando um monstro do oponente ataca: bane o atacante |
 | ZOE-PT066 | Obelisco, o Imenso **(limitada a 1)** | Efeito · DIVINO · Besta Divina · Nv 10 · 4000/4000 | – | 3 tributos, não pode ser baixado, ninguém responde à Invocação-Normal e nenhum efeito escolhe ele como alvo; botão Efeito: tributa 2 e destrói todos os monstros do oponente |
 | ZOE-PT067 | Dragão Sulista Safado Olhos Nada Azuis | Monstro Normal · LUZ · Dragão · Nv 8 · 3000/2500 | – | Material do Miro, o Adestrador de Dragões |
@@ -293,8 +293,15 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT076 | Miro Metálico Calvo Dragon | Efeito · TREVAS · Dragão · Nv 10 · 2800/2400 | – | Invocação-Especial da mão banindo 1 Dragão seu com a face para cima (1 por turno; também entra com 2 tributos); botão Efeito (1 por turno): Invoca 1 Dragão da mão ou do Cemitério (menos outro Miro Metálico) |
 | ZOE-PT077 | AlexanMiro | Monstro Normal · LUZ · Dragão · Nv 4 · 2000/100 | – | Dragão de alexandrita sem tributo |
 | ZOE-PT078 | Wellyborgue | Monstro Normal · TERRA · Máquina · Nv 4 · 1900/1500 | – | Guerreiro cibernético de escudo e lâmina de plasma |
-| ZOE-PT079 | WI-FI Grátis | Magia de Campo | – | Todos os monstros de INTERNET (com a face para cima, dos dois lados) +500 ATK e −400 DEF |
+| ZOE-PT079 | WI-FI Grátis | Magia de Campo | – | Todos os monstros de TERRA (com a face para cima, dos dois lados) +500 ATK e −400 DEF |
 | ZOE-PT080 | Espanta Trouxas **(limitada a 1)** | Magia | – | Destrói todos os monstros do oponente |
+| ZOE-PT081 | Geada da Peste | Magia de Campo | – | (Também se chama "Gelada".) Monstros de ÁGUA no campo +200 ATK/DEF; os de ÁGUA nas mãos e no campo ficam com 1 Nível a menos (o Manoel do Gelo Careca passa a pedir 1 tributo) |
+| ZOE-PT082 | Guerreiro Manoel | Monstro Normal · ÁGUA · Guerreiro · Nv 4 · 2000/1500 | – | Guerreiro das correntes congelantes do norte |
+| ZOE-PT083 | Daiki Místico | Monstro Normal · LUZ · Mago · Nv 4 · 800/2000 | – | Elfo de pouco ataque e muita defesa |
+| ZOE-PT084 | Defense Careca | Efeito · TREVAS · Guerreiro · Nv 6 · 1550/2500 | – | Invocado por Invocação-Normal ou Flip vai para Defesa; ataca mesmo em Defesa, usando o ATK |
+| ZOE-PT085 | Doutor Daiki **(limitada a 1)** | Efeito · TREVAS · Mago · Nv 1 · 300/300 | – | Botão Efeito (Ataque ou Defesa): paga 1000 PV e Invoca 1 Fusão de Nível 6 ou menos do Deck Adicional; ela não ataca direto e volta no fim do turno |
+
+**Atributos:** TERRA, TREVAS, LUZ, ÁGUA (水), VENTO e DIVINO. Desde 04/10/2026 não existem mais GELO (os Manoel do Gelo viraram ÁGUA; o "gelo" do Pote do Gelo é ÁGUA ou "Gelo" no nome) nem INTERNET (o W — Guerreiro virou TERRA, e o WI-FI Grátis passou a dar o bônus para TERRA). O Nível "na hora" (`nivelAtual` em `js/motor.js`, por causa da Geada da Peste) é o que vale para os tributos e para os efeitos que olham o Nível na mão e no campo.
 
 **Cartas da Loja:** as quatro cartas "Lendária da Zoeira" (ZOE-PT071 a 074) não estão no deck padrão: são compradas com Careca Coins na 🛒 Loja (veja em [Funcionalidades](#funcionalidades)). **Lendária da Zoeira é só para essas exclusivas**, que ninguém tem no começo; as outras cartas fortes vão até Ultra Rara. Detalhes que valem no jogo:
 - **Entrada lendária:** quando uma delas entra em campo, a arena faz uma entrada especial: a carta desce do céu com raios arco-íris, faíscas, clarão, tremor e fanfarra, com o selo "★ LENDÁRIA DA ZOEIRA ★" e uma frase só dela (`ENTRADAS_LENDARIAS` em `js/arena.js`). Em campo, ela fica com uma aura arco-íris pulsando.
@@ -369,7 +376,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
 ├── supabase/banco.sql    # Banco de dados: tabelas, funções e permissões (cole no SQL Editor do Supabase)
-├── data/cartas.json      # As 80 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
+├── data/cartas.json      # As 85 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
 ├── data/noticias.json    # As notícias (a mais nova aparece primeiro)
 ├── img/noticias/         # Cartazes das notícias
 ├── img/cartas/           # Artes recortadas (WebP 640×640)

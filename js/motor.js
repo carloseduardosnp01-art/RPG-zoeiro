@@ -306,6 +306,19 @@ export function quemAge(estado) {
 // Tributos de uma carta (o Obelisco pede 3 mesmo sendo Nível 10)
 export const tributosDaCarta = (c) => c.tributos ?? tributosNecessarios(c.nivel);
 
+// Nível na hora: a Geada da Peste tira 1 dos monstros de ÁGUA na mão e no campo (nunca abaixo de 1)
+export function nivelAtual(estado, iid) {
+  const c = carta(estado, iid);
+  if (!c || c.categoria !== "monstro") return 0;
+  let nivel = c.nivel;
+  if (c.atributo === "ÁGUA") {
+    const loc = localizar(estado, iid);
+    if (loc && (loc.zona === "mao" || (loc.zona === "monstros" && loc.obj.face))) nivel -= camposAtivos(estado, "geada");
+  }
+  return Math.max(1, nivel);
+}
+export const tributosNaHora = (estado, iid) => carta(estado, iid).tributos ?? tributosNecessarios(nivelAtual(estado, iid));
+
 export function tributosNecessarios(nivel) {
   if (nivel >= 7) return 2;
   if (nivel >= 5) return 1;
@@ -353,7 +366,8 @@ export function atkAtual(estado, iid) {
   const loc = localizar(estado, iid);
   if (loc && loc.zona === "monstros" && loc.obj.marcadores) atk += 300 * loc.obj.marcadores;
   if (loc && loc.zona === "monstros" && tipoAtual(estado, iid) === "Besta Alada") atk += 200 * zoologicosAtivos(estado);
-  if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "INTERNET") atk += 500 * camposAtivos(estado, "wifi");
+  if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "TERRA") atk += 500 * camposAtivos(estado, "wifi");
+  if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "ÁGUA") atk += 200 * camposAtivos(estado, "geada");
   if (c.efeito === "wellington-animal" && loc && loc.zona === "monstros") {
     const ventos = estado.jogadores[loc.j].monstros.filter((m) => m && m.face && carta(estado, m.iid).atributo === "VENTO").length;
     atk += 500 * ventos;
@@ -380,20 +394,21 @@ function marcarUso(estado, j, chave) {
   (estado.jogadores[j].usos ||= {})[chave] = estado.turno;
 }
 
-// Cartas "gelo": atributo GELO ou "Gelo" no nome (Pote do Gelo)
-const ehMonstroGelo = (c) => c.categoria === "monstro" && c.atributo === "GELO";
-const ehCartaGelo = (c) => c.atributo === "GELO" || c.nome.toLowerCase().includes("gelo");
+// Monstros de ÁGUA (Manoel do Gelo Careca) e cartas "gelo": de ÁGUA ou com "Gelo" no nome (Pote do Gelo)
+const ehMonstroGelo = (c) => c.categoria === "monstro" && c.atributo === "ÁGUA";
+const ehCartaGelo = (c) => c.atributo === "ÁGUA" || c.nome.toLowerCase().includes("gelo");
 
 export function defAtual(estado, iid) {
   const c = carta(estado, iid);
   const loc = localizar(estado, iid);
   let def = c.def;
   if (loc && loc.zona === "monstros" && tipoAtual(estado, iid) === "Besta Alada") def += 200 * zoologicosAtivos(estado);
-  if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "INTERNET") def -= 400 * camposAtivos(estado, "wifi");
+  if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "TERRA") def -= 400 * camposAtivos(estado, "wifi");
+  if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "ÁGUA") def += 200 * camposAtivos(estado, "geada");
   return Math.max(0, def);
 }
 
-// Quantas Magias de Campo com esse efeito estão ativas (dos dois lados): WI-FI Grátis
+// Quantas Magias de Campo com esse efeito estão ativas (dos dois lados): WI-FI Grátis, Geada da Peste
 const camposAtivos = (estado, efeito) => estado.jogadores.filter((p) => p.campo && p.campo.face && carta(estado, p.campo.iid).efeito === efeito).length;
 
 // Quantos "Zoológico Animal" com a face para cima existem no campo (dos dois lados)
@@ -667,7 +682,7 @@ function invocar(estado, j, { iid, modo = "atk", tributos = [] }, ev) {
   if (!podeControlarMais(estado, j, iid)) return `Você só pode controlar 1 "${c.nome}".`;
   if (modo === "baixar" && c.naoBaixa) return `"${c.nome}" não pode ser baixado.`;
 
-  const n = tributosDaCarta(c);
+  const n = tributosNaHora(estado, iid);
   const slots = [...new Set(tributos)];
   if (slots.length !== n || tributos.length !== n) {
     return n === 0 ? "Esse monstro não precisa de tributo." : `Esse monstro precisa de ${n} tributo${n > 1 ? "s" : ""}.`;
@@ -730,19 +745,19 @@ function invocarPenetra(estado, j, { iid, pos = "atk" }, ev) {
   return null;
 }
 
-// Manoel do Gelo Careca: descarta 2 outros monstros GELO da mão e entra por Invocação-Especial
+// Manoel do Gelo Careca: descarta 2 outros monstros de ÁGUA da mão e entra por Invocação-Especial
 export function requisitosGeloCareca(estado, j, iid) {
   const p = estado.jogadores[j];
   if (!ehFasePrincipal(estado) || !p.mao.includes(iid) || zonaLivre(p.monstros) < 0) return null;
   const candidatos = p.mao.filter((x) => x !== iid && ehMonstroGelo(carta(estado, x)));
   if (candidatos.length < 2) return null;
-  return { candidatos, min: 2, max: 2, titulo: `${carta(estado, iid).nome}: descarte 2 monstros GELO` };
+  return { candidatos, min: 2, max: 2, titulo: `${carta(estado, iid).nome}: descarte 2 monstros de ÁGUA` };
 }
 
 function invocarGeloCareca(estado, j, { iid, alvos = [] }, ev) {
   const req = requisitosGeloCareca(estado, j, iid);
-  if (!req) return "Precisa de 2 outros monstros GELO na mão e uma zona de monstro livre.";
-  if (new Set(alvos).size !== 2 || alvos.length !== 2 || alvos.some((a) => !req.candidatos.includes(a))) return "Escolha 2 monstros GELO para descartar.";
+  if (!req) return "Precisa de 2 outros monstros de ÁGUA na mão e uma zona de monstro livre.";
+  if (new Set(alvos).size !== 2 || alvos.length !== 2 || alvos.some((a) => !req.candidatos.includes(a))) return "Escolha 2 monstros de ÁGUA para descartar.";
   const p = estado.jogadores[j];
   if (bloqueadoPorMago(estado, j, iid)) return "O Mago Dragão do oponente não deixa você ativar cartas com esse nome.";
   marcarAtivacao(estado, j);
@@ -784,7 +799,7 @@ export function podeInvocarBig(estado, j, iid) {
     !usou(estado, j, "big-especial") &&
     !bloqueado(estado, j, iid) &&
     zonaLivre(p.monstros) >= 0 &&
-    p.monstros.some((m) => m && m.face && ehAnimal(carta(estado, m.iid)) && carta(estado, m.iid).nivel >= 5)
+    p.monstros.some((m) => m && m.face && ehAnimal(carta(estado, m.iid)) && nivelAtual(estado, m.iid) >= 5)
   );
 }
 
@@ -832,6 +847,15 @@ function invocarMiroMetalico(estado, j, { iid, alvos = [] }, ev) {
   ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
   aposEspecial(estado, j, iid, ev);
   return null;
+}
+
+// Fusões que o Doutor Daiki pode trazer: Nível 6 ou menos, do seu Deck Adicional (a Fusão que só
+// entra pela Suruba, como o Mago Dragão, não)
+function fusoesDoDoutor(estado, j) {
+  return (estado.jogadores[j].extra || []).filter((x) => {
+    const c = carta(estado, x);
+    return ehFusao(c) && c.nivel <= 6 && !c.somenteFusao && podeControlarMais(estado, j, x);
+  });
 }
 
 // Dragões que o efeito do Miro Metálico pode trazer: da mão ou do Cemitério, menos outro Miro Metálico.
@@ -946,7 +970,7 @@ export function podeInvocarGeorge(estado, j, iid) {
     carta(estado, iid).efeito === "george" &&
     !usou(estado, j, "george-especial") &&
     zonaLivre(p.monstros) >= 0 &&
-    p.monstros.some((m) => m && m.face && carta(estado, m.iid).atributo === "VENTO" && carta(estado, m.iid).nivel <= 6)
+    p.monstros.some((m) => m && m.face && carta(estado, m.iid).atributo === "VENTO" && nivelAtual(estado, m.iid) <= 6)
   );
 }
 
@@ -998,6 +1022,16 @@ function aposInvocar(estado, j, iid, modo, ev) {
   if (!semResposta) verificarArmadilhas(estado, "invocacao", { j, iid, modo }, ev);
   if (estado.vencedor !== null) return;
   const c = carta(estado, iid);
+
+  // Defense Careca: Invocado por Invocação-Normal ou Flip, muda para a Posição de Defesa
+  if (c.efeito === "defense-careca" && ["normal", "tributo", "flip"].includes(modo)) {
+    const m = localizar(estado, iid);
+    if (m && m.zona === "monstros" && m.obj.face && m.obj.pos === "atk") {
+      m.obj.pos = "def";
+      ev.push({ t: "efeito", j, iid });
+      ev.push({ t: "posicao", j, iid, pos: "def" });
+    }
+  }
 
   if ((modo === "normal" || modo === "tributo") && c.efeito === "davi" && !usou(estado, j, "davi-devolver")) {
     const loc = localizar(estado, iid);
@@ -1271,9 +1305,10 @@ export function requisitosMagia(estado, j, iid) {
     }
     case "zoologico":
     case "wifi":
+    case "geada":
       return { alvos: null };
     case "calvo-in": {
-      const candidatos = p.mao.filter((x) => x !== iid && carta(estado, x).categoria === "monstro" && carta(estado, x).nivel === 8);
+      const candidatos = p.mao.filter((x) => x !== iid && carta(estado, x).categoria === "monstro" && nivelAtual(estado, x) === 8);
       return candidatos.length && p.deck.length >= 2
         ? { alvos: { candidatos, min: 1, max: 1, titulo: "Calvo-In: escolha o monstro de Nível 8 da mão para descartar" } }
         : null;
@@ -1485,7 +1520,8 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
       mandarProCemiterio(estado, iid, ev);
       break;
     case "wifi":
-      break; // fica na Zona de Campo; o bônus é contínuo
+    case "geada":
+      break; // fica na Zona de Campo; o efeito é contínuo
     case "litro":
       p.pl += 2000;
       ev.push({ t: "ganhoPV", j, valor: 2000, pl: p.pl });
@@ -1935,7 +1971,7 @@ function processarGatilhos(estado, ev) {
       titulo = `${c.nome}: você pode recuperar do Cemitério 1 Magia/Armadilha que mencione "Irmãos Animal"`;
     } else if (g.tipo === "thales") {
       candidatos = cartasIrmaos(estado, dono);
-      const temGrande = estado.jogadores[dono].monstros.some((m) => m && m.face && ehAnimal(carta(estado, m.iid)) && carta(estado, m.iid).nivel >= 5);
+      const temGrande = estado.jogadores[dono].monstros.some((m) => m && m.face && ehAnimal(carta(estado, m.iid)) && nivelAtual(estado, m.iid) >= 5);
       max = temGrande ? 2 : 1;
       titulo = `${c.nome}: você pode adicionar ${max === 2 ? "até 2 cartas (com nomes diferentes)" : "1 carta"} que mencionam "Irmãos Animal" do deck à mão`;
     }
@@ -2056,6 +2092,16 @@ export function efeitoAtivavel(estado, j, iid) {
         confirmar: "Chaos Kelvor: pagar 1000 PV e mandar para o Cemitério TODAS as cartas das duas mãos e dos dois campos (as suas também, inclusive o Kelvor)? Depois você não ativa mais nada neste turno.",
       };
     }
+    case "doutor-daiki": {
+      if (!ehFasePrincipal(estado) || p.pl <= 1000 || zonaLivre(p.monstros) < 0) return null;
+      const candidatos = fusoesDoDoutor(estado, j);
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: pagar 1000 PV e Invocar 1 Fusão de Nível 6 ou menos do Deck Adicional",
+        alvos: { candidatos, min: 1, max: 1, titulo: "Doutor Daiki (paga 1000 PV): escolha o Monstro de Fusão de Nível 6 ou menos" },
+        posicoes: true,
+      };
+    }
     case "miro-metalico": {
       if (!ehFasePrincipal(estado) || usou(estado, j, "metalico") || zonaLivre(p.monstros) < 0) return null;
       const candidatos = dragoesParaMetalico(estado, j);
@@ -2079,8 +2125,8 @@ export function efeitoAtivavel(estado, j, iid) {
       const candidatos = p.monstros.filter((x) => x && x.iid !== iid && x.face && x.pos === "atk" && ehMonstroGelo(carta(estado, x.iid))).map((x) => x.iid);
       if (!candidatos.length) return null;
       return {
-        rotulo: "Efeito: tributar 1 monstro GELO e atacar 2 vezes",
-        alvos: { candidatos, min: 1, max: 1, titulo: `${c.nome}: escolha o monstro GELO em ataque para tributar` },
+        rotulo: "Efeito: tributar 1 monstro de ÁGUA e atacar 2 vezes",
+        alvos: { candidatos, min: 1, max: 1, titulo: `${c.nome}: escolha o monstro de ÁGUA em ataque para tributar` },
       };
     }
     default:
@@ -2088,9 +2134,10 @@ export function efeitoAtivavel(estado, j, iid) {
   }
 }
 
-function efeitoMonstro(estado, j, { iid, alvos = [] }, ev) {
+function efeitoMonstro(estado, j, { iid, alvos = [], pos = "atk" }, ev) {
   const efeito = efeitoAtivavel(estado, j, iid);
   if (!efeito) return "Esse efeito não pode ser usado agora.";
+  if (efeito.posicoes && pos !== "atk" && pos !== "def") return "Escolha Ataque ou Defesa.";
   if (efeito.alvos) {
     const { candidatos, min, max } = efeito.alvos;
     if (new Set(alvos).size !== alvos.length || alvos.length < min || alvos.length > max || alvos.some((a) => !candidatos.includes(a))) {
@@ -2169,6 +2216,19 @@ function efeitoMonstro(estado, j, { iid, alvos = [] }, ev) {
       m.semAtaque = estado.turno;
       banir(estado, alvos[0], ev);
       break;
+    case "doutor-daiki": {
+      const p = estado.jogadores[j];
+      p.pl -= 1000;
+      ev.push({ t: "custo", j, valor: 1000, pl: p.pl });
+      const alvo = alvos[0];
+      p.extra.splice(p.extra.indexOf(alvo), 1);
+      const slot = zonaLivre(p.monstros);
+      // volta para o Deck Adicional no fim do turno e não ataca os PV do oponente diretamente
+      p.monstros[slot] = { iid: alvo, pos, face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false, doDoutor: estado.turno, semAtaqueDireto: true };
+      ev.push({ t: "invocacao", j, iid: alvo, modo: "especial", slot });
+      aposEspecial(estado, j, alvo, ev);
+      break;
+    }
     case "miro-metalico": {
       marcarUso(estado, j, "metalico");
       const p = estado.jogadores[j];
@@ -2257,7 +2317,7 @@ export function alvosDeAtaque(estado, j) {
     .map((m, s) => {
       if (!m) return null;
       const c = carta(estado, m.iid);
-      if (georgeEmCampo && m.face && ehAnimal(c) && c.nivel <= 6) return null;
+      if (georgeEmCampo && m.face && ehAnimal(c) && nivelAtual(estado, m.iid) <= 6) return null;
       const outroVento = estado.jogadores[oponente(j)].monstros.some((x) => x && x !== m && x.face && carta(estado, x.iid).atributo === "VENTO");
       if (m.face && c.efeito === "wellington-animal" && outroVento) return null;
       return s;
@@ -2273,9 +2333,12 @@ export function podeAtacar(estado, j, slot) {
     estado.fase === "batalha" &&
     estado.turno > 1 &&
     !luzAtiva(estado, oponente(j)) &&
-    Boolean(m && m.face && m.pos === "atk" && podeAtacarDeNovo(estado, m))
+    Boolean(m && posicaoQueAtaca(estado, m) && podeAtacarDeNovo(estado, m))
   );
 }
+
+// Em Posição de Ataque; o Defense Careca ataca também em Defesa (com a face para cima, usando o ATK)
+const posicaoQueAtaca = (estado, m) => m.face && (m.pos === "atk" || carta(estado, m.iid).efeito === "defense-careca");
 
 // Ainda tem ataque sobrando: nenhum ainda, ou o segundo (Mestre das Lâminas / Manoel Careca)
 const podeAtacarDeNovo = (estado, m) => m.semAtaque !== estado.turno && (!m.atacou || (temAtaqueDuplo(estado, m) && !m.atacouDuas));
@@ -2287,13 +2350,14 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
   const o = estado.jogadores[oponente(j)];
   const m = p.monstros[slot];
   if (!m) return "Não há monstro nessa zona.";
-  if (!m.face || m.pos !== "atk") return "Só monstros em Posição de Ataque podem atacar.";
+  if (!posicaoQueAtaca(estado, m)) return "Só monstros em Posição de Ataque podem atacar.";
   if (m.semAtaque === estado.turno) return "Esse monstro usou o efeito e não pode atacar neste turno.";
   if (!podeAtacarDeNovo(estado, m)) return "Esse monstro já atacou neste turno.";
   if (luzAtiva(estado, oponente(j))) return "As Carecas da Luz Reveladora estão te cegando: não dá para atacar!";
 
   const alvosValidos = alvosDeAtaque(estado, j);
   if (alvo === null || alvo === undefined) {
+    if (m.semAtaqueDireto) return "Esse monstro não pode atacar os Pontos de Vida do oponente diretamente.";
     if (alvosValidos.length) return "Só dá para atacar direto se o oponente não tiver monstros que possam ser atacados.";
   } else if (!o.monstros[alvo]) {
     return "Não há monstro nessa zona do oponente.";
@@ -2691,6 +2755,12 @@ function passarTurno(estado, ev) {
       if (m && m.emprestado) devolverControle(estado, k, s, ev);
     });
   });
+  // Doutor Daiki: a Fusão que ele trouxe volta para o Deck Adicional no fim do turno
+  estado.jogadores.forEach((q) => {
+    q.monstros.forEach((m) => {
+      if (m && m.doDoutor !== undefined) devolverParaMao(estado, m.iid, ev); // Fusão "para a mão" vai para o Deck Adicional
+    });
+  });
   // Obelisco que entrou por Invocação-Especial: vai para o Cemitério na Fase Final
   estado.jogadores.forEach((q, k) => {
     q.monstros.forEach((m) => {
@@ -2883,7 +2953,7 @@ export function opcoesDaCarta(estado, j, iid) {
   if (loc.zona === "mao" && principal) {
     if (c.categoria === "monstro") {
       if (!p.invocouNormal && !c.somenteEspecial && podeControlarMais(estado, j, iid)) {
-        const n = tributosDaCarta(c);
+        const n = tributosNaHora(estado, iid);
         const qtd = monstrosEmCampo(estado, j).length;
         if (qtd >= n && (n > 0 || qtd < ZONAS)) {
           const sufixo = n ? ` (${n} tributo${n > 1 ? "s" : ""})` : "";
@@ -2916,7 +2986,7 @@ export function opcoesDaCarta(estado, j, iid) {
       }
       const gelo = c.efeito === "gelo-careca" && requisitosGeloCareca(estado, j, iid);
       if (gelo) {
-        opcoes.push({ id: "especial", rotulo: "Invocação-Especial (descartar 2 GELO)", acao: { tipo: "invocarEspecial", iid }, alvos: gelo });
+        opcoes.push({ id: "especial", rotulo: "Invocação-Especial (descartar 2 de ÁGUA)", acao: { tipo: "invocarEspecial", iid }, alvos: gelo });
       }
     } else {
       const livre = c.subtipo === "campo" || zonaLivre(p.magias) >= 0;
@@ -2936,10 +3006,17 @@ export function opcoesDaCarta(estado, j, iid) {
     if (podeAtacar(estado, j, loc.slot)) {
       const o = estado.jogadores[oponente(j)];
       const alvos = alvosDeAtaque(estado, j);
-      opcoes.push({ id: "atacar", rotulo: "Atacar", acao: { tipo: "atacar", slot: loc.slot }, ataque: { alvos, direto: alvos.length === 0 } });
+      if (alvos.length || !m.semAtaqueDireto) {
+        opcoes.push({ id: "atacar", rotulo: "Atacar", acao: { tipo: "atacar", slot: loc.slot }, ataque: { alvos, direto: alvos.length === 0 } });
+      }
     }
     const efeito = efeitoAtivavel(estado, j, iid);
-    if (efeito) opcoes.push({ id: "efeito", rotulo: efeito.rotulo, acao: { tipo: "efeitoMonstro", iid }, alvos: efeito.alvos, confirmar: efeito.confirmar });
+    if (efeito?.posicoes) {
+      // Doutor Daiki: a Fusão entra em Ataque ou em Defesa (quem escolhe é o jogador)
+      for (const [pos, nome] of [["atk", "Ataque"], ["def", "Defesa"]]) {
+        opcoes.push({ id: "efeito", rotulo: `${efeito.rotulo} (${nome})`, acao: { tipo: "efeitoMonstro", iid, pos }, alvos: efeito.alvos });
+      }
+    } else if (efeito) opcoes.push({ id: "efeito", rotulo: efeito.rotulo, acao: { tipo: "efeitoMonstro", iid }, alvos: efeito.alvos, confirmar: efeito.confirmar });
     if (principal && !m.face && m.turnoEntrou < estado.turno && m.mudouPos !== estado.turno) {
       opcoes.push({ id: "virar", rotulo: "Virar (Invocação-Flip)", acao: { tipo: "virar", slot: loc.slot } });
     }

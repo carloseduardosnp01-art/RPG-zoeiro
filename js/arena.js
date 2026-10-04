@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610041639";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610041639";
-import { el, esperar, aviso } from "./util.js?v=202610041639";
-import { tocar } from "./som.js?v=202610041639";
-import { abrirDetalhes } from "./catalogo.js?v=202610041639";
-import * as adm from "./admin.js?v=202610041639";
-import { PREMIOS } from "./premios.js?v=202610041639";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610041639";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610041639";
+} from "./motor.js?v=202610041702";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610041702";
+import { el, esperar, aviso } from "./util.js?v=202610041702";
+import { tocar } from "./som.js?v=202610041702";
+import { abrirDetalhes } from "./catalogo.js?v=202610041702";
+import * as adm from "./admin.js?v=202610041702";
+import { PREMIOS } from "./premios.js?v=202610041702";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610041702";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610041702";
 
 const raiz = document.querySelector("#arena");
 
@@ -57,6 +57,9 @@ const FRASES = {
   "calvo-in": "CALVO-IN!",
   "wifi": "WI-FI GRÁTIS: CONECTOU!",
   "espanta": "ESPANTA TROUXAS!",
+  "geada": "GEADA DA PESTE!",
+  "defense-careca": "MURALHA CARECA!",
+  "doutor-daiki": "INJEÇÃO DE FUSÃO!",
   vapo: "VAPO!",
   "forca-careca": "FORÇA CARECA!",
   "armadilha-big": "CAIU NA ARMADILHA DO BIG!",

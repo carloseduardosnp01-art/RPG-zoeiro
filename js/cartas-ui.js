@@ -4,7 +4,7 @@
    Usado pelo catálogo, pelo deck e pela arena.
    ========================================================================== */
 
-import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610041639";
+import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610041702";
 
 // Emblema do careca (logo, verso das cartas e ícone do site)
 export const SVG_CARECA = `
@@ -26,9 +26,8 @@ export const ATRIBUTOS = {
   TERRA: { chave: "terra", kanji: "地", nome: "Terra" },
   TREVAS: { chave: "trevas", kanji: "闇", nome: "Trevas" },
   LUZ: { chave: "luz", kanji: "光", nome: "Luz" },
-  GELO: { chave: "gelo", kanji: "氷", nome: "Gelo" },
+  ÁGUA: { chave: "agua", kanji: "水", nome: "Água" },
   VENTO: { chave: "vento", kanji: "風", nome: "Vento" },
-  INTERNET: { chave: "internet", kanji: "网", nome: "Internet" },
   DIVINO: { chave: "divino", kanji: "神", nome: "Divino" },
   MAGIA: { chave: "magia", kanji: "魔", nome: "Magia" },
   ARMADILHA: { chave: "armadilha", kanji: "罠", nome: "Armadilha" },

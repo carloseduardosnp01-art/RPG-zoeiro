@@ -182,9 +182,8 @@
 .carta__atributo[data-atributo="terra"] { --attr-claro: #6d6a66; --attr-escuro: #1f1d1b; }
 .carta__atributo[data-atributo="trevas"] { --attr-claro: #a45bd6; --attr-escuro: #3a1057; }
 .carta__atributo[data-atributo="vento"] { --attr-claro: #b6f5a6; --attr-escuro: #1f7a3a; color: #fff; }
-.carta__atributo[data-atributo="internet"] { --attr-claro: #6ff5d0; --attr-escuro: #0a4a42; color: #fff; }
 .carta__atributo[data-atributo="divino"] { --attr-claro: #ffe9a3; --attr-escuro: #9a6400; color: #fff; }
-.carta__atributo[data-atributo="gelo"] { --attr-claro: #e3f8ff; --attr-escuro: #1d6fa8; color: #fff; }
+.carta__atributo[data-atributo="agua"] { --attr-claro: #b9e6ff; --attr-escuro: #1458a8; color: #fff; }
 .carta__atributo[data-atributo="luz"] { --attr-claro: #fff3b0; --attr-escuro: #c99a12; color: #3a2a00; text-shadow: none; }
 .carta__atributo[data-atributo="magia"] { --attr-claro: #4fd1e8; --attr-escuro: #0c4f78; }
 .carta__atributo[data-atributo="armadilha"] { --attr-claro: #f06aa6; --attr-escuro: #6e1043; }

@@ -7,8 +7,8 @@
 
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
-  luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosDaCarta, validar, alvosDeAtaque, paresDeFusao,
-} from "./motor.js?v=202610041639";
+  luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao,
+} from "./motor.js?v=202610041702";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 
@@ -95,7 +95,7 @@ function* jogadasPrincipais(estado, j) {
     yield { tipo: "invocarEspecial", iid, alvos: [fraco("LUZ"), fraco("TREVAS")] };
   }
 
-  // 1b. Manoel do Gelo Careca entra descartando 2 GELO
+  // 1b. Manoel do Gelo Careca entra descartando 2 monstros de ÁGUA
   for (const { iid, c } of mao) {
     if (c.efeito === "daiki") continue;
     const op = opcoes(iid).find((x) => x.id === "especial" && x.alvos);
@@ -335,7 +335,7 @@ function melhorInvocacao(estado, j, mao) {
   for (const { iid, c } of mao) {
     if (c.categoria !== "monstro") continue;
     if (c.efeito === "w-laminas" && p.monstros.some((m) => m && carta(estado, m.iid).efeito === "w-laminas")) continue;
-    const n = tributosDaCarta(c);
+    const n = tributosNaHora(estado, iid); // a Geada da Peste baixa o Nível dos monstros de ÁGUA
     if (meusSlots.length < n) continue;
     const tributos = meusSlots.slice(0, n);
     const custo = tributos.reduce((t, x) => t + x.valor, 0);

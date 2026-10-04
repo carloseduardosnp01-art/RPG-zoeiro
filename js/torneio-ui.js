@@ -14,18 +14,18 @@
    O histórico também fica no banco do jogo (js/banco.js), que não esquece.
    ========================================================================== */
 
-import { PREFIXO, publicar, assinar, lerRetido } from "./rede.js?v=202610041107";
-import * as conta from "./conta.js?v=202610041107";
-import { bancoLigado, chamar } from "./banco.js?v=202610041107";
-import * as adm from "./admin.js?v=202610041107";
-import * as T from "./torneio.js?v=202610041107";
-import { PREMIOS, ehReliquia } from "./premios.js?v=202610041107";
-import { novoDuelo, problemaDoDeck } from "./motor.js?v=202610041107";
-import { paraLista } from "./deck.js?v=202610041107";
-import { topicosDuelo } from "./sessao.js?v=202610041107";
-import { arenaAtiva, sessaoAtual, fecharArena } from "./arena.js?v=202610041107";
-import { el, gerarId, aviso, nivelDoXp } from "./util.js?v=202610041107";
-import { tocar } from "./som.js?v=202610041107";
+import { PREFIXO, publicar, assinar, lerRetido } from "./rede.js?v=202610041200";
+import * as conta from "./conta.js?v=202610041200";
+import { bancoLigado, chamar } from "./banco.js?v=202610041200";
+import * as adm from "./admin.js?v=202610041200";
+import * as T from "./torneio.js?v=202610041200";
+import { PREMIOS, ehReliquia } from "./premios.js?v=202610041200";
+import { novoDuelo, problemaDoDeck } from "./motor.js?v=202610041200";
+import { paraLista } from "./deck.js?v=202610041200";
+import { topicosDuelo } from "./sessao.js?v=202610041200";
+import { arenaAtiva, sessaoAtual, fecharArena } from "./arena.js?v=202610041200";
+import { el, gerarId, aviso, nivelDoXp } from "./util.js?v=202610041200";
+import { tocar } from "./som.js?v=202610041200";
 
 const TOPICO = `${PREFIXO}/torneio/atual`;
 const topicoInscricao = (id, chave) => `${PREFIXO}/torneio/inscricao/${id}/${chave}`;

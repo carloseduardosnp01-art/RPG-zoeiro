@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610041107";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610041107";
-import { el, esperar, aviso } from "./util.js?v=202610041107";
-import { tocar } from "./som.js?v=202610041107";
-import { abrirDetalhes } from "./catalogo.js?v=202610041107";
-import * as adm from "./admin.js?v=202610041107";
-import { PREMIOS } from "./premios.js?v=202610041107";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610041107";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610041107";
+} from "./motor.js?v=202610041200";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610041200";
+import { el, esperar, aviso } from "./util.js?v=202610041200";
+import { tocar } from "./som.js?v=202610041200";
+import { abrirDetalhes } from "./catalogo.js?v=202610041200";
+import * as adm from "./admin.js?v=202610041200";
+import { PREMIOS } from "./premios.js?v=202610041200";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610041200";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610041200";
 
 const raiz = document.querySelector("#arena");
 
@@ -150,6 +150,7 @@ export function abrirArena(novaSessao, opcoes = {}) {
   montarEsqueleto();
   vazia.hidden = true;
   raiz.hidden = false;
+  iniciarRegistro(sessao.estado);
 
   sessao.aguardarVisual = () => fila;
   sessao.aoAtualizar((estado, eventos) => enfileirar(estado, eventos));
@@ -214,7 +215,10 @@ function montarEsqueleto() {
           <ol class="ordem-tag__lista" id="ordem-tag-lista"></ol>
         </section>
         <section class="caixa-lateral caixa-lateral--cresce">
-          <h3 class="caixa-lateral__titulo">Registro do duelo</h3>
+          <div class="caixa-lateral__cabecalho">
+            <h3 class="caixa-lateral__titulo">Registro do duelo</h3>
+            <button type="button" class="btn-copiar-log" id="copiar-log" title="Copiar o registro inteiro do duelo (para mandar quando algo der errado)">📋 Copiar</button>
+          </div>
           <ol class="log" id="log" aria-live="polite"></ol>
         </section>
         <section class="caixa-lateral caixa-lateral--cresce chat-duelo">
@@ -269,6 +273,7 @@ function montarEsqueleto() {
   });
 
   raiz.querySelector("#botao-sair-arena").addEventListener("click", sairDaArena);
+  raiz.querySelector("#copiar-log").addEventListener("click", copiarRegistro);
 
   // Celular: o chat fica embaixo do tabuleiro; o botão leva até ele e mostra as mensagens novas
   refs.botaoChat.addEventListener("click", () => {
@@ -303,6 +308,7 @@ function sairDaArena() {
 /* ---------- 2. Fila de atualizações ---------- */
 
 function enfileirar(estado, eventos) {
+  anotarNoRegistro(estado, eventos);
   pendentesNaFila++;
   raiz.dataset.ocupado = "true";
   fila = fila
@@ -807,6 +813,73 @@ function mostrarPrevia(iid) {
   if (c.categoria === "monstro") texto.append(el("div", "previa__stats", `ATK ${atk ?? c.atk} / DEF ${c.def}`));
   texto.append(el("p", "mb-0 mt-1", c.texto));
   refs.previa.replaceChildren(cartaEl, texto);
+}
+
+/* Registro completo do duelo (o estado guarda só os últimos 80 eventos): vai sendo anotado
+   aqui a cada jogada e o botão "📋 Copiar" copia tudo, com um cabeçalho para achar o problema */
+let registro = { linhas: [], seq: -1, doComeco: true };
+
+function iniciarRegistro(estado) {
+  const historico = estado.historico || [];
+  registro = {
+    linhas: historico.map((ev) => linhaDoRegistro(estado, ev)).filter(Boolean),
+    seq: estado.seq,
+    // página recarregada no meio do duelo: o começo pode ter ficado de fora
+    doComeco: historico[0]?.t === "inicio" || historico[0]?.t === "turno" && historico[0].turno === 1,
+  };
+}
+
+function anotarNoRegistro(estado, eventos) {
+  if (!sessao || estado.id !== sessao.estado.id || estado.seq <= registro.seq) return;
+  registro.seq = estado.seq;
+  for (const ev of eventos) {
+    const linha = linhaDoRegistro(estado, { ...ev, turno: ev.turno ?? estado.turno });
+    if (linha) registro.linhas.push(linha);
+  }
+}
+
+function linhaDoRegistro(estado, ev) {
+  try {
+    return descreverEvento(estado, ev)?.texto || null;
+  } catch {
+    return `(evento ${ev.t})`;
+  }
+}
+
+function textoDoRegistro() {
+  const estado = sessao.estado;
+  const versao = document.querySelector('script[src*="app.js"]')?.src.match(/v=(\d+)/)?.[1] || "?";
+  const lados = estado.jogadores.map((p, j) => `${nomeJogador(estado, j)} (${p.pl} LP, ${p.mao.length} na mão, ${p.deck.length} no deck)`);
+  const cabecalho = [
+    "Duelo da Zoeira — registro do duelo",
+    `Copiado em ${new Date().toLocaleString("pt-BR")} · versão do jogo ${versao}`,
+    `Duelo ${estado.id}${ehTag(estado) ? " (Tag 2vs2)" : ""} · turno ${estado.turno} · fase ${estado.fase}${estado.vencedor !== null ? ` · vencedor: ${nomeJogador(estado, estado.vencedor)}` : ""}`,
+    `Jogadores: ${lados.join(" x ")}`,
+  ];
+  if (!registro.doComeco) cabecalho.push("(a página foi recarregada no meio do duelo: o começo pode estar faltando)");
+  return [...cabecalho, "", ...registro.linhas.map((l, i) => `${i + 1}. ${l}`)].join("\n");
+}
+
+async function copiarRegistro() {
+  if (!sessao) return;
+  const texto = textoDoRegistro();
+  try {
+    await navigator.clipboard.writeText(texto);
+    aviso("📋 Registro do duelo copiado! Cole na conversa para mandar.", "ok", 6000);
+  } catch {
+    // sem permissão para a área de transferência: mostra o texto para copiar na mão
+    const caixa = el("textarea", "copiar-log__texto");
+    caixa.value = texto;
+    caixa.readOnly = true;
+    const fundo = el("div", "copiar-log");
+    const fechar = el("button", "btn btn-sm btn-ouro", "Fechar");
+    fechar.type = "button";
+    fechar.addEventListener("click", () => fundo.remove());
+    fundo.append(el("p", "", "Selecione tudo e copie (Ctrl+C ou segurar e copiar):"), caixa, fechar);
+    document.body.append(fundo);
+    caixa.focus();
+    caixa.select();
+  }
 }
 
 function desenharLog(estado) {

@@ -4,23 +4,23 @@
    pelo endereço (#inicio, #catalogo, #deck, #regras, #salao, #arena).
    ========================================================================== */
 
-import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610041107";
-import { iniciarCatalogo } from "./catalogo.js?v=202610041107";
-import { iniciarEditorDeck } from "./editor-deck.js?v=202610041107";
-import { deckAtual } from "./deck.js?v=202610041107";
-import { iniciarSalao, ativarSalao } from "./salao.js?v=202610041107";
-import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610041107";
-import { criarSessaoBot } from "./sessao.js?v=202610041107";
-import * as conta from "./conta.js?v=202610041107";
-import { alternarSom, somLigado } from "./som.js?v=202610041107";
-import { aviso } from "./util.js?v=202610041107";
-import { iniciarNoticias } from "./noticias.js?v=202610041107";
-import { iniciarLoja } from "./loja.js?v=202610041107";
-import { iniciarAviso } from "./aviso.js?v=202610041107";
-import { iniciarRoleta } from "./roleta.js?v=202610041107";
+import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610041200";
+import { iniciarCatalogo } from "./catalogo.js?v=202610041200";
+import { iniciarEditorDeck } from "./editor-deck.js?v=202610041200";
+import { deckAtual } from "./deck.js?v=202610041200";
+import { iniciarSalao, ativarSalao } from "./salao.js?v=202610041200";
+import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610041200";
+import { criarSessaoBot } from "./sessao.js?v=202610041200";
+import * as conta from "./conta.js?v=202610041200";
+import { alternarSom, somLigado } from "./som.js?v=202610041200";
+import { aviso } from "./util.js?v=202610041200";
+import { iniciarNoticias } from "./noticias.js?v=202610041200";
+import { iniciarLoja } from "./loja.js?v=202610041200";
+import { iniciarAviso } from "./aviso.js?v=202610041200";
+import { iniciarRoleta } from "./roleta.js?v=202610041200";
 
 // Número da versão (atualizado por ferramentas/nova-versao.py a cada envio)
-const VERSAO = "202610041107";
+const VERSAO = "202610041200";
 
 const TELAS = ["inicio", "noticias", "catalogo", "deck", "regras", "salao", "arena"];
 

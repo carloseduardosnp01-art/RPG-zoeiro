@@ -20,16 +20,16 @@
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
         crossorigin="anonymous">
 
-  <link rel="stylesheet" href="css/estilo.css?v=202610040150">
-  <link rel="stylesheet" href="css/carta.css?v=202610040150">
-  <link rel="stylesheet" href="css/arena.css?v=202610040150">
+  <link rel="stylesheet" href="css/estilo.css?v=202610040157">
+  <link rel="stylesheet" href="css/carta.css?v=202610040157">
+  <link rel="stylesheet" href="css/arena.css?v=202610040157">
 
   <!-- Bootstrap (JS) e MQTT.js (conexão em tempo real para o modo online) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
           integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
           crossorigin="anonymous" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js" defer></script>
-  <script type="module" src="js/app.js?v=202610040150"></script>
+  <script type="module" src="js/app.js?v=202610040157"></script>
 </head>
 <body>
   <a class="visually-hidden-focusable pular-link" href="#conteudo">Pular para o conteúdo</a>
@@ -656,7 +656,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h2 class="modal-title h5" id="titulo-aviso">📜 Aviso do Duelo da Zoeira</h2>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar" data-so-ler></button>
         </div>
         <div class="modal-body">
           <p>O Duelo da Zoeira é uma brincadeira entre amigos. Antes de jogar, leia:</p>
@@ -671,7 +671,8 @@
           <p class="aviso-situacao mb-0" id="aviso-situacao" hidden></p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Fechar</button>
+          <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal" data-so-ler>Fechar</button>
+          <button type="button" class="btn btn-outline-light" id="aviso-sair" hidden>Não concordo (sair da conta)</button>
           <button type="button" class="btn btn-ouro" id="aviso-ciente" hidden>✔ Li e estou ciente</button>
         </div>
       </div>

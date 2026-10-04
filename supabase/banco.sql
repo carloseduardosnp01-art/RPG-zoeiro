@@ -66,13 +66,14 @@ create table if not exists zoeira.torneios (
 create table if not exists zoeira.roleta (
   chave  text not null references zoeira.jogadores (chave) on delete cascade,
   dia    date not null,               -- dia do giro no horário de Brasília
-  faixa  text not null,               -- onde a roleta parou: carta, reliquia, coins30, coins10, nada
-  premio text not null,               -- o que o jogador levou: carta, reliquia, coins, nada
+  faixa  text not null,               -- onde a roleta parou: carta, reliquia, cosmetico, coins30, coins10, nada
+  premio text not null,               -- o que o jogador levou: carta, reliquia, cosmetico, coins, nada
   valor  integer not null default 0,  -- Careca Coins ganhas
   carta  text,                        -- carta da Loja ganha
   quando timestamptz not null default now(),
   primary key (chave, dia)
 );
+alter table zoeira.roleta add column if not exists cosmetico text;  -- cosmético ganho (moldura, campo, costas)
 
 alter table zoeira.jogadores  enable row level security;
 alter table zoeira.sessoes    enable row level security;
@@ -360,9 +361,9 @@ $$;
 -- 1 giro grátis por dia, que volta à meia-noite (horário de Brasília). Não dá para comprar
 -- giro nem mudar as chances. O sorteio e o prêmio são feitos aqui; o perfil recebe só o
 -- resumo (campo "roleta"), que o navegador não consegue alterar.
--- Chances (em 10000): carta da Loja 500 (5%), relíquia Careca do Milênio 300 (3%),
--- 30 Careca Coins 1200 (12%), 10 Careca Coins 5000 (50%), nada 3000 (30%).
--- Carta repetida (já tem todas as da Loja) vira 100 Careca Coins; relíquia repetida, 50.
+-- Chances (em 10000): carta da Loja 300 (3%), relíquia Careca do Milênio 200 (2%),
+-- cosmético 500 (5%), 30 Careca Coins 1000 (10%), 10 Careca Coins 5000 (50%), nada 3000 (30%).
+-- Repetido vira Careca Coins: carta (já tem todas as da Loja) 100; relíquia 50; cosmético 50.
 
 create or replace function zoeira.hoje() returns date
 language sql stable set search_path = '' as $$
@@ -372,8 +373,9 @@ $$;
 -- Onde a roleta para, para um número de 0 a 9999
 create or replace function zoeira.faixa_da_roleta(p_numero integer) returns text
 language sql immutable set search_path = '' as $$
-  select case when p_numero < 500 then 'carta'
-              when p_numero < 800 then 'reliquia'
+  select case when p_numero < 300 then 'carta'
+              when p_numero < 500 then 'reliquia'
+              when p_numero < 1000 then 'cosmetico'
               when p_numero < 2000 then 'coins30'
               when p_numero < 7000 then 'coins10'
               else 'nada' end
@@ -387,6 +389,7 @@ $$;
 create or replace function zoeira.giro_json(r zoeira.roleta) returns jsonb
 language sql stable set search_path = '' as $$
   select jsonb_build_object('dia', r.dia, 'faixa', r.faixa, 'premio', r.premio, 'valor', r.valor, 'carta', r.carta,
+                            'cosmetico', r.cosmetico,
                             'reliquia', case when r.premio = 'reliquia' then zoeira.id_reliquia_roleta(r.chave, r.dia) end,
                             't', (extract(epoch from r.quando) * 1000)::bigint)
 $$;
@@ -398,6 +401,7 @@ language sql stable security definer set search_path = '' as $$
            'giros', count(*),
            'coins', coalesce(sum(r.valor), 0),
            'cartas', coalesce(jsonb_agg(r.carta order by r.dia) filter (where r.premio = 'carta'), '[]'::jsonb),
+           'cosmeticos', coalesce(jsonb_agg(r.cosmetico order by r.dia) filter (where r.premio = 'cosmetico'), '[]'::jsonb),
            'reliquias', coalesce(jsonb_agg(jsonb_build_object('id', zoeira.id_reliquia_roleta(r.chave, r.dia),
                                                               't', (extract(epoch from r.quando) * 1000)::bigint)
                                            order by r.dia) filter (where r.premio = 'reliquia'), '[]'::jsonb)) end
@@ -410,6 +414,9 @@ returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
   -- cartas da Loja que a roleta pode dar (quando a Loja ganhar carta nova, acrescente aqui)
   v_loja text[] := array['chaos-kelvor-prodigio', 'black-luster-daiki', 'mago-dragao-sonho-do-big', 'miro-sulista-calvo'];
+  -- cosméticos que a roleta pode dar (os mesmos de js/cosmeticos.js)
+  v_cosmeticos text[] := array['moldura-viking', 'moldura-cosmica', 'moldura-dragoes', 'campo-arcano', 'verso-arcano'];
+  v_cosmetico text;
   v_hoje date := zoeira.hoje();
   v_faixa text := zoeira.faixa_da_roleta(p_numero);
   j zoeira.jogadores;
@@ -455,6 +462,21 @@ begin
     else
       v_premio := 'reliquia';
     end if;
+  elsif v_faixa = 'cosmetico' then
+    -- um cosmético que ele ainda não tem (comprado ou ganho na roleta); se já tem todos, 50 coins
+    v_faltam := array(
+      select c from unnest(v_cosmeticos) c
+       where not exists (select 1 from jsonb_array_elements(case when jsonb_typeof(j.perfil -> 'compras') = 'array'
+                                                                 then j.perfil -> 'compras' else '[]'::jsonb end) x
+                          where x ->> 'cosmetico' = c)
+         and not exists (select 1 from zoeira.roleta g where g.chave = p_chave and g.cosmetico = c));
+    if cardinality(v_faltam) > 0 then
+      v_premio := 'cosmetico';
+      v_cosmetico := v_faltam[1 + floor(random() * cardinality(v_faltam))::integer];
+    else
+      v_premio := 'coins';
+      v_valor := 50;
+    end if;
   elsif v_faixa = 'coins30' then
     v_premio := 'coins';
     v_valor := 30;
@@ -464,8 +486,8 @@ begin
   else
     v_premio := 'nada';
   end if;
-  insert into zoeira.roleta (chave, dia, faixa, premio, valor, carta)
-  values (p_chave, v_hoje, v_faixa, v_premio, v_valor, v_carta)
+  insert into zoeira.roleta (chave, dia, faixa, premio, valor, carta, cosmetico)
+  values (p_chave, v_hoje, v_faixa, v_premio, v_valor, v_carta, v_cosmetico)
   returning * into r;
   v_perfil := j.perfil || jsonb_build_object('roleta', zoeira.resumo_roleta(p_chave));
   update zoeira.jogadores set perfil = v_perfil, versao = versao + 1, atualizado_em = now()

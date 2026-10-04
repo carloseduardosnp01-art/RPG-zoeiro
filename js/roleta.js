@@ -7,24 +7,27 @@
    Depois do giro, o evento "roleta-girou" avisa o salão (que conta no chat).
    ========================================================================== */
 
-import * as conta from "./conta.js?v=202610040308";
-import { criarCarta } from "./cartas-ui.js?v=202610040308";
-import { PREMIOS } from "./premios.js?v=202610040308";
-import { el, aviso } from "./util.js?v=202610040308";
-import { tocar } from "./som.js?v=202610040308";
+import * as conta from "./conta.js?v=202610041107";
+import { criarCarta } from "./cartas-ui.js?v=202610041107";
+import { PREMIOS } from "./premios.js?v=202610041107";
+import { COSMETICOS, TIPOS } from "./cosmeticos.js?v=202610041107";
+import { previaCosmetico } from "./loja.js?v=202610041107";
+import { el, aviso } from "./util.js?v=202610041107";
+import { tocar } from "./som.js?v=202610041107";
 
 // As faixas (as mesmas chances do banco.sql)
 const FAIXAS = {
-  carta: { icone: "🃏", rotulo: "", nome: "Carta da Loja (uma que você ainda não tem)", chance: 5, cor: "#7b3fc4" },
-  reliquia: { icone: "🔺", rotulo: "", nome: "Relíquia Careca do Milênio", chance: 3, cor: "#b8322a" },
-  coins30: { icone: "🪙", rotulo: "30", nome: "30 Careca Coins", chance: 12, cor: "#d9a521" },
+  carta: { icone: "🃏", rotulo: "", nome: "Carta da Loja (uma que você ainda não tem)", chance: 3, cor: "#7b3fc4" },
+  reliquia: { icone: "🔺", rotulo: "", nome: "Relíquia Careca do Milênio", chance: 2, cor: "#b8322a" },
+  cosmetico: { icone: "🎨", rotulo: "", nome: "Cosmético (moldura, campo ou costas que você não tem)", chance: 5, cor: "#1f9a82" },
+  coins30: { icone: "🪙", rotulo: "30", nome: "30 Careca Coins", chance: 10, cor: "#d9a521" },
   coins10: { icone: "🪙", rotulo: "10", nome: "10 Careca Coins", chance: 50, cor: "#80601a" },
   nada: { icone: "💨", rotulo: "", nome: "Nada (fica pra amanhã)", chance: 30, cor: "#3b3430" },
 };
 // A roda: o tamanho de cada fatia é a chance dela (somam 100%)
 const FATIAS = [
-  ["coins10", 10], ["nada", 10], ["coins10", 10], ["coins30", 6], ["coins10", 10], ["carta", 5],
-  ["nada", 10], ["coins10", 10], ["coins30", 6], ["coins10", 10], ["nada", 10], ["reliquia", 3],
+  ["coins10", 10], ["nada", 10], ["coins10", 10], ["coins30", 5], ["coins10", 10], ["cosmetico", 5], ["nada", 10],
+  ["coins10", 10], ["carta", 3], ["coins30", 5], ["coins10", 10], ["nada", 10], ["reliquia", 2],
 ];
 const ANGULOS = (() => {
   let a = 0;
@@ -147,7 +150,7 @@ function tabelaDeChances() {
     corpo.append(tr);
   }
   tabela.append(corpo);
-  caixa.append(tabela, el("p", "roleta__nota", "Carta repetida (já tem todas as da Loja) vira 100 Careca Coins; relíquia repetida vira 50."));
+  caixa.append(tabela, el("p", "roleta__nota", "Repetido vira Careca Coins: carta (já tem todas as da Loja) 100; relíquia 50; cosmético (já tem todos) 50."));
   return caixa;
 }
 
@@ -198,7 +201,7 @@ async function girar() {
       await pararNa(r.giro.faixa, true);
       mostrarResultado(r.giro, true);
       mostrarStatus("Volte amanhã para o próximo giro grátis (meia-noite, horário de Brasília).");
-      if (r.ok) document.dispatchEvent(new CustomEvent("roleta-girou", { detail: { giro: r.giro, nomeCarta: nomeDaCarta(r.giro.carta) } }));
+      if (r.ok) document.dispatchEvent(new CustomEvent("roleta-girou", { detail: { giro: r.giro, nomeCarta: nomeDaCarta(r.giro.carta), nomeCosmetico: COSMETICOS[r.giro.cosmetico]?.nome } }));
     } else {
       mostrarStatus(r?.erro === "sessao" ? "Sua sessão acabou: entre de novo." : "Não deu para girar agora. Tente de novo.", r?.erro !== "sessao");
     }
@@ -253,7 +256,7 @@ function mostrarResultado(giro, agora) {
   const caixa = $("#roleta-resultado");
   if (!caixa) return;
   caixa.replaceChildren();
-  const raro = giro.premio === "carta" || giro.premio === "reliquia";
+  const raro = giro.premio === "carta" || giro.premio === "reliquia" || giro.premio === "cosmetico";
   caixa.className = "roleta__resultado" + (raro ? " roleta__resultado--raro" : "");
   if (giro.premio === "carta") {
     const c = cartas.find((x) => x.id === giro.carta);
@@ -273,8 +276,16 @@ function mostrarResultado(giro, agora) {
     caixa.append(el("p", "roleta__premio", "🔺 RELÍQUIA DO MILÊNIO!"), img, el("p", "roleta__premio-nome", info.nome),
       el("p", "roleta__dica", "Equipe no seu perfil para levar a Compra do Destino para os duelos."));
     if (agora) tocar("lendaria");
+  } else if (giro.premio === "cosmetico" && COSMETICOS[giro.cosmetico]) {
+    const c = COSMETICOS[giro.cosmetico];
+    caixa.append(el("p", "roleta__premio", "🎨 COSMÉTICO!"), el("p", "roleta__premio-nome", `${c.nome} (${TIPOS[c.tipo].nome})`),
+      previaCosmetico(giro.cosmetico, conta.usuarioAtual()?.avatar),
+      el("p", "roleta__dica", "É seu! Para usar: Loja → aba Cosméticos → Usar."));
+    if (agora) tocar("lendaria");
   } else if (giro.premio === "coins") {
-    const repetida = giro.faixa === "carta" ? "Saiu Carta da Loja, mas você já tem todas: " : giro.faixa === "reliquia" ? "Saiu a Relíquia, mas você já tem a sua: " : "";
+    const repetida = giro.faixa === "carta" ? "Saiu Carta da Loja, mas você já tem todas: "
+      : giro.faixa === "reliquia" ? "Saiu a Relíquia, mas você já tem a sua: "
+      : giro.faixa === "cosmetico" ? "Saiu Cosmético, mas você já tem todos: " : "";
     caixa.append(el("p", "roleta__premio", `🪙 +${giro.valor} Careca Coins!`));
     if (repetida) caixa.append(el("p", "roleta__dica", `${repetida}+${giro.valor} Careca Coins.`));
     if (agora) tocar("vitoria");
@@ -288,6 +299,7 @@ function mostrarResultado(giro, agora) {
 export function textoDoPremio(giro, nomeCarta = nomeDaCarta(giro.carta)) {
   if (giro.premio === "carta") return `a carta lendária ${nomeCarta || giro.carta}`;
   if (giro.premio === "reliquia") return "a relíquia Careca do Milênio";
+  if (giro.premio === "cosmetico") return `o cosmético ${COSMETICOS[giro.cosmetico]?.nome || giro.cosmetico}`;
   if (giro.premio === "coins") return `${giro.valor} Careca Coins`;
   return "nada";
 }

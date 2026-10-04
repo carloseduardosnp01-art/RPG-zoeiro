@@ -180,6 +180,7 @@ export function novoDuelo({ id, jogadores, semente = Date.now() }) {
       nivel: info.nivel || 1,
       bot: Boolean(info.bot),
       reliquia: info.reliquia || null, // prêmio assinado pelo ADM (ex.: Careca do Milênio)
+      visual: info.visual || null, // cosméticos (moldura, campo, costas das cartas): só visual
       pl: PL_INICIAL,
       deck: embaralhar(deck, sorteio),
       extra,
@@ -238,7 +239,7 @@ export function novoDueloTag({ id, jogadores, semente = Date.now() }) {
       const extra = todas.filter((x) => ehFusao(CARTAS[estado.cartas[x]]));
       return { extra, deck: embaralhar(todas.filter((x) => !extra.includes(x)), sorteio) };
     });
-    const cartoes = membros.map((info) => ({ chave: info.chave, nick: info.nick, tag: info.tag || "", avatar: info.avatar || "", nivel: info.nivel || 1, reliquia: info.reliquia || null }));
+    const cartoes = membros.map((info) => ({ chave: info.chave, nick: info.nick, tag: info.tag || "", avatar: info.avatar || "", nivel: info.nivel || 1, reliquia: info.reliquia || null, visual: info.visual || null }));
     // mão inicial do membro que espera
     const maoReserva = decks[1].deck.splice(-MAO_INICIAL).reverse();
     estado.jogadores.push({
@@ -280,7 +281,7 @@ function proximoMembro(estado, j, ev) {
     [p.extra, p.reserva.extra] = [p.reserva.extra || [], p.extra || []];
     p.ativo = 1 - p.ativo;
     const m = p.membros[p.ativo];
-    Object.assign(p, { nick: m.nick, tag: m.tag, avatar: m.avatar, nivel: m.nivel, reliquia: m.reliquia || null });
+    Object.assign(p, { nick: m.nick, tag: m.tag, avatar: m.avatar, nivel: m.nivel, reliquia: m.reliquia || null, visual: m.visual || null });
     ev.push({ t: "troca", j, nick: p.nick });
   }
   p.turnosJogados++;

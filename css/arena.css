@@ -322,6 +322,101 @@ body.em-duelo .tela-arena {
   box-shadow: inset 0 0 40px rgba(0, 0, 0, .6);
 }
 
+/* ---------- Skin de campo (cosmético) ----------
+   Cada metade tem o fundo da skin do dono (a do oponente vem girada) e cada zona a
+   peça da arte; com carta na zona, a carta fica por cima. */
+.campo__fundo {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 50%;
+  overflow: hidden;
+  background: center / cover no-repeat;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.campo__fundo--op {
+  top: 0;
+  transform: rotate(180deg);
+}
+
+.campo__fundo--eu {
+  bottom: 0;
+}
+
+.campo__fundo[data-skin="arcano"] {
+  background-image: url("../img/cosmeticos/campo-arcano-fundo.webp");
+}
+
+.campo__fundo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 20%, rgba(190, 110, 255, .45), transparent 62%);
+  opacity: .4;
+  animation: campo-pulso 5s ease-in-out infinite;
+}
+
+@keyframes campo-pulso {
+  0%, 100% { opacity: .35; }
+  46% { opacity: .85; }
+  48% { opacity: 1; }
+  50% { opacity: .55; }
+  52% { opacity: .95; }
+}
+
+.zona[data-skin] {
+  isolation: isolate;
+}
+
+.zona[data-skin]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--peca) center / 100% 100% no-repeat;
+  border-radius: inherit;
+  filter: drop-shadow(0 0 4px rgba(170, 100, 255, .45));
+  pointer-events: none;
+}
+
+.zona--op[data-skin]::before {
+  transform: rotate(180deg);
+}
+
+.zona--vazia[data-skin] {
+  background: none;
+  border-color: transparent;
+  opacity: 1;
+}
+
+.zona[data-skin] > .zona__rotulo {
+  display: none;
+}
+
+.zona[data-skin="arcano"][data-zona="monstros"] { --peca: url("../img/cosmeticos/campo-arcano-monstro.webp"); }
+.zona[data-skin="arcano"][data-zona="magias"] { --peca: url("../img/cosmeticos/campo-arcano-magia.webp"); }
+.zona[data-skin="arcano"][data-zona="campo"] { --peca: url("../img/cosmeticos/campo-arcano-campo.webp"); }
+.zona[data-skin="arcano"][data-zona="cemiterio"] { --peca: url("../img/cosmeticos/campo-arcano-cemiterio.webp"); }
+.zona[data-skin="arcano"][data-zona="deck"] { --peca: url("../img/cosmeticos/campo-arcano-deck.webp"); }
+.zona[data-skin="arcano"][data-zona="extra"] { --peca: url("../img/cosmeticos/campo-arcano-extra.webp"); }
+
+.pilha-campo .carta-verso[data-skin] .carta-verso__corpo {
+  box-shadow: inset 0 0 0 .9cqw #c9a2ff, inset 0 0 0 1.8cqw rgba(16, 6, 34, .85), 2px 2px 0 #1a0b2e, 4px 4px 0 #0e0618;
+}
+
+/* Moldura (cosmético) no placar: o brilho da vez vai na moldura */
+.jogador-info[data-vez="true"] .com-moldura__moldura {
+  filter: drop-shadow(0 0 6px rgba(255, 215, 90, .95));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campo__fundo::after {
+    animation: none;
+  }
+}
+
 .campo__divisa {
   grid-column: 1 / -1;
   align-self: center;

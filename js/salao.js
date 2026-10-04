@@ -12,19 +12,20 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610040308";
-import * as conta from "./conta.js?v=202610040308";
-import { bancoLigado, chamar } from "./banco.js?v=202610040308";
-import * as adm from "./admin.js?v=202610040308";
-import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610040308";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610040308";
-import { abrirPremio } from "./visor-premio.js?v=202610040308";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610040308";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610040308";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610040308";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610040308";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610040308";
-import { tocar } from "./som.js?v=202610040308";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede } from "./rede.js?v=202610041107";
+import * as conta from "./conta.js?v=202610041107";
+import { bancoLigado, chamar } from "./banco.js?v=202610041107";
+import * as adm from "./admin.js?v=202610041107";
+import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610041107";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610041107";
+import { abrirPremio } from "./visor-premio.js?v=202610041107";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610041107";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610041107";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610041107";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610041107";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610041107";
+import { tocar } from "./som.js?v=202610041107";
+import { comMoldura, visualDe } from "./cosmeticos.js?v=202610041107";
 
 const SID = gerarId(12); // identifica esta aba
 
@@ -370,7 +371,7 @@ function desenharPerfil() {
   else meuNome.append(u.nick);
   nick.append(meuNome);
   nomes.append(nick, el("div", "perfil__nivel", `Nível ${nivelDoXp(u.xp)} · ${u.xp} XP`), seloCoins(conta.saldoCoins(u)), linhaId(u));
-  topo.append(img, nomes);
+  topo.append(comMoldura(img, visualDe(u).moldura), nomes);
 
   const barra = el("div", "barra-xp");
   const cheio = el("span");
@@ -1231,7 +1232,7 @@ function abrirPerfil(cartao) {
   info.append(barra);
   const status = online ? (online.status === "duelando" ? "🟠 Duelando agora" : "🟢 Online") : "⚫ Offline";
   info.append(el("div", "pj__status", status));
-  topo.append(img, info);
+  topo.append(comMoldura(img, visualDe(p).moldura), info);
 
   const total = (p.vitorias || 0) + (p.derrotas || 0);
   const stats = el("div", "perfil__stats");
@@ -1564,19 +1565,23 @@ function mensagemRoleta(item) {
 function conferirRoleta(item) {
   if (item.tipo !== "roleta" || !item.raro) return;
   conta.roletaNoBanco(item.de?.chave, { deNovo: true }).then((r) => {
-    item.roletaOk = Boolean(r && (item.premio === "carta" ? r.cartas.includes(item.carta) : r.reliquias.some((x) => x.id === item.reliquia)));
+    item.roletaOk = Boolean(r && (item.premio === "carta" ? r.cartas.includes(item.carta)
+      : item.premio === "cosmetico" ? r.cosmeticos.includes(item.cosmetico)
+      : r.reliquias.some((x) => x.id === item.reliquia)));
     if (item.roletaOk) desenharMensagens();
   });
 }
 
-function anunciarRoleta({ giro, nomeCarta } = {}) {
+function anunciarRoleta({ giro, nomeCarta, nomeCosmetico } = {}) {
   const u = conta.usuarioAtual();
   if (!u || !giro || giro.premio === "nada") return;
-  const raro = giro.premio === "carta" || giro.premio === "reliquia";
+  const raro = giro.premio === "carta" || giro.premio === "reliquia" || giro.premio === "cosmetico";
   const texto = giro.premio === "carta" ? `🃏 ${u.nick} tirou a carta lendária ${nomeCarta || giro.carta} na Roleta Diária!`
     : giro.premio === "reliquia" ? `🔺 ${u.nick} ganhou a relíquia Careca do Milênio na Roleta Diária!`
+    : giro.premio === "cosmetico" ? `🎨 ${u.nick} ganhou o cosmético ${nomeCosmetico || giro.cosmetico} na Roleta Diária!`
     : `🎡 ${u.nick} girou a Roleta Diária e ganhou ${giro.valor} Careca Coins.`;
-  enviarGlobal({ id: gerarId(), tipo: "roleta", de: conta.cartaoPublico(), texto, raro, premio: giro.premio, carta: giro.carta || null, reliquia: giro.reliquia || null, t: Date.now() });
+  enviarGlobal({ id: gerarId(), tipo: "roleta", de: conta.cartaoPublico(), texto, raro, premio: giro.premio, carta: giro.carta || null,
+    reliquia: giro.reliquia || null, cosmetico: giro.cosmetico || null, t: Date.now() });
 }
 
 // Mensagem que diz ser de ADM: confere a assinatura e redesenha

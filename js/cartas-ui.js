@@ -4,6 +4,8 @@
    Usado pelo catálogo, pelo deck e pela arena.
    ========================================================================== */
 
+import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610041107";
+
 // Emblema do careca (logo, verso das cartas e ícone do site)
 export const SVG_CARECA = `
 <svg viewBox="0 0 64 64" aria-hidden="true" class="emblema-careca">
@@ -234,9 +236,16 @@ ${linhas.b}`;
   return raiz;
 }
 
-export function criarVerso(classe = "") {
+// versoId: as costas que o dono da carta equipou (cosmético), ou nada para as costas padrão
+export function criarVerso(classe = "", versoId = null) {
   const verso = el("div", "carta-verso" + (classe ? " " + classe : ""));
   const corpo = el("div", "carta-verso__corpo");
+  const skin = skinDe(versoId, "verso");
+  if (skin) {
+    verso.dataset.skin = skin;
+    verso.style.setProperty("--verso-img", `url("${new URL(COSMETICOS[versoId].imagem, document.baseURI).href}")`);
+    corpo.append(el("span", "carta-verso__brilho"));
+  }
   const logo = el("div", "carta-verso__logo");
   logo.innerHTML = `${SVG_CARECA.replace('class="emblema-careca"', 'class="carta-verso__careca"')}
     <span class="carta-verso__texto">ZOEIRA<small>DUELO</small></span>`;

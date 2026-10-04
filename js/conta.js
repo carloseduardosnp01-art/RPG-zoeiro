@@ -13,12 +13,13 @@
    antiga é levado para o banco na hora, com a mesma senha.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610040308";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610040308";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610040308";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610040308";
-import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610040308";
-import { precoNaLoja } from "./motor.js?v=202610040308";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610041107";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610041107";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610041107";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610041107";
+import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610041107";
+import { precoNaLoja } from "./motor.js?v=202610041107";
+import { COSMETICOS, ehCosmetico, precoCosmetico, visualDe } from "./cosmeticos.js?v=202610041107";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -407,7 +408,7 @@ export function mesclarPerfis(a, b) {
   perfil.premios = [...premios.values()].sort((x, y) => (x.t || 0) - (y.t || 0)).slice(-60);
   // compras: a mesma carta comprada nos dois aparelhos conta uma vez só
   const compras = new Map();
-  for (const x of [...comprasDe(a), ...comprasDe(b)]) if (!compras.has(x.carta)) compras.set(x.carta, x);
+  for (const x of [...comprasDe(a), ...comprasDe(b)]) if (!compras.has(chaveDaCompra(x))) compras.set(chaveDaCompra(x), x);
   perfil.compras = [...compras.values()];
   // roleta: o resumo é do servidor; fica a cópia com mais giros
   if (roletaDe(a).giros || roletaDe(b).giros) perfil.roleta = (roletaDe(b).giros > roletaDe(a).giros ? b : a).roleta;
@@ -688,8 +689,13 @@ export const saldoCoins = (p) =>
 /* ---------- Loja: cartas compradas com Careca Coins ---------- */
 
 // Cada compra fica no perfil ({ carta, preco, t }) e nunca some: a carta é do jogador para sempre
-const comprasDe = (p) => (p?.compras || []).filter((x) => x && typeof x === "object" && typeof x.carta === "string" && Number.isInteger(x.preco) && x.preco > 0);
-export const cartasCompradas = (p = usuario) => new Set([...comprasDe(p).map((x) => x.carta), ...roletaDe(p).cartas]);
+// (cosméticos também: { cosmetico, preco, t })
+const comprasDe = (p) => (p?.compras || []).filter((x) => x && typeof x === "object" && (typeof x.carta === "string" || typeof x.cosmetico === "string")
+  && Number.isInteger(x.preco) && x.preco > 0);
+const chaveDaCompra = (x) => (typeof x.carta === "string" ? x.carta : `cosmetico:${x.cosmetico}`);
+export const cartasCompradas = (p = usuario) => new Set([...comprasDe(p).filter((x) => typeof x.carta === "string").map((x) => x.carta), ...roletaDe(p).cartas]);
+export const cosmeticosDe = (p = usuario) => new Set([...comprasDe(p).filter((x) => typeof x.cosmetico === "string").map((x) => x.cosmetico), ...roletaDe(p).cosmeticos]
+  .filter(ehCosmetico));
 
 export function comprarCarta(id) {
   if (!usuario) throw new Error("Entre na sua conta (Salão Online) para comprar.");
@@ -702,6 +708,28 @@ export function comprarCarta(id) {
   publicarPerfil();
   guardarLocalmente();
   avisar();
+}
+
+/* ---------- Cosméticos (moldura, campo, costas das cartas): 50 Careca Coins cada ---------- */
+
+export function comprarCosmetico(id) {
+  if (!usuario) throw new Error("Entre na sua conta (Salão Online) para comprar.");
+  const preco = precoCosmetico(id);
+  if (!preco) throw new Error("Esse cosmético não existe.");
+  if (cosmeticosDe().has(id)) throw new Error("Você já tem esse cosmético.");
+  const saldo = saldoCoins(usuario);
+  if (saldo < preco) throw new Error(`Faltam ${preco - saldo} Careca Coins.`);
+  usuario = { ...usuario, compras: [...comprasDe(usuario), { cosmetico: id, preco, t: Date.now() }], atualizado: Date.now() };
+  publicarPerfil();
+  guardarLocalmente();
+  avisar();
+}
+
+// Equipa (ou tira, com id null) a moldura, o campo ou as costas das cartas
+export function equiparCosmetico(tipo, id) {
+  if (!usuario || !["moldura", "campo", "verso"].includes(tipo)) return;
+  if (id && (COSMETICOS[id]?.tipo !== tipo || !cosmeticosDe().has(id))) throw new Error("Você ainda não tem esse cosmético.");
+  atualizarPerfil({ visual: { ...visualDe(usuario), [tipo]: id || null } });
 }
 
 // Soma o resultado de um duelo (uma vez por duelo). Devolve { xp, coins } ganhos.
@@ -777,6 +805,7 @@ export function roletaDe(p) {
     coins: Number.isInteger(r.coins) && r.coins > 0 ? r.coins : 0,
     cartas: Array.isArray(r.cartas) ? r.cartas.filter((x) => typeof x === "string") : [],
     reliquias: Array.isArray(r.reliquias) ? r.reliquias.filter((x) => x && typeof x.id === "string") : [],
+    cosmeticos: Array.isArray(r.cosmeticos) ? r.cosmeticos.filter((x) => typeof x === "string") : [],
   };
 }
 
@@ -848,7 +877,10 @@ export function atualizarPerfil(mudancas) {
 
 // Informação pública usada no chat, na presença e no duelo
 export function cartaoPublico(p = usuario) {
-  return { chave: p.chave, nick: p.nick, tag: p.tag || "", avatar: p.avatar, nivel: nivelDoXp(p.xp) };
+  const visual = visualDe(p);
+  const cartao = { chave: p.chave, nick: p.nick, tag: p.tag || "", avatar: p.avatar, nivel: nivelDoXp(p.xp) };
+  if (visual.moldura || visual.campo || visual.verso) cartao.visual = visual;
+  return cartao;
 }
 
 

@@ -15,14 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610040308";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610040308";
-import { el, esperar, aviso } from "./util.js?v=202610040308";
-import { tocar } from "./som.js?v=202610040308";
-import { abrirDetalhes } from "./catalogo.js?v=202610040308";
-import * as adm from "./admin.js?v=202610040308";
-import { PREMIOS } from "./premios.js?v=202610040308";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610040308";
+} from "./motor.js?v=202610041107";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610041107";
+import { el, esperar, aviso } from "./util.js?v=202610041107";
+import { tocar } from "./som.js?v=202610041107";
+import { abrirDetalhes } from "./catalogo.js?v=202610041107";
+import * as adm from "./admin.js?v=202610041107";
+import { PREMIOS } from "./premios.js?v=202610041107";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610041107";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610041107";
 
 const raiz = document.querySelector("#arena");
 
@@ -438,7 +439,7 @@ function infoJogador(estado, j, lado) {
   const avatar = el("img", "jogador-info__avatar");
   avatar.src = imagemAvatar(p.avatar);
   avatar.alt = "";
-  info.append(nivel, cartas, meio, avatar);
+  info.append(nivel, cartas, meio, comMoldura(avatar, visualDe(p).moldura));
   return info;
 }
 
@@ -486,6 +487,14 @@ function desenharCampo(estado) {
   const invertido = [4, 3, 2, 1, 0];
   const campo = refs.campo;
   campo.replaceChildren();
+  // Skin de campo (cosmético): o fundo de cada metade é o do dono dela
+  for (const [j, lado] of [[op, "op"], [eu, "eu"]]) {
+    const skin = skinDeCampo(estado, j);
+    if (!skin) continue;
+    const fundo = el("div", `campo__fundo campo__fundo--${lado}`);
+    fundo.dataset.skin = skin;
+    campo.append(fundo);
+  }
 
   // Linha 1: deck do oponente, magias do oponente, zona extra
   campo.append(zonaPilha(estado, op, "deck"));
@@ -507,8 +516,14 @@ function desenharCampo(estado) {
   campo.append(zonaPilha(estado, eu, "deck"));
 }
 
+// Cosméticos de cada jogador: skin do campo e costas das cartas
+const skinDeCampo = (estado, j) => skinDe(visualDe(estado?.jogadores[j]).campo, "campo");
+const versoDe = (estado, j) => visualDe(estado?.jogadores[j]).verso;
+
 function criarZona(j, zona, slot = null) {
   const z = el("div", "zona" + (["deck", "cemiterio", "extra", "campo"].includes(zona) ? " zona--lado" : ""));
+  const skin = skinDeCampo(sessao.estado, j);
+  if (skin) z.dataset.skin = skin;
   z.dataset.zona = zona;
   z.dataset.j = j;
   if (slot !== null) z.dataset.slot = slot;
@@ -532,7 +547,7 @@ function zonaExtra(estado, j) {
   const qtd = `${lista.length} carta${lista.length === 1 ? "" : "s"}`;
   const b = el("button", "pilha-campo");
   b.type = "button";
-  b.append(criarVerso(), el("span", "pilha-campo__qtd", String(lista.length)));
+  b.append(criarVerso("", versoDe(estado, j)), el("span", "pilha-campo__qtd", String(lista.length)));
   b.title = "Deck Adicional (Monstros de Fusão)";
   b.setAttribute("aria-label", `${deQuem(estado, j, "Deck Adicional")}: ${qtd}`);
   b.addEventListener("click", () => {
@@ -553,7 +568,7 @@ function zonaPilha(estado, j, zona) {
   const b = el("button", "pilha-campo");
   b.type = "button";
   if (zona === "deck") {
-    b.append(criarVerso());
+    b.append(criarVerso("", versoDe(estado, j)));
     b.setAttribute("aria-label", `${deQuem(estado, j, "Deck")}: ${lista.length} cartas`);
     b.addEventListener("click", () => aviso(`${deQuem(estado, j, "Deck")}: ${lista.length} cartas.`));
   } else {
@@ -621,7 +636,7 @@ function zonaCarta(estado, j, zona, slot) {
     b.dataset.minhaBaixada = "true";
     b.append(criarCarta(c), el("span", "selo-baixada", "BAIXADA"));
   } else {
-    b.append(criarVerso());
+    b.append(criarVerso("", versoDe(estado, j)));
   }
 
   // ATK/DEF legíveis por cima da carta
@@ -738,7 +753,7 @@ function desenharMaoOponente(estado) {
   refs.maoOp.setAttribute("aria-label", `Mão do oponente: ${n} carta${n === 1 ? "" : "s"}`);
   for (let k = 0; k < n; k++) {
     const c = el("div", "mao-op__carta");
-    c.append(criarVerso());
+    c.append(criarVerso("", versoDe(estado, oponente(sessao.eu))));
     refs.maoOp.append(c);
   }
   refs.maoOp.append(el("span", "mao-op__qtd", String(n)));
@@ -1035,7 +1050,7 @@ function escolherCartas({ titulo, sub = "", candidatos, min, max, podeCancelar =
       b.type = "button";
       b.setAttribute("aria-pressed", "false");
       b.setAttribute("aria-label", visivel ? c.nome : "Carta virada do oponente");
-      b.append(visivel ? criarCarta(c, { atk: loc.zona === "monstros" ? atkAtual(estado, iid) : undefined }) : criarVerso());
+      b.append(visivel ? criarCarta(c, { atk: loc.zona === "monstros" ? atkAtual(estado, iid) : undefined }) : criarVerso("", versoDe(estado, loc.j)));
       const lado = loc.zona === "mao" ? (loc.j === eu ? "Na sua mão" : "Mão do oponente")
         : loc.zona === "deck" ? "No seu deck"
         : loc.zona === "cemiterio" ? (loc.j === eu ? "No seu Cemitério" : "Cemitério do oponente")

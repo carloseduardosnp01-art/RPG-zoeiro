@@ -2438,6 +2438,86 @@ a:hover {
   }
 }
 
+/* ---------- Moldura de avatar (cosmético) ----------
+   A caixa fica do tamanho do avatar de antes; o avatar entra no buraco da moldura e a
+   moldura passa um pouco por fora (--escala-moldura). Brilho: faixa de luz + faíscas. */
+.com-moldura {
+  --escala-moldura: 1.32;
+  position: relative;
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  overflow: visible;
+  isolation: isolate;
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+.com-moldura__avatar {
+  width: calc(var(--abertura) * var(--escala-moldura) * 104%);
+  height: calc(var(--abertura) * var(--escala-moldura) * 104%);
+  object-fit: cover;
+  border-radius: 8%;
+}
+
+.com-moldura__moldura,
+.com-moldura__brilho,
+.com-moldura::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--escala-moldura) * 100%);
+  height: calc(var(--escala-moldura) * 100%);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.com-moldura__moldura {
+  z-index: 1;
+}
+
+.com-moldura__brilho {
+  z-index: 2;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, .75) 48%, rgba(255, 228, 150, .5) 52%, transparent 62%) 0 0 / 300% 100%;
+  -webkit-mask: var(--mascara) center / 100% 100% no-repeat;
+  mask: var(--mascara) center / 100% 100% no-repeat;
+  mix-blend-mode: screen;
+  animation: moldura-brilho 3.4s ease-in-out infinite;
+}
+
+.com-moldura::after {
+  content: "";
+  z-index: 3;
+  background:
+    radial-gradient(circle at 12% 16%, #fff 0 1.1%, transparent 2.6%),
+    radial-gradient(circle at 88% 24%, #fff 0 .9%, transparent 2.3%),
+    radial-gradient(circle at 80% 90%, #fff 0 1.1%, transparent 2.6%),
+    radial-gradient(circle at 18% 84%, #fff 0 .8%, transparent 2.1%),
+    radial-gradient(circle at 50% 4%, #fff 0 .9%, transparent 2.3%);
+  filter: drop-shadow(0 0 3px #ffe9a8);
+  opacity: 0;
+  animation: moldura-faisca 2.8s ease-in-out infinite;
+}
+
+@keyframes moldura-brilho {
+  0% { background-position: 110% 0; }
+  55%, 100% { background-position: -10% 0; }
+}
+
+@keyframes moldura-faisca {
+  0%, 100% { opacity: 0; }
+  45% { opacity: .95; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .com-moldura__brilho,
+  .com-moldura::after {
+    display: none;
+  }
+}
+
 /* Prêmio da roleta no chat */
 .msg--roleta {
   color: var(--texto-suave);
@@ -2499,6 +2579,77 @@ a:hover {
   margin: 0;
   color: var(--texto-suave);
   font-size: .85rem;
+}
+
+.loja__abas {
+  display: flex;
+  gap: .4rem;
+  margin: .2rem 0 .5rem;
+}
+
+.loja__aba {
+  padding: .35rem .9rem;
+  color: var(--texto-suave);
+  font-weight: 700;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid var(--borda);
+  border-radius: 2rem;
+}
+
+.loja__aba[aria-selected="true"] {
+  color: #1b1208;
+  background: linear-gradient(180deg, var(--ouro-claro), var(--ouro));
+  border-color: var(--ouro);
+}
+
+.loja__secao {
+  margin: 1rem 0 .5rem;
+  color: var(--ouro-claro);
+  font-family: var(--fonte-titulo);
+  font-size: 1.05rem;
+}
+
+.loja__grade.loja__grade--campo {
+  grid-template-columns: 1fr;
+}
+
+.loja__item--cosmetico .loja__info {
+  align-items: flex-start;
+}
+
+.loja__descricao {
+  color: var(--texto-suave);
+  font-size: .85rem;
+}
+
+.loja__previa {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  padding: .6rem;
+  background: radial-gradient(ellipse at 50% 50%, rgba(160, 100, 255, .18), rgba(0, 0, 0, .35));
+  border-radius: .6rem;
+}
+
+.loja__previa-avatar,
+.loja__previa .com-moldura {
+  width: 104px;
+  height: 104px;
+}
+
+.loja__previa--campo {
+  padding: 0;
+  overflow: hidden;
+}
+
+.loja__previa--campo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.loja__previa--verso .carta-verso {
+  width: 92px;
 }
 
 .loja__grade {

@@ -17,10 +17,10 @@
    duas jogadas ao mesmo tempo.
    ========================================================================== */
 
-import { novoDuelo, aplicar, quemAge, carta, ErroJogada, membroAtivo } from "./motor.js?v=202610040308";
-import { jogadaDoBot } from "./bot.js?v=202610040308";
-import { PREFIXO, publicar, assinar, pedirRetido, aoStatus } from "./rede.js?v=202610040308";
-import { esperar, gerarId } from "./util.js?v=202610040308";
+import { novoDuelo, aplicar, quemAge, carta, ErroJogada, membroAtivo } from "./motor.js?v=202610041107";
+import { jogadaDoBot } from "./bot.js?v=202610041107";
+import { PREFIXO, publicar, assinar, pedirRetido, aoStatus } from "./rede.js?v=202610041107";
+import { esperar, gerarId } from "./util.js?v=202610041107";
 
 export const SEM_SINAL_AVISO = 20;  // segundos sem sinal do oponente para avisar
 export const SEM_SINAL_WO = 60;     // segundos sem sinal para poder pedir W.O.
@@ -69,6 +69,7 @@ export function criarSessaoBot(perfil, deck) {
     avatar: perfil?.avatar || "careca-feijao",
     nivel: perfil?.nivel || 1,
     reliquia: perfil?.reliquia || null,
+    visual: perfil?.visual || null,
     deck,
   };
   const bot = { chave: "bot-careca", nick: "Bot Careca", tag: "BOT", avatar: "careca-cast-surpresa", nivel: 99, bot: true };

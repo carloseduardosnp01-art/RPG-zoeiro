@@ -24,7 +24,7 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
 6. [Regras e automações](#regras-e-automações)
 7. [Estrutura do código](#estrutura-do-código) · [Banco de dados](#banco-de-dados-supabase)
 8. [Como publicar uma notícia](#como-publicar-uma-notícia)
-9. [Como criar cartas novas](#como-criar-cartas-novas)
+9. [Como criar cartas novas](#como-criar-cartas-novas) · [Como criar um cosmético](#como-criar-um-cosmético)
 10. [Aviso do jogo](#aviso-do-jogo)
 11. [Créditos](#créditos)
 
@@ -55,7 +55,12 @@ O site é 100% estático (HTML, CSS e JavaScript puro), então roda no **GitHub 
   - **Troféus e relíquias** (`js/premios.js`): troféus de **ouro, prata e bronze** e a relíquia **Careca do Milênio**, entregues só por ADM (pelo pódio do torneio ou pelo perfil do jogador) e conferidos pela assinatura. Aparecem no perfil e, ao clicar em um troféu ou na relíquia, abre a imagem grande com os detalhes (dono, torneio, data e ADM que entregou; `js/visor-premio.js`); para tirar um prêmio entregue por engano (ou de teste), coloque o id dele em `REMOVIDOS` (`js/premios.js`): o jogo de todo mundo passa a ignorá-lo e o perfil do dono se limpa sozinho; a relíquia se equipa no perfil e vai junto para os duelos (1vs1, Tag e treino). **Compra do Destino:** 1 vez por duelo, na sua Fase Principal, com **4000 PV ou menos**, escolha qualquer carta do deck e coloque-a no topo (no Tag, cada membro usa a sua);
   - **Careca Coins** (moeda do jogo, `img/careca-coin.webp`): **+5** por vitória contra jogador de verdade (1vs1 ou Tag 2vs2) e **+1** por vitória contra o Bot; derrota não dá moeda. O saldo aparece no seu perfil, no perfil dos outros, no histórico e na tela de vitória. No perfil público ficam `coinsGanhas`, `coinsGastas` e os `presentes` de ADM (cada um com a assinatura do ADM); saldo = ganhas + presentes − gastas − compras da Loja. **Proteção:** como o servidor de mensagens é público, o jogo do dono nunca aceita de lá nada que diminua o saldo (gastos, presentes sem assinatura válida, presentes "já contados", perfil zerado ou apagado) e republica o perfil certo por cima. Isso impede alguém de zerar as moedas dos outros, mas não impede a pessoa de mexer no próprio saldo (para isso só com servidor próprio). Com o banco de dados, o perfil de cada um fica guardado no servidor. As moedas se gastam na **🛒 Loja da Zoeira**;
   - **🛒 Loja da Zoeira** (`js/loja.js`, botão no Salão, na página Deck e na carta do catálogo): cartas especiais compradas com Careca Coins. Cada uma é comprada **uma vez** e fica na coleção para sempre (fica em `compras` no perfil e vai para o banco). No editor do deck, as cartas da Loja que você ainda não tem aparecem com 🔒 e o preço; clicar nelas abre a Loja. Se um deck tiver uma carta da Loja que o jogador não comprou, ela vira **Careca Feijão** nos duelos (uma Fusão não comprada só sai do Deck Adicional). Compras vindas do servidor público (modo antigo) que o próprio jogo não fez são ignoradas, para ninguém gastar as moedas dos outros;
-  - **🎡 Roleta Diária** (`js/roleta.js`, botão no Salão e no seu perfil): **1 giro grátis por dia**, que volta à meia-noite (horário de Brasília). Não dá para comprar giros, pagar para girar de novo nem aumentar as chances, e os prêmios só valem dentro do jogo. As chances aparecem na própria roleta, e o tamanho de cada fatia é a chance dela: **carta da Loja** que você ainda não tem **5%**, **relíquia Careca do Milênio 3%**, **30 Careca Coins 12%**, **10 Careca Coins 50%**, **nada 30%**. Carta repetida (já tem todas as da Loja) vira 100 Careca Coins; relíquia repetida, 50. **Quem sorteia é o servidor** (`girar_roleta` em `supabase/banco.sql`): a roda só gira até a fatia que ele mandou, o limite de um giro por dia é conferido lá, e o perfil recebe só um resumo (`roleta`: giros, moedas, cartas e relíquias) que o navegador não consegue alterar. O prêmio vai para o chat; carta e relíquia aparecem com destaque depois que o banco confirma. A relíquia da roleta não tem assinatura de ADM: quem confirma que ela é de verdade (no perfil, no placar do duelo e ao aceitar um desafio) é o resumo no banco;
+  - **🎨 Cosméticos** (`js/cosmeticos.js`, aba **Cosméticos** da Loja): **50 Careca Coins** cada, ou na Roleta Diária. Só mudam o visual, e o oponente vê os seus nos duelos:
+    - **Molduras de avatar** (Fúria Viking, Coroa Cósmica, Trovão dos Dragões): em volta da sua foto no perfil e no placar do duelo, com uma faixa de luz e faíscas;
+    - **Skin de campo** (Templo Arcano): o seu lado do campo ganha a arte, uma peça por zona (as de monstro roxas, as de magia azuis, deck e Deck Adicional em círculos vermelhos), e um fundo com pulso de luz. O lado do oponente usa a skin dele, virada;
+    - **Costas das cartas** (Selo Arcano, o portal do templo): o seu deck, o seu Deck Adicional, as suas cartas baixadas e a sua mão vista pelo oponente, com um reflexo que passa de vez em quando.
+    Comprado na Loja já sai usando; em **Usar / Em uso (tirar)** dá para trocar. Fica no perfil: o que você tem em `compras` (`{ cosmetico, preco }`) ou no resumo da roleta, e o que está usando em `visual` (`{ moldura, campo, verso }`), que vai no cartão do jogador para o duelo.
+  - **🎡 Roleta Diária** (`js/roleta.js`, botão no Salão e no seu perfil): **1 giro grátis por dia**, que volta à meia-noite (horário de Brasília). Não dá para comprar giros, pagar para girar de novo nem aumentar as chances, e os prêmios só valem dentro do jogo. As chances aparecem na própria roleta, e o tamanho de cada fatia é a chance dela: **10 Careca Coins 50%**, **nada 30%**, **30 Careca Coins 10%**, **cosmético** que você ainda não tem **5%**, **carta da Loja** que você ainda não tem **3%** e **relíquia Careca do Milênio 2%**. Repetido vira Careca Coins: carta (já tem todas as da Loja) 100, relíquia 50, cosmético (já tem todos) 50. **Quem sorteia é o servidor** (`girar_roleta` em `supabase/banco.sql`): a roda só gira até a fatia que ele mandou, o limite de um giro por dia é conferido lá, e o perfil recebe só um resumo (`roleta`: giros, moedas, cartas e relíquias) que o navegador não consegue alterar. O prêmio vai para o chat; carta e relíquia aparecem com destaque depois que o banco confirma. A relíquia da roleta não tem assinatura de ADM: quem confirma que ela é de verdade (no perfil, no placar do duelo e ao aceitar um desafio) é o resumo no banco;
   - XP: online vitória +100 e derrota +40; contra o Bot, 30% disso (+30 / +12) sem contar vitória/derrota. Desistir do treino antes do 3º turno não dá XP.
 - **Arena**:
   - no PC, a arena ocupa a tela toda: os jogadores e o relógio ficam numa coluna à esquerda, as fases na vertical ao lado do campo, e o menu do site some durante o duelo (botões **⛶ Tela cheia** e **🏠 Ir ao site** na coluna dos jogadores);
@@ -345,6 +350,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── loja.js           # Loja da Zoeira (cartas compradas com Careca Coins)
 │   ├── aviso.js          # Aviso do jogo (sem fins comerciais, nome e imagem) e confirmação de ciência
 │   ├── roleta.js         # Roleta Diária (1 giro grátis por dia; o sorteio é do servidor)
+│   ├── cosmeticos.js     # Cosméticos: molduras de avatar, skin de campo e costas das cartas
 │   ├── deck.js           # Deck do jogador: guardar, validar, usar nos duelos
 │   ├── editor-deck.js    # Tela "Meu deck"
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
@@ -355,6 +361,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 ├── data/noticias.json    # As notícias (a mais nova aparece primeiro)
 ├── img/noticias/         # Cartazes das notícias
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
+├── img/cosmeticos/       # Molduras, peças da skin de campo (uma por zona), fundo, prévia e costas
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```
 
@@ -372,6 +379,15 @@ O **motor** é independente da tela: dá para rodar partidas inteiras no Node (f
    - `botao` (opcional): `{ "texto": "...", "href": "#salao" }`.
    - `encerrado` (opcional): `true` quando o evento já terminou (o selo vira "Encerrado").
 3. Rode `python ferramentas/nova-versao.py` e publique. A mais nova (pela data `publicada`) vira a faixa da página inicial.
+
+---
+
+## Como criar um cosmético
+
+1. **Moldura de avatar:** PNG/WebP quadrado com o centro transparente (o buraco onde entra a foto), uns 512×512, em `img/cosmeticos/`. Em `js/cosmeticos.js`, uma linha em `COSMETICOS` com `tipo: "moldura"`, `nome`, `imagem`, `descricao` e `abertura` (quanto da largura da imagem é o buraco, de 0 a 1).
+2. **Skin de campo:** uma peça em pé (proporção de carta, 59×86) para cada zona (`campo`, `monstro`, `cemiterio`, `magia`, `deck`, `extra`), um fundo e uma prévia para a Loja, com o nome `campo-<skin>-<zona>.webp`. Em `COSMETICOS`: `tipo: "campo"`, `skin: "<skin>"`, `previa`; e no fim de `css/arena.css`, as linhas `.zona[data-skin="<skin>"][data-zona="..."]` e `.campo__fundo[data-skin="<skin>"]` (copie as do Templo Arcano).
+3. **Costas das cartas:** uma arte em pé (59×86, uns 452×660) em `img/cosmeticos/`. Em `COSMETICOS`: `tipo: "verso"`, `skin`, `imagem`.
+4. Para a **Roleta Diária** também poder dar o cosmético, acrescente o id em `v_cosmeticos` (função `zoeira.girar` no `supabase/banco.sql`) e rode o arquivo de novo no SQL Editor.
 
 ---
 

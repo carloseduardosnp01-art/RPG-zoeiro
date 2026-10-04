@@ -513,6 +513,39 @@
   letter-spacing: .3em;
 }
 
+/* Costas com skin (cosmético): a arte, um friso roxo e um reflexo que passa de vez em quando */
+.carta-verso[data-skin] .carta-verso__corpo {
+  background: var(--verso-img) center / cover no-repeat, #160a2c;
+  border-color: #24113f;
+  box-shadow: inset 0 0 0 .9cqw #c9a2ff, inset 0 0 0 1.8cqw rgba(16, 6, 34, .85), inset 0 0 9cqw rgba(0, 0, 0, .45), 0 1.5cqw 4cqw rgba(0, 0, 0, .45);
+}
+
+.carta-verso[data-skin] .carta-verso__corpo::before,
+.carta-verso[data-skin] .carta-verso__logo {
+  display: none;
+}
+
+.carta-verso__brilho {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, .45) 47%, rgba(200, 150, 255, .4) 52%, transparent 63%) 0 0 / 260% 260%;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: verso-brilho 4s ease-in-out infinite;
+}
+
+@keyframes verso-brilho {
+  0% { background-position: 120% 120%; }
+  55%, 100% { background-position: -40% -40%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carta-verso__brilho {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .carta[data-raridade="lendaria"] .carta__nome,
   .carta[data-raridade="lendaria"] .carta__arte-moldura::after {

@@ -7,8 +7,8 @@
 
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
-  luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao,
-} from "./motor.js?v=202610042342";
+  luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao, ehW, semAtaqueDireto,
+} from "./motor.js?v=202610050058";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 
@@ -128,6 +128,11 @@ function* jogadasPrincipais(estado, j) {
       const baratos = [...op.alvos.candidatos].sort((a, b) => forca(estado, j, a) - forca(estado, j, b)).slice(0, 2);
       if (somaForca(estado, j, deles) > somaForca(estado, j, baratos) + 1000) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: baratos };
     }
+    // Os Irmãos: bane os 2 monstros mais fracos do Cemitério (+300 de ATK cada)
+    if (ef === "os-irmaos") {
+      const fracos = [...op.alvos.candidatos].sort((a, b) => (carta(estado, a).atk || 0) - (carta(estado, b).atk || 0)).slice(0, op.alvos.max);
+      yield { tipo: "efeitoMonstro", iid: m.iid, alvos: fracos };
+    }
     // O Emanuel Careca de ICE: paga 1000 PV para destruir o monstro mais forte do oponente (só com PV sobrando)
     if (ef === "emanuel-ice" && p.pl > 3000) {
       const deles2 = op.alvos.candidatos.filter((x) => localizar(estado, x).j !== j);
@@ -141,6 +146,18 @@ function* jogadasPrincipais(estado, j) {
       const pior = [...op.alvos.candidatos].sort((a, b) => valorNaMao(estado, j, a) - valorNaMao(estado, j, b))[0];
       yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [pior] };
     }
+  }
+
+  // 1d2. W — A Rede Central: ativa se tiver monstro "W" (na mão ou no campo) e chama o "W" mais forte da mão
+  const redeMinha = p.campo && p.campo.face && carta(estado, p.campo.iid).efeito === "w-rede";
+  if (!redeMinha && [...p.mao, ...meus].some((x) => carta(estado, x).categoria === "monstro" && ehW(carta(estado, x)))) {
+    for (const { iid, c } of mao) {
+      if (c.efeito === "w-rede" && opcoes(iid).some((x) => x.id === "ativar")) yield { tipo: "ativar", iid };
+    }
+  }
+  if (redeMinha) {
+    const op = opcoes(p.campo.iid).find((x) => x.id === "efeito");
+    if (op) yield { tipo: "efeitoMonstro", iid: p.campo.iid, pos: "atk", alvos: [[...op.alvos.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0]] };
   }
 
   // 1e. Zoológico Animal (se ainda não tiver um) e Egoísmo Puro (traz o "Animal" mais forte)
@@ -208,6 +225,15 @@ function* jogadasPrincipais(estado, j) {
     if (!op) continue;
     const peso = (x) => (ehAnimal(carta(estado, x)) ? -10 : 0) + valorNaMao(estado, j, x);
     yield { tipo: "ativar", iid: mg.iid, alvos: [[...op.alvos.candidatos].sort((a, b) => peso(a) - peso(b))[0]] };
+  }
+
+  // 1f6. Chamado dos Vagabundos baixado: traz o monstro mais forte do Cemitério
+  for (const mg of p.magias) {
+    if (!mg || carta(estado, mg.iid).efeito !== "vagabundos") continue;
+    const op = opcoes(mg.iid).find((x) => x.id === "ativar");
+    if (!op) continue;
+    const melhor = [...op.alvos.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0];
+    if (carta(estado, melhor).atk >= 1500) yield { tipo: "ativar", iid: mg.iid, alvos: [melhor] };
   }
 
   // 1g. Controle Carecal: pega o monstro mais forte do oponente para atacar com ele
@@ -381,7 +407,7 @@ function melhorMagiaDoOponente(estado, j, candidatos) {
     const loc = localizar(estado, x);
     const c = carta(estado, x);
     if (loc.obj.face && c.efeito === "luz") return 3;
-    if (loc.obj.face && c.efeito === "revolucao" && (loc.obj.revividos || []).length) return 3;
+    if (loc.obj.face && (c.efeito === "revolucao" || c.efeito === "vagabundos") && (loc.obj.revividos || []).length) return 3;
     if (!loc.obj.face) return 2;
     return 1;
   };
@@ -403,7 +429,10 @@ function escolherAtaque(estado, j) {
   for (const slot of atacantes) {
     const atk = atkAtual(estado, p.monstros[slot].iid);
     const atacaveis = alvosDeAtaque(estado, j);
-    if (!atacaveis.length) return { tipo: "atacar", slot, alvo: null };
+    if (!atacaveis.length) {
+      if (semAtaqueDireto(estado, p.monstros[slot])) continue;
+      return { tipo: "atacar", slot, alvo: null };
+    }
 
     let melhorAlvo = null;
     let melhorValor = -1;
@@ -445,6 +474,7 @@ const VALOR_NA_MAO = {
   "armadilha-big": 6, luz: 6, penetra: 5, saideira: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
   "flip-descartar": 5, "flip-comprar": 4, karecoh: 4, egoismo: 6, zoologico: 5,
   "armadura-gelo": 7, obelisco: 6, fusao: 5, "careca-dragao": 6, "emanuel-ice": 6,
+  "w-hacker": 4, vagabundos: 6, "w-miqueas": 6, "w-midas": 5, "w-rede": 5, "os-irmaos": 6,
   sugadao: 7, "hoje-nao": 6, "bora-bill": 4, thangan: 5, hacker: 7, "w-laminas": 5,
   berinjela: 4, revolucao: 6, rafaza: 5, negao: 6, "flip-parasita": 5, litro: 3, daiki: 7,
   controle: 7, menino: 4, "mestre-caos": 6, upstart: 3, jinreca: 6, "mil-facas": 6, irmaollow: 5,
@@ -486,6 +516,18 @@ function escolherAlvos(estado, j, pend) {
     return atkAtual(estado, deles[0]) >= 1500 ? [meus[0], deles[0]] : [];
   }
   if (pend.efeito === "midas-invocar") return [];
+  // W — O Hacker: descarta a carta que menos faz falta
+  if (pend.efeito === "w-hacker-descarte") return [[...pend.candidatos].sort((a, b) => valorNaMao(estado, j, a) - valorNaMao(estado, j, b))[0]];
+  // W — Miqueas: entra sempre; destrói a melhor Magia/Armadilha do oponente (nunca a minha, se puder)
+  if (pend.efeito === "w-miqueas-invocar") return [pend.origem];
+  if (pend.efeito === "w-miqueas") {
+    const alvo = melhorMagiaDoOponente(estado, j, pend.candidatos);
+    return alvo ? [alvo] : pend.min ? [pend.candidatos[0]] : [];
+  }
+  // W — Midas: a melhor carta da mão do oponente; W — A Rede Central: a melhor carta "W" do Cemitério
+  if (pend.efeito === "w-midas" || pend.efeito === "w-rede") {
+    return [[...pend.candidatos].sort((a, b) => valorNaMao(estado, j, b) - valorNaMao(estado, j, a))[0]];
+  }
   // O Emanuel Careca de ICE: só paga os PV (até ficar com 100) se tiver bastante para pagar
   if (pend.efeito === "emanuel-pagar") return estado.jogadores[j].pl >= 4000 ? [pend.origem] : [];
   // Fusão: os materiais que menos fazem falta

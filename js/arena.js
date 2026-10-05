@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610042342";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610042342";
-import { el, esperar, aviso } from "./util.js?v=202610042342";
-import { tocar } from "./som.js?v=202610042342";
-import { abrirDetalhes } from "./catalogo.js?v=202610042342";
-import * as adm from "./admin.js?v=202610042342";
-import { PREMIOS } from "./premios.js?v=202610042342";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610042342";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610042342";
+} from "./motor.js?v=202610050058";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610050058";
+import { el, esperar, aviso } from "./util.js?v=202610050058";
+import { tocar } from "./som.js?v=202610050058";
+import { abrirDetalhes } from "./catalogo.js?v=202610050058";
+import * as adm from "./admin.js?v=202610050058";
+import { PREMIOS } from "./premios.js?v=202610050058";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610050058";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610050058";
 
 const raiz = document.querySelector("#arena");
 
@@ -68,6 +68,12 @@ const FRASES = {
   "defense-careca": "MURALHA CARECA!",
   "doutor-daiki": "INJEÇÃO DE FUSÃO!",
   "careca-dragao": "SLIF RUGIU: -2000 DE ATK!",
+  "w-hacker": "ACESSO LIBERADO!",
+  "w-miqueas": "RUNAS QUEBRADAS!",
+  "w-midas": "DADOS ROUBADOS!",
+  "w-rede": "REDE CENTRAL CONECTADA!",
+  vagabundos: "OS VAGABUNDOS LEVANTARAM!",
+  "os-irmaos": "OS IRMÃOS NÃO SE SEPARAM!",
   "emanuel-ice": "O EMANUEL DE ICE CONGELOU TUDO!",
   vapo: "VAPO!",
   "forca-careca": "FORÇA CARECA!",

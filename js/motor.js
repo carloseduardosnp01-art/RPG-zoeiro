@@ -368,6 +368,8 @@ export function atkAtual(estado, iid) {
   if (loc && loc.zona === "monstros" && tipoAtual(estado, iid) === "Besta Alada") atk += 200 * zoologicosAtivos(estado);
   if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "TERRA") atk += 500 * camposAtivos(estado, "wifi");
   if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "ÁGUA") atk += 200 * camposAtivos(estado, "geada");
+  if (loc && loc.zona === "monstros" && loc.obj.face && ehW(c)) atk += 200 * camposAtivos(estado, "w-rede");
+  if (loc && loc.zona === "monstros" && loc.obj.maisAtk) atk += loc.obj.maisAtk; // Os Irmãos
   if (c.efeito === "wellington-animal" && loc && loc.zona === "monstros") {
     const ventos = estado.jogadores[loc.j].monstros.filter((m) => m && m.face && carta(estado, m.iid).atributo === "VENTO").length;
     atk += 500 * ventos;
@@ -395,6 +397,9 @@ function bonusDosDeuses(estado, iid) {
   if (c.efeito === "emanuel-ice") return loc.obj.bonusPago || 0;
   return 0;
 }
+
+// Cartas "W": o nome começa com "W —" (W — Guerreiro das Lâminas Gêmeas, W — O Hacker, W — A Rede Central...)
+export const ehW = (c) => Boolean(c && /^W\s*[—–-]\s/.test(c.nome));
 
 // "Animal": cartas cujo nome é tratado como "Animal" (David, Davi, Thales, George, Miro...)
 export const ehAnimal = (c) => Boolean(c && c.categoria === "monstro" && c.nome.includes("Animal"));
@@ -551,6 +556,23 @@ function negadoPorMagoDragao(estado, j, iid, ev) {
 // Nome bloqueado pelo Mago Dragão do oponente (a carta negada e as com o mesmo nome)
 const bloqueadoPorMago = (estado, j, iid) => (magoDragaoDe(estado, oponente(j))?.nomesBloqueados || []).includes(estado.cartas[iid]);
 
+// Os Irmãos com a face para cima e uma carta "Alquimista" com a face para cima no campo (de qualquer lado):
+// os monstros de quem controla Os Irmãos não são destruídos em batalha
+function protegidoPelosIrmaos(estado, k) {
+  if (!estado.jogadores[k].monstros.some((m) => m && m.face && carta(estado, m.iid).efeito === "os-irmaos" && !bloqueado(estado, k, m.iid))) return false;
+  return estado.jogadores.some((p) => [...p.monstros, ...p.magias, p.campo].some((m) => m && m.face && carta(estado, m.iid).nome.includes("Alquimista")));
+}
+
+// Chamado dos Vagabundos (com a face para cima) que trouxe esse monstro do Cemitério
+function chamadoQueTrouxe(estado, iid) {
+  for (const p of estado.jogadores) {
+    for (const m of p.magias) {
+      if (m && m.face && (m.revividos || []).includes(iid) && carta(estado, m.iid).efeito === "vagabundos") return m.iid;
+    }
+  }
+  return null;
+}
+
 // Dano perfurante (W — Guerreiro das Lâminas Gêmeas, Careca Lamentador)
 const perfurante = (c) => c.efeito === "w-laminas" || c.efeito === "careca-lamentador";
 
@@ -635,6 +657,7 @@ function executarAcao(estado, j, acao, ev) {
       if (BANE_LUZ_TREVAS.includes(ef)) return invocarDaiki(estado, j, acao, ev);
       if (ef === "miro-sulista") return invocarMiroSulista(estado, j, acao, ev);
       if (ef === "miro-metalico") return invocarMiroMetalico(estado, j, acao, ev);
+      if (ef === "w-hacker") return invocarHacker(estado, j, acao, ev);
       return invocarPenetra(estado, j, acao, ev);
     }
     case "efeitoMonstro": return efeitoMonstro(estado, j, acao, ev);
@@ -707,6 +730,10 @@ function invocar(estado, j, { iid, modo = "atk", tributos = [] }, ev) {
     const iidTributo = p.monstros[s].iid;
     ev.push({ t: "tributo", j, iid: iidTributo });
     removerDoCampo(estado, iidTributo, ev, "tributo");
+    // W — O Hacker usado numa Invocação-Tributo: compre 1 carta e depois descarte 1
+    if (carta(estado, iidTributo).efeito === "w-hacker" && !bloqueado(estado, j, iidTributo)) {
+      (estado.gatilhos ||= []).push({ tipo: "w-hacker", j, iid: iidTributo, turno: estado.turno });
+    }
   }
 
   p.mao.splice(p.mao.indexOf(iid), 1);
@@ -757,6 +784,74 @@ function invocarPenetra(estado, j, { iid, pos = "atk" }, ev) {
   return null;
 }
 
+// W — O Hacker: Invocação-Especial da mão se você controla um monstro "W" com a face para cima
+export function podeInvocarHacker(estado, j, iid) {
+  const p = estado.jogadores[j];
+  return (
+    ehFasePrincipal(estado) &&
+    p.mao.includes(iid) &&
+    carta(estado, iid).efeito === "w-hacker" &&
+    !bloqueado(estado, j, iid) &&
+    zonaLivre(p.monstros) >= 0 &&
+    p.monstros.some((m) => m && m.face && ehW(carta(estado, m.iid)))
+  );
+}
+
+function invocarHacker(estado, j, { iid, pos = "atk" }, ev) {
+  if (!podeInvocarHacker(estado, j, iid)) return "O W — O Hacker só entra se você controlar um monstro \"W\" com a face para cima (e tiver zona livre).";
+  const p = estado.jogadores[j];
+  p.mao.splice(p.mao.indexOf(iid), 1);
+  const slot = zonaLivre(p.monstros);
+  p.monstros[slot] = { iid, pos: pos === "def" ? "def" : "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+  ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
+  aposEspecial(estado, j, iid, ev);
+  return null;
+}
+
+// W — Miqueas, o Quebrador de Runas: sai da mão por Invocação-Especial depois que uma Armadilha é ativada
+function invocarMiqueasDaMao(estado, j, iid, ev) {
+  const p = estado.jogadores[j];
+  const slot = zonaLivre(p.monstros);
+  if (!p.mao.includes(iid) || slot < 0) return;
+  p.mao.splice(p.mao.indexOf(iid), 1);
+  p.monstros[slot] = { iid, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+  ev.push({ t: "efeito", j, iid });
+  ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
+  aposEspecial(estado, j, iid, ev);
+}
+
+// Efeitos "quando Invocado" dos "W" (qualquer Invocação: Normal, Tributo, Flip ou Especial)
+function gatilhosW(estado, j, iid) {
+  const ef = carta(estado, iid).efeito;
+  if ((ef === "w-miqueas" || ef === "w-midas") && !bloqueado(estado, j, iid)) {
+    (estado.gatilhos ||= []).push({ tipo: ef, j, iid, turno: estado.turno });
+  }
+}
+
+// Alguém ativou uma Armadilha (de qualquer lado). W — Miqueas, o Quebrador de Runas:
+// no campo de quem está jogando o turno, ataca 2 vezes neste turno (sem ataque direto), 1 vez por turno;
+// na mão de qualquer jogador, pode entrar por Invocação-Especial
+function armadilhaAtivada(estado, ev) {
+  for (let k = 0; k < 2; k++) {
+    const p = estado.jogadores[k];
+    const daVez = estado.vez === k && (estado.fase === "principal1" || estado.fase === "batalha");
+    for (const m of p.monstros) {
+      if (!daVez || !m || !m.face || carta(estado, m.iid).efeito !== "w-miqueas") continue;
+      if (bloqueado(estado, k, m.iid) || usou(estado, k, "w-miqueas-duplo")) continue;
+      marcarUso(estado, k, "w-miqueas-duplo");
+      m.ataqueDuplo = estado.turno;
+      m.semDiretoTurno = estado.turno;
+      ev.push({ t: "efeito", j: k, iid: m.iid });
+      ev.push({ t: "ataqueDuplo", j: k, iid: m.iid });
+    }
+    for (const x of p.mao) {
+      if (carta(estado, x).efeito !== "w-miqueas") continue;
+      if ((estado.gatilhos || []).some((g) => g.tipo === "w-miqueas-invocar" && g.iid === x)) continue;
+      (estado.gatilhos ||= []).push({ tipo: "w-miqueas-invocar", j: k, iid: x, turno: estado.turno });
+    }
+  }
+}
+
 // Manoel do Gelo Careca: descarta 2 outros monstros de ÁGUA da mão e entra por Invocação-Especial
 export function requisitosGeloCareca(estado, j, iid) {
   const p = estado.jogadores[j];
@@ -789,6 +884,7 @@ function aposEspecial(estado, j, iid, ev) {
   verificarArmadilhas(estado, "invocacao", { j, iid, modo: "especial" }, ev);
   if (estado.vencedor !== null) return;
   gatilhoDragaoCareca(estado, iid, ev);
+  gatilhosW(estado, j, iid);
   if (carta(estado, iid).efeito === "thales") gatilhoThales(estado, j, iid);
   if (carta(estado, iid).efeito === "big-animal") marcarBigMP2(estado, j, iid);
   gatilhoZoologico(estado, j, iid);
@@ -1069,6 +1165,7 @@ function aposInvocar(estado, j, iid, modo, ev) {
   }
   // Slif o Dragão Careca do Céu do oponente: quem entrou em Ataque perde 2000 de ATK (depois do Defense Careca ir para Defesa)
   if (modo === "normal" || modo === "tributo") gatilhoDragaoCareca(estado, iid, ev);
+  if (["normal", "tributo", "flip"].includes(modo)) gatilhosW(estado, j, iid);
 
   if ((modo === "normal" || modo === "tributo") && c.efeito === "davi" && !usou(estado, j, "davi-devolver")) {
     const loc = localizar(estado, iid);
@@ -1343,6 +1440,7 @@ export function requisitosMagia(estado, j, iid) {
     case "zoologico":
     case "wifi":
     case "geada":
+    case "w-rede":
       return { alvos: null };
     case "calvo-in": {
       const candidatos = p.mao.filter((x) => x !== iid && carta(estado, x).categoria === "monstro" && nivelAtual(estado, x) === 8);
@@ -1558,6 +1656,7 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
       break;
     case "wifi":
     case "geada":
+    case "w-rede":
       break; // fica na Zona de Campo; o efeito é contínuo
     case "litro":
       p.pl += 2000;
@@ -1783,11 +1882,23 @@ const animaisDaRevolucao = (estado, j) =>
     return ehAnimal(c) && (!c.somenteEspecial || liberado(estado, x));
   });
 
+// Monstros do Cemitério de j que podem voltar por Invocação-Especial (Lamento Prematuro, Chamado dos Vagabundos)
+const podemVoltarDoCemiterio = (estado, j) =>
+  estado.jogadores[j].cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && !carta(estado, x).naoEspecial && (!carta(estado, x).somenteEspecial || liberado(estado, x)) && podeControlarMais(estado, j, x));
+
 export function requisitosArmadilha(estado, j, iid) {
   const loc = localizar(estado, iid);
   if (!loc || loc.j !== j || loc.zona !== "magias" || loc.obj.face || loc.obj.turnoBaixada >= estado.turno) return null;
-  if (carta(estado, iid).efeito !== "revolucao" || jinrecaEmCampo(estado)) return null;
+  const ef = carta(estado, iid).efeito;
+  if ((ef !== "revolucao" && ef !== "vagabundos") || jinrecaEmCampo(estado)) return null;
   const p = estado.jogadores[j];
+  if (ef === "vagabundos") {
+    if (zonaLivre(p.monstros) < 0) return null;
+    const candidatos = podemVoltarDoCemiterio(estado, j);
+    return candidatos.length
+      ? { alvos: { candidatos, min: 1, max: 1, titulo: "Chamado dos Vagabundos: escolha 1 monstro do seu Cemitério para voltar em Posição de Ataque" } }
+      : null;
+  }
   if (zonaLivre(p.monstros) < 0 || !p.mao.length) return null;
   // sem "Animal" no Cemitério, só vale descartar um "Animal" (que volta junto)
   const descartes = animaisDaRevolucao(estado, j).length
@@ -1799,16 +1910,36 @@ export function requisitosArmadilha(estado, j, iid) {
 
 function ativarArmadilha(estado, j, { iid, alvos = [] }, ev) {
   if (estado.vez !== j || !ehFasePrincipal(estado)) return "Essa Armadilha é ativada nas suas Fases Principais.";
+  const ef = carta(estado, iid).efeito;
   const req = requisitosArmadilha(estado, j, iid);
   if (!req) {
-    return carta(estado, iid).efeito === "revolucao"
-      ? "A Revolução Animal só ativa a partir do turno seguinte ao que foi baixada, com \"Animal\" para Invocar e sem o Jinreca no campo."
-      : "Armadilhas ativam sozinhas: é só baixar no campo.";
+    if (ef === "revolucao") return "A Revolução Animal só ativa a partir do turno seguinte ao que foi baixada, com \"Animal\" para Invocar e sem o Jinreca no campo.";
+    if (ef === "vagabundos") return "O Chamado dos Vagabundos só ativa a partir do turno seguinte ao que foi baixado, com monstro no seu Cemitério, zona livre e sem o Jinreca no campo.";
+    return "Armadilhas ativam sozinhas: é só baixar no campo.";
   }
-  if (alvos.length !== 1 || !req.alvos.candidatos.includes(alvos[0])) return "Escolha a carta para descartar.";
-  localizar(estado, iid).obj.face = true;
+  if (alvos.length !== 1 || !req.alvos.candidatos.includes(alvos[0])) {
+    return ef === "vagabundos" ? "Escolha 1 monstro do seu Cemitério." : "Escolha a carta para descartar.";
+  }
+  const armadilha = localizar(estado, iid).obj;
+  armadilha.face = true;
   ev.push({ t: "ativacao", j, iid });
   marcarAtivacao(estado, j);
+  armadilhaAtivada(estado, ev);
+  if (ef === "vagabundos") {
+    if (negadaPorHacker(estado, j, iid, ev)) return null;
+    // o monstro volta em Ataque e fica preso à armadilha (uma sai do campo, a outra vai junto)
+    const p = estado.jogadores[j];
+    const alvo = alvos[0];
+    const slot = zonaLivre(p.monstros);
+    const i = p.cemiterio.indexOf(alvo);
+    if (slot < 0 || i < 0) return null;
+    p.cemiterio.splice(i, 1);
+    p.monstros[slot] = { iid: alvo, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+    armadilha.revividos = [alvo];
+    ev.push({ t: "invocacao", j, iid: alvo, modo: "especial", slot });
+    aposEspecial(estado, j, alvo, ev);
+    return null;
+  }
   descartar(estado, j, alvos[0], ev);
   if (negadaPorHacker(estado, j, iid, ev)) return null;
   const candidatos = animaisDaRevolucao(estado, j);
@@ -1852,6 +1983,7 @@ function verificarArmadilhas(estado, gatilho, dados, ev) {
   const ativou = (m) => {
     m.face = true;
     ev.push({ t: "armadilha", j: defensor, iid: m.iid, alvo: dados.iid });
+    armadilhaAtivada(estado, ev);
     return !negadaPorHacker(estado, defensor, m.iid, ev);
   };
   for (let s = 0; s < ZONAS; s++) {
@@ -1939,6 +2071,7 @@ function negadaPorHacker(estado, quemAtivou, iid, ev) {
   if (!m) return false;
   m.face = true;
   ev.push({ t: "armadilha", j: o, iid: m.iid, alvo: iid });
+  armadilhaAtivada(estado, ev);
   descartar(estado, o, p.mao[Math.floor(sorteioDoEstado(estado)() * p.mao.length)], ev);
   ev.push({ t: "negada", j: quemAtivou, iid });
   if (protegidaPorMiro(estado, iid, o)) mandarProCemiterio(estado, iid, ev); // negada, mas não destruída
@@ -1979,6 +2112,10 @@ function processarGatilhos(estado, ev) {
     let candidatos = [];
     let max = 1;
     let titulo = "";
+    if (g.tipo.startsWith("w-")) {
+      gatilhoW(estado, g, meuTurno, ev);
+      continue;
+    }
     if (g.tipo === "davi-cemiterio") {
       if (localizar(estado, g.iid)?.zona === "cemiterio" && negadoPorMagoDragao(estado, dono, g.iid, ev)) continue;
       candidatos = estado.jogadores[dono].deck.filter((x) => {
@@ -2028,12 +2165,97 @@ function processarGatilhos(estado, ev) {
 }
 
 
+// Gatilhos dos "W" (W — O Hacker, W — Miqueas, W — Midas e W — A Rede Central). No próprio turno o
+// jogador escolhe; no turno do oponente é automático (sorteado), como os outros gatilhos.
+function gatilhoW(estado, g, meuTurno, ev) {
+  const dono = g.j;
+  const p = estado.jogadores[dono];
+  const c = carta(estado, g.iid);
+  const sortear = (lista) => lista[Math.floor(sorteioDoEstado(estado)() * lista.length)];
+  if (g.tipo === "w-hacker") {
+    // compre 1 carta e, depois, descarte 1
+    ev.push({ t: "efeito", j: dono, iid: g.iid });
+    if (!comprar(estado, dono, 1, ev) || !p.mao.length) return;
+    if (!meuTurno) {
+      descartar(estado, dono, sortear(p.mao), ev);
+      return;
+    }
+    estado.pendente = {
+      tipo: "alvo", efeito: "w-hacker-descarte", jogador: dono, origem: g.iid, candidatos: [...p.mao], min: 1, max: 1,
+      titulo: `${c.nome}: você comprou 1 carta. Agora descarte 1 carta da sua mão`,
+    };
+  } else if (g.tipo === "w-miqueas") {
+    // destrua 1 Magia/Armadilha do campo (só as suas no campo: pode não escolher nenhuma)
+    const alvos = magiasAlvejaveis(estado, dono);
+    const deles = alvos.filter((x) => localizar(estado, x).j !== dono);
+    if (!alvos.length) return;
+    if (!meuTurno) {
+      if (!deles.length) return;
+      ev.push({ t: "efeito", j: dono, iid: g.iid });
+      destruir(estado, sortear(deles), ev, "efeito");
+      return;
+    }
+    estado.pendente = {
+      tipo: "alvo", efeito: "w-miqueas", jogador: dono, origem: g.iid, candidatos: alvos, min: deles.length ? 1 : 0, max: 1,
+      titulo: deles.length ? `${c.nome}: destrua 1 Magia/Armadilha do campo` : `${c.nome}: só há Magias/Armadilhas suas no campo. Escolha 1 para destruir ou confirme sem escolher`,
+    };
+  } else if (g.tipo === "w-miqueas-invocar") {
+    if (!p.mao.includes(g.iid) || zonaLivre(p.monstros) < 0 || bloqueado(estado, dono, g.iid)) return;
+    if (!meuTurno) {
+      invocarMiqueasDaMao(estado, dono, g.iid, ev);
+      return;
+    }
+    estado.pendente = {
+      tipo: "alvo", efeito: "w-miqueas-invocar", jogador: dono, origem: g.iid, candidatos: [g.iid], min: 0, max: 1,
+      titulo: `Uma Armadilha foi ativada! Escolha o ${c.nome} para Invocá-lo da mão por Invocação-Especial, ou confirme sem escolher para deixá-lo na mão`,
+    };
+  } else if (g.tipo === "w-midas") {
+    // olha só as Magias/Armadilhas da mão do oponente e escolhe 1 para ele descartar
+    const o = oponente(dono);
+    const alvos = estado.jogadores[o].mao.filter((x) => carta(estado, x).categoria !== "monstro");
+    if (!alvos.length) return;
+    if (!meuTurno) {
+      ev.push({ t: "efeito", j: dono, iid: g.iid, alvos: [] });
+      descartar(estado, o, sortear(alvos), ev);
+      midasPerdeAtk(estado, g.iid);
+      return;
+    }
+    estado.pendente = {
+      tipo: "alvo", efeito: "w-midas", jogador: dono, origem: g.iid, candidatos: alvos, min: 0, max: 1,
+      titulo: `${c.nome}: estas são as Magias e Armadilhas da mão do oponente. Escolha 1 para ele descartar (o Midas perde 200 de ATK) ou confirme sem escolher`,
+    };
+  } else if (g.tipo === "w-rede") {
+    // um monstro "W" seu foi destruído: pode pegar 1 carta "W" do Cemitério
+    if (!(p.campo && p.campo.face && carta(estado, p.campo.iid).efeito === "w-rede")) return;
+    const vistos = new Set();
+    const candidatos = p.cemiterio.filter((x) => ehW(carta(estado, x)) && !vistos.has(estado.cartas[x]) && vistos.add(estado.cartas[x]));
+    if (!candidatos.length) return;
+    if (!meuTurno) {
+      ev.push({ t: "efeito", j: dono, iid: p.campo.iid });
+      recuperarDoCemiterio(estado, dono, sortear(candidatos), ev);
+      return;
+    }
+    estado.pendente = {
+      tipo: "alvo", efeito: "w-rede", jogador: dono, origem: p.campo.iid, candidatos, min: 0, max: 1,
+      titulo: `${carta(estado, p.campo.iid).nome}: um monstro "W" seu foi destruído. Você pode adicionar 1 carta "W" do seu Cemitério à mão`,
+    };
+  }
+}
+
+// W — Midas, o Ladrão de Dados: fez o oponente descartar -> perde 200 de ATK
+function midasPerdeAtk(estado, iid) {
+  const loc = localizar(estado, iid);
+  if (loc && loc.zona === "monstros") loc.obj.menosAtk = (loc.obj.menosAtk || 0) + 200;
+}
+
+
 /* ---------- Efeitos que o jogador ativa (botão "Efeito" no monstro) ---------- */
 
 // Devolve { rotulo, alvos } se o monstro tem um efeito que dá para usar agora
 export function efeitoAtivavel(estado, j, iid) {
   const loc = localizar(estado, iid);
-  if (!loc || loc.j !== j || loc.zona !== "monstros" || !loc.obj.face || estado.vez !== j || bloqueado(estado, j, iid)) return null;
+  const daRede = loc && loc.zona === "campo" && carta(estado, iid).efeito === "w-rede"; // Magia de Campo com efeito
+  if (!loc || loc.j !== j || (loc.zona !== "monstros" && !daRede) || !loc.obj.face || estado.vez !== j || bloqueado(estado, j, iid)) return null;
   const m = loc.obj;
   const c = carta(estado, iid);
   const p = estado.jogadores[j];
@@ -2136,6 +2358,28 @@ export function efeitoAtivavel(estado, j, iid) {
       return {
         rotulo: "Efeito: pagar 1000 PV e destruir 1 monstro do campo",
         alvos: { candidatos, min: 1, max: 1, titulo: "O Emanuel Careca de ICE (paga 1000 PV): escolha o monstro que vai ser destruído" },
+      };
+    }
+    case "os-irmaos": {
+      if (!ehFasePrincipal(estado) || usou(estado, j, "os-irmaos")) return null;
+      const candidatos = p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro");
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: banir até 2 monstros do seu Cemitério (+300 de ATK cada)",
+        alvos: { candidatos, min: 1, max: Math.min(2, candidatos.length), titulo: "Os Irmãos: escolha 1 ou 2 monstros do seu Cemitério para banir (+300 de ATK por monstro)" },
+      };
+    }
+    case "w-rede": {
+      if (!ehFasePrincipal(estado) || usou(estado, j, "w-rede") || zonaLivre(p.monstros) < 0) return null;
+      const candidatos = p.mao.filter((x) => {
+        const w = carta(estado, x);
+        return w.categoria === "monstro" && ehW(w) && !w.somenteEspecial && !w.naoEspecial && podeControlarMais(estado, j, x);
+      });
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: Invocar 1 monstro \"W\" da mão",
+        alvos: { candidatos, min: 1, max: 1, titulo: "W — A Rede Central: escolha o monstro \"W\" da sua mão que entra por Invocação-Especial" },
+        posicoes: true,
       };
     }
     case "doutor-daiki": {
@@ -2269,6 +2513,22 @@ function efeitoMonstro(estado, j, { iid, alvos = [], pos = "atk" }, ev) {
       destruir(estado, alvos[0], ev, "efeito");
       break;
     }
+    case "os-irmaos":
+      marcarUso(estado, j, "os-irmaos");
+      for (const alvo of alvos) banirDoCemiterio(estado, alvo, ev);
+      m.maisAtk = (m.maisAtk || 0) + 300 * alvos.length;
+      break;
+    case "w-rede": {
+      marcarUso(estado, j, "w-rede");
+      const p = estado.jogadores[j];
+      const alvo = alvos[0];
+      p.mao.splice(p.mao.indexOf(alvo), 1);
+      const slot = zonaLivre(p.monstros);
+      p.monstros[slot] = { iid: alvo, pos, face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+      ev.push({ t: "invocacao", j, iid: alvo, modo: "especial", slot });
+      aposEspecial(estado, j, alvo, ev);
+      break;
+    }
     case "doutor-daiki": {
       const p = estado.jogadores[j];
       p.pl -= 1000;
@@ -2365,6 +2625,9 @@ function efeitoMao(estado, j, { iid }, ev) {
 
 // Zonas do oponente que podem ser alvo de ataque (George Animal protege os "Animal" de Nível 6 ou menos)
 export function alvosDeAtaque(estado, j) {
+  // Os Irmãos com a face para cima: o oponente de quem controla eles só pode atacar eles
+  const irmaos = irmaosQueSeguram(estado, oponente(j));
+  if (irmaos.length) return irmaos;
   const georgeEmCampo = estado.jogadores.some((p) => p.monstros.some((m) => m && m.face && carta(estado, m.iid).efeito === "george"));
   return estado.jogadores[oponente(j)].monstros
     .map((m, s) => {
@@ -2377,6 +2640,13 @@ export function alvosDeAtaque(estado, j) {
     })
     .filter((s) => s !== null);
 }
+
+// Zonas com "Os Irmãos" (face para cima) do jogador k
+const irmaosQueSeguram = (estado, k) =>
+  estado.jogadores[k].monstros.map((m, s) => (m && m.face && carta(estado, m.iid).efeito === "os-irmaos" && !bloqueado(estado, k, m.iid) ? s : null)).filter((s) => s !== null);
+
+// Sem ataque direto: Fusão do Doutor Daiki (sempre) e W — Miqueas no turno do ataque duplo
+export const semAtaqueDireto = (estado, m) => Boolean(m.semAtaqueDireto || m.semDiretoTurno === estado.turno);
 
 // Monstros do jogador que ainda podem atacar neste turno
 export function podeAtacar(estado, j, slot) {
@@ -2410,11 +2680,12 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
 
   const alvosValidos = alvosDeAtaque(estado, j);
   if (alvo === null || alvo === undefined) {
-    if (m.semAtaqueDireto) return "Esse monstro não pode atacar os Pontos de Vida do oponente diretamente.";
+    if (semAtaqueDireto(estado, m)) return "Esse monstro não pode atacar os Pontos de Vida do oponente diretamente.";
     if (alvosValidos.length) return "Só dá para atacar direto se o oponente não tiver monstros que possam ser atacados.";
   } else if (!o.monstros[alvo]) {
     return "Não há monstro nessa zona do oponente.";
   } else if (!alvosValidos.includes(alvo)) {
+    if (irmaosQueSeguram(estado, oponente(j)).length) return "Os Irmãos estão em campo: o ataque tem que ser neles.";
     return "O George Animal protege esse monstro: ele não pode ser alvo de ataques.";
   }
 
@@ -2545,14 +2816,29 @@ function dano(estado, j, valor, ev) {
 function destruir(estado, iid, ev, causa) {
   const loc = localizar(estado, iid);
   if (!loc || (loc.zona !== "monstros" && loc.zona !== "magias" && loc.zona !== "campo")) return;
-  if (causa === "batalha" && loc.zona === "monstros" && (carta(estado, iid).efeito === "irmaollow" || estado.jogadores[loc.j].hojeNao === estado.turno)) {
+  if (causa === "batalha" && loc.zona === "monstros" && (carta(estado, iid).efeito === "irmaollow" || estado.jogadores[loc.j].hojeNao === estado.turno || protegidoPelosIrmaos(estado, loc.j))) {
     ev.push({ t: "indestrutivel", j: loc.j, iid });
     return;
   }
   ev.push({ t: "destruida", iid, j: loc.j, causa });
   const equipado = loc.zona === "magias" ? loc.obj.equipadoEm : null;
+  const chamado = loc.zona === "monstros" ? chamadoQueTrouxe(estado, iid) : null;
   removerDoCampo(estado, iid, ev, causa);
   if (equipado && carta(estado, iid).efeito === "lamento") destruir(estado, equipado, ev, "efeito");
+  // Chamado dos Vagabundos: o monstro que ele trouxe foi destruído -> a armadilha vai junto
+  if (chamado && noCampo(estado, chamado) && !jinrecaEmCampo(estado)) destruir(estado, chamado, ev, "efeito");
+  if (loc.zona === "monstros" && ehW(carta(estado, iid))) {
+    // W — A Rede Central de quem controlava o monstro: pode pegar 1 carta "W" do Cemitério
+    const q = estado.jogadores[loc.j];
+    if (q.campo && q.campo.face && carta(estado, q.campo.iid).efeito === "w-rede" && !(estado.gatilhos || []).some((g) => g.tipo === "w-rede" && g.j === loc.j)) {
+      (estado.gatilhos ||= []).push({ tipo: "w-rede", j: loc.j, iid: q.campo.iid, turno: estado.turno });
+    }
+  }
+  // W — Midas, o Ladrão de Dados destruído em batalha: quem controlava compra 1 carta
+  if (loc.zona === "monstros" && causa === "batalha" && carta(estado, iid).efeito === "w-midas" && !bloqueado(estado, loc.j, iid) && estado.vencedor === null) {
+    ev.push({ t: "efeito", j: loc.j, iid });
+    comprar(estado, loc.j, 1, ev);
+  }
   // Karecoh Alado: destruído no campo -> o dono não sofre dano de batalha pelo resto do turno
   if (loc.zona === "monstros" && carta(estado, iid).efeito === "karecoh" && !bloqueado(estado, loc.j, iid)) {
     estado.jogadores[loc.j].semDanoBatalha = estado.turno;
@@ -2625,6 +2911,12 @@ function removerDoCampo(estado, iid, ev, causa) {
     }
   }
   if (loc.zona === "monstros") {
+    // o Chamado dos Vagabundos deixa de estar preso a um monstro que saiu do campo
+    for (const q2 of estado.jogadores) {
+      for (const m of q2.magias) {
+        if (m && m.revividos && carta(estado, m.iid).efeito === "vagabundos") m.revividos = m.revividos.filter((x) => x !== iid);
+      }
+    }
     for (let k = 0; k < 2; k++) {
       estado.jogadores[k].magias.forEach((m) => {
         if (m && m.equipadoEm === iid) {
@@ -2634,7 +2926,7 @@ function removerDoCampo(estado, iid, ev, causa) {
       });
     }
   }
-  if (loc.zona === "magias" && loc.obj.face && loc.obj.revividos && carta(estado, iid).efeito === "revolucao" && !jinrecaEmCampo(estado)) {
+  if (loc.zona === "magias" && loc.obj.face && loc.obj.revividos && ["revolucao", "vagabundos"].includes(carta(estado, iid).efeito) && !jinrecaEmCampo(estado)) {
     for (const x of loc.obj.revividos) {
       if (localizar(estado, x)?.zona === "monstros") destruir(estado, x, ev, "efeito");
     }
@@ -2978,6 +3270,23 @@ function resolverEscolha(estado, j, alvos, ev) {
     for (const alvo of alvos) devolverParaMao(estado, alvo, ev);
     return null;
   }
+  if (pend.efeito === "w-hacker-descarte") {
+    descartar(estado, j, alvos[0], ev);
+    return null;
+  }
+  if (pend.efeito === "w-miqueas-invocar") {
+    invocarMiqueasDaMao(estado, j, alvos[0], ev);
+    return null;
+  }
+  if (pend.efeito === "w-midas") {
+    descartar(estado, oponente(j), alvos[0], ev);
+    midasPerdeAtk(estado, pend.origem);
+    return null;
+  }
+  if (pend.efeito === "w-rede") {
+    recuperarDoCemiterio(estado, j, alvos[0], ev);
+    return null;
+  }
   for (const alvo of alvos) destruir(estado, alvo, ev, "efeito");
   return null;
 }
@@ -2990,6 +3299,7 @@ export function escolhaAutomatica(estado, pend) {
   if (pend.efeito === "davi-cemiterio" || pend.efeito === "thales" || pend.efeito === "big" || pend.efeito === "john-invocar") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "zoologico") return pend.candidatos.filter((x) => localizar(estado, x).j !== pend.jogador).slice(0, 1);
   if (pend.efeito === "midas-invocar" || pend.efeito === "emanuel-pagar") return [];
+  if (["w-hacker-descarte", "w-miqueas-invocar", "w-midas", "w-rede"].includes(pend.efeito)) return pend.candidatos.slice(0, 1);
   if (pend.efeito === "revolucao") return pend.candidatos.slice(0, pend.max);
   if (pend.efeito === "destino") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "fusao") return paresDeFusao(estado, j, pend.fusao)[0] || [];
@@ -3028,6 +3338,11 @@ export function opcoesDaCarta(estado, j, iid) {
       if (podeInvocarPenetra(estado, j, iid)) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial (penetra)", acao: { tipo: "invocarEspecial", iid } });
       }
+      if (podeInvocarHacker(estado, j, iid)) {
+        for (const [pos, nome] of [["atk", "Ataque"], ["def", "Defesa"]]) {
+          opcoes.push({ id: "especial", rotulo: `Invocação-Especial em ${nome} (você controla um "W")`, acao: { tipo: "invocarEspecial", iid, pos } });
+        }
+      }
       if (podeInvocarBig(estado, j, iid)) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial (tem \"Animal\" de Nível 5+)", acao: { tipo: "invocarEspecial", iid } });
       }
@@ -3059,7 +3374,8 @@ export function opcoesDaCarta(estado, j, iid) {
         if (req) opcoes.push({ id: "ativar", rotulo: "Ativar", acao: { tipo: "ativar", iid }, alvos: req.alvos });
       }
       if (livre) {
-        const rotulo = c.efeito === "revolucao" ? "Baixar (ative a partir do próximo turno)" : c.categoria === "armadilha" ? "Baixar (ativa sozinha)" : "Baixar virada";
+        const manual = c.efeito === "revolucao" || c.efeito === "vagabundos"; // armadilhas que o jogador ativa
+        const rotulo = manual ? "Baixar (ative a partir do próximo turno)" : c.categoria === "armadilha" ? "Baixar (ativa sozinha)" : "Baixar virada";
         opcoes.push({ id: "baixar", rotulo, acao: { tipo: "baixarMagia", iid } });
       }
     }
@@ -3070,7 +3386,7 @@ export function opcoesDaCarta(estado, j, iid) {
     if (podeAtacar(estado, j, loc.slot)) {
       const o = estado.jogadores[oponente(j)];
       const alvos = alvosDeAtaque(estado, j);
-      if (alvos.length || !m.semAtaqueDireto) {
+      if (alvos.length || !semAtaqueDireto(estado, m)) {
         opcoes.push({ id: "atacar", rotulo: "Atacar", acao: { tipo: "atacar", slot: loc.slot }, ataque: { alvos, direto: alvos.length === 0 } });
       }
     }
@@ -3090,6 +3406,15 @@ export function opcoesDaCarta(estado, j, iid) {
     }
   }
 
+  // Magia de Campo com efeito (W — A Rede Central): Invoca em Ataque ou em Defesa
+  if (loc.zona === "campo" && loc.obj.face) {
+    const efeito = efeitoAtivavel(estado, j, iid);
+    if (efeito?.posicoes) {
+      for (const [pos, nome] of [["atk", "Ataque"], ["def", "Defesa"]]) {
+        opcoes.push({ id: "efeito", rotulo: `${efeito.rotulo} (${nome})`, acao: { tipo: "efeitoMonstro", iid, pos }, alvos: efeito.alvos });
+      }
+    }
+  }
   if ((loc.zona === "magias" || loc.zona === "campo") && principal && !loc.obj.face && c.categoria === "magia") {
     const podeRapida = c.subtipo !== "rapida" || loc.obj.turnoBaixada < estado.turno;
     const req = requisitosMagia(estado, j, iid);

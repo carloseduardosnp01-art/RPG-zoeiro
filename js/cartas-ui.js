@@ -4,7 +4,7 @@
    Usado pelo catálogo, pelo deck e pela arena.
    ========================================================================== */
 
-import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610042342";
+import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610050058";
 
 // Emblema do careca (logo, verso das cartas e ícone do site)
 export const SVG_CARECA = `
@@ -102,7 +102,7 @@ function tamanhoTexto(texto) {
   if (n < 175) return "3.15cqw";
   if (n < 280) return "2.9cqw";
   // textos enormes (Davi, George, Big Animal, Grande Mestre do Caos...): letra menor para caber na caixa
-  if (n < 295) return "2.75cqw";
+  if (n < 287) return "2.75cqw"; // de 287 em diante (Os Irmãos) já não cabe nessa letra
   if (n < 330) return "2.45cqw";
   if (n < 440) return "2.2cqw";
   if (n < 480) return "2.05cqw";

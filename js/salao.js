@@ -12,20 +12,20 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede, presencaGerenciada } from "./rede.js?v=202610042342";
-import * as conta from "./conta.js?v=202610042342";
-import { bancoLigado, chamar } from "./banco.js?v=202610042342";
-import * as adm from "./admin.js?v=202610042342";
-import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610042342";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610042342";
-import { abrirPremio } from "./visor-premio.js?v=202610042342";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610042342";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610042342";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610042342";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610042342";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610042342";
-import { tocar } from "./som.js?v=202610042342";
-import { comMoldura, visualDe } from "./cosmeticos.js?v=202610042342";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede, presencaGerenciada } from "./rede.js?v=202610050058";
+import * as conta from "./conta.js?v=202610050058";
+import { bancoLigado, chamar } from "./banco.js?v=202610050058";
+import * as adm from "./admin.js?v=202610050058";
+import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610050058";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610050058";
+import { abrirPremio } from "./visor-premio.js?v=202610050058";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610050058";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610050058";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610050058";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610050058";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610050058";
+import { tocar } from "./som.js?v=202610050058";
+import { comMoldura, visualDe } from "./cosmeticos.js?v=202610050058";
 
 const SID = gerarId(12); // identifica esta aba
 

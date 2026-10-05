@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao,
-} from "./motor.js?v=202610041702";
+} from "./motor.js?v=202610042103";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 
@@ -127,6 +127,12 @@ function* jogadasPrincipais(estado, j) {
     if (ef === "obelisco" && deles.length >= 2) {
       const baratos = [...op.alvos.candidatos].sort((a, b) => forca(estado, j, a) - forca(estado, j, b)).slice(0, 2);
       if (somaForca(estado, j, deles) > somaForca(estado, j, baratos) + 1000) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: baratos };
+    }
+    // O Emanuel Careca de ICE: paga 1000 PV para destruir o monstro mais forte do oponente (só com PV sobrando)
+    if (ef === "emanuel-ice" && p.pl > 3000) {
+      const deles2 = op.alvos.candidatos.filter((x) => localizar(estado, x).j !== j);
+      const alvo = deles2.sort((a, b) => forca(estado, j, b) - forca(estado, j, a))[0];
+      if (alvo && forca(estado, j, alvo) >= 1800) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [alvo] };
     }
     if (ef === "mestre-caos") {
       yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [[...op.alvos.candidatos].sort((a, b) => valorNaMao(estado, j, b) - valorNaMao(estado, j, a))[0]] };
@@ -342,6 +348,8 @@ function melhorInvocacao(estado, j, mao) {
 
     let valor = c.atk;
     let modo = "atk";
+    if (c.efeito === "careca-dragao") valor = 1000 * (p.mao.length - 1); // 1000 por carta na mão (sem ele)
+    if (c.efeito === "emanuel-ice") valor = (p.pl >= 4000 ? p.pl - 100 : 0) + (deles.length ? 1000 : 0);
     if (c.efeito === "tributo-destruir-monstro" && deles.length) {
       valor += Math.max(...deles.map((x) => forca(estado, j, x)));
     }
@@ -436,7 +444,7 @@ const VALOR_NA_MAO = {
   vapo: 9, "forca-careca": 8, "tributo-destruir-monstro": 7, soco: 6, "tributo-destruir-magias": 6,
   "armadilha-big": 6, luz: 6, penetra: 5, saideira: 5, "flip-destruir": 5, feiticeira: 5, bust: 4, invocador: 3,
   "flip-descartar": 5, "flip-comprar": 4, karecoh: 4, egoismo: 6, zoologico: 5,
-  "armadura-gelo": 7, obelisco: 6, fusao: 5,
+  "armadura-gelo": 7, obelisco: 6, fusao: 5, "careca-dragao": 6, "emanuel-ice": 6,
   sugadao: 7, "hoje-nao": 6, "bora-bill": 4, thangan: 5, hacker: 7, "w-laminas": 5,
   berinjela: 4, revolucao: 6, rafaza: 5, negao: 6, "flip-parasita": 5, litro: 3, daiki: 7,
   controle: 7, menino: 4, "mestre-caos": 6, upstart: 3, jinreca: 6, "mil-facas": 6, irmaollow: 5,
@@ -478,6 +486,8 @@ function escolherAlvos(estado, j, pend) {
     return atkAtual(estado, deles[0]) >= 1500 ? [meus[0], deles[0]] : [];
   }
   if (pend.efeito === "midas-invocar") return [];
+  // O Emanuel Careca de ICE: só paga os PV (até ficar com 100) se tiver bastante para pagar
+  if (pend.efeito === "emanuel-pagar") return estado.jogadores[j].pl >= 4000 ? [pend.origem] : [];
   // Fusão: os materiais que menos fazem falta
   if (pend.efeito === "fusao") {
     const custo = (x) => (localizar(estado, x).zona === "monstros" ? forca(estado, j, x) : valorNaMao(estado, j, x) * 300);

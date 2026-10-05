@@ -13,17 +13,17 @@
    ========================================================================== */
 
 import {
-  carta, quemAge, opcoesDaCarta, atkAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
+  carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610041702";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610041702";
-import { el, esperar, aviso } from "./util.js?v=202610041702";
-import { tocar } from "./som.js?v=202610041702";
-import { abrirDetalhes } from "./catalogo.js?v=202610041702";
-import * as adm from "./admin.js?v=202610041702";
-import { PREMIOS } from "./premios.js?v=202610041702";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610041702";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610041702";
+} from "./motor.js?v=202610042103";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610042103";
+import { el, esperar, aviso } from "./util.js?v=202610042103";
+import { tocar } from "./som.js?v=202610042103";
+import { abrirDetalhes } from "./catalogo.js?v=202610042103";
+import * as adm from "./admin.js?v=202610042103";
+import { PREMIOS } from "./premios.js?v=202610042103";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610042103";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610042103";
 
 const raiz = document.querySelector("#arena");
 
@@ -60,6 +60,8 @@ const FRASES = {
   "geada": "GEADA DA PESTE!",
   "defense-careca": "MURALHA CARECA!",
   "doutor-daiki": "INJEÇÃO DE FUSÃO!",
+  "careca-dragao": "O DRAGÃO CARECA RUGIU: -2000 DE ATK!",
+  "emanuel-ice": "O EMANUEL DE ICE CONGELOU TUDO!",
   vapo: "VAPO!",
   "forca-careca": "FORÇA CARECA!",
   "armadilha-big": "CAIU NA ARMADILHA DO BIG!",
@@ -644,7 +646,8 @@ function zonaCarta(estado, j, zona, slot) {
   if (obj.face) {
     const contador = c.efeito === "luz" ? obj.turnosRestantes : null;
     const atk = zona === "monstros" ? atkAtual(estado, obj.iid) : undefined;
-    b.append(criarCarta(c, { atk, contador }));
+    const def = zona === "monstros" ? defAtual(estado, obj.iid) : undefined;
+    b.append(criarCarta(c, { atk, def, contador }));
   } else if (meu) {
     b.dataset.minhaBaixada = "true";
     b.append(criarCarta(c), el("span", "selo-baixada", "BAIXADA"));
@@ -657,7 +660,8 @@ function zonaCarta(estado, j, zona, slot) {
     const atk = atkAtual(estado, obj.iid);
     const selo = el("span", "selo-stats-campo");
     const sAtk = el("span", atk > c.atk ? "mais" : "", String(atk));
-    const sDef = el("span", obj.pos === "def" ? "ativo-def" : "", String(c.def));
+    const def = defAtual(estado, obj.iid);
+    const sDef = el("span", [obj.pos === "def" ? "ativo-def" : "", def > c.def ? "mais" : ""].filter(Boolean).join(" "), String(def));
     selo.append(sAtk, " / ", sDef);
     z.append(selo);
   }
@@ -812,12 +816,14 @@ function mostrarPrevia(iid) {
   const c = carta(estado, iid);
   const loc = localizar(estado, iid);
   const cartaEl = el("div", "previa__carta");
-  const atk = loc && loc.zona === "monstros" ? atkAtual(estado, iid) : undefined;
-  cartaEl.append(criarCarta(c, { atk }));
+  const noCampo = loc && loc.zona === "monstros";
+  const atk = noCampo ? atkAtual(estado, iid) : undefined;
+  const def = noCampo ? defAtual(estado, iid) : undefined;
+  cartaEl.append(criarCarta(c, { atk, def }));
   const texto = el("div", "previa__texto");
   texto.append(el("h4", "", c.nome));
   texto.append(el("div", "", c.categoria === "monstro" ? `${linhaTipo(c)} · Nível ${c.nivel}` : nomeCategoria(c)));
-  if (c.categoria === "monstro") texto.append(el("div", "previa__stats", `ATK ${atk ?? c.atk} / DEF ${c.def}`));
+  if (c.categoria === "monstro") texto.append(el("div", "previa__stats", `ATK ${atk ?? (c.statsVariaveis ? "?" : c.atk)} / DEF ${def ?? (c.statsVariaveis ? "?" : c.def)}`));
   texto.append(el("p", "mb-0 mt-1", c.texto));
   refs.previa.replaceChildren(cartaEl, texto);
 }
@@ -1130,7 +1136,7 @@ function escolherCartas({ titulo, sub = "", candidatos, min, max, podeCancelar =
       b.type = "button";
       b.setAttribute("aria-pressed", "false");
       b.setAttribute("aria-label", visivel ? c.nome : "Carta virada do oponente");
-      b.append(visivel ? criarCarta(c, { atk: loc.zona === "monstros" ? atkAtual(estado, iid) : undefined }) : criarVerso("", versoDe(estado, loc.j)));
+      b.append(visivel ? criarCarta(c, loc.zona === "monstros" ? { atk: atkAtual(estado, iid), def: defAtual(estado, iid) } : {}) : criarVerso("", versoDe(estado, loc.j)));
       const lado = loc.zona === "mao" ? (loc.j === eu ? "Na sua mão" : "Mão do oponente")
         : loc.zona === "deck" ? "No seu deck"
         : loc.zona === "cemiterio" ? (loc.j === eu ? "No seu Cemitério" : "Cemitério do oponente")
@@ -1251,7 +1257,7 @@ function verPilhas(estado, titulo, abas, aba) {
   const mostrarDetalhe = (iid) => {
     const c = carta(estado, iid);
     detalhe.replaceChildren(el("h4", "", c.nome));
-    detalhe.append(el("div", "pilhas__tipo", c.categoria === "monstro" ? `${linhaTipo(c)} · Nível ${c.nivel} · ATK ${c.atk} / DEF ${c.def}` : nomeCategoria(c)));
+    detalhe.append(el("div", "pilhas__tipo", c.categoria === "monstro" ? `${linhaTipo(c)} · Nível ${c.nivel} · ATK ${c.statsVariaveis ? "?" : c.atk} / DEF ${c.statsVariaveis ? "?" : c.def}` : nomeCategoria(c)));
     detalhe.append(el("p", "mb-0 mt-1", c.texto));
     detalhe.hidden = false;
     grade.querySelectorAll(".escolha__opcao").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.iid === iid)));

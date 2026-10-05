@@ -350,7 +350,7 @@ function noCampo(estado, iid) {
 export function atkAtual(estado, iid) {
   const c = carta(estado, iid);
   if (!c || c.categoria !== "monstro") return 0;
-  let atk = c.atk;
+  let atk = c.atk + bonusDosDeuses(estado, iid);
   if (c.efeito === "feiticeira") {
     const mestres = estado.jogadores
       .flatMap((p) => p.cemiterio)
@@ -381,7 +381,19 @@ export function atkAtual(estado, iid) {
       if (m && m.face && m.equipadoEm === iid && carta(estado, m.iid).efeito === "gole") atk *= 2;
     }
   }
-  return atk;
+  if (loc && loc.zona === "monstros" && loc.obj.menosAtk) atk -= loc.obj.menosAtk; // Careca o Dragão Careca
+  return Math.max(0, atk);
+}
+
+// ATK/DEF "?" dos deuses: Careca o Dragão Careca ganha 1000 por carta na mão de quem o controla;
+// O Emanuel Careca de ICE, os PV pagos quando entrou
+function bonusDosDeuses(estado, iid) {
+  const c = carta(estado, iid);
+  const loc = localizar(estado, iid);
+  if (!loc || loc.zona !== "monstros" || !loc.obj.face) return 0;
+  if (c.efeito === "careca-dragao" && !bloqueado(estado, loc.j, iid)) return 1000 * estado.jogadores[loc.j].mao.length;
+  if (c.efeito === "emanuel-ice") return loc.obj.bonusPago || 0;
+  return 0;
 }
 
 // "Animal": cartas cujo nome é tratado como "Animal" (David, Davi, Thales, George, Miro...)
@@ -401,7 +413,7 @@ const ehCartaGelo = (c) => c.atributo === "ÁGUA" || c.nome.toLowerCase().includ
 export function defAtual(estado, iid) {
   const c = carta(estado, iid);
   const loc = localizar(estado, iid);
-  let def = c.def;
+  let def = c.def + bonusDosDeuses(estado, iid);
   if (loc && loc.zona === "monstros" && tipoAtual(estado, iid) === "Besta Alada") def += 200 * zoologicosAtivos(estado);
   if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "TERRA") def -= 400 * camposAtivos(estado, "wifi");
   if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "ÁGUA") def += 200 * camposAtivos(estado, "geada");
@@ -776,9 +788,24 @@ function aposEspecial(estado, j, iid, ev) {
   if (loc && loc.zona === "monstros") loc.obj.especial = true;
   verificarArmadilhas(estado, "invocacao", { j, iid, modo: "especial" }, ev);
   if (estado.vencedor !== null) return;
+  gatilhoDragaoCareca(estado, iid, ev);
   if (carta(estado, iid).efeito === "thales") gatilhoThales(estado, j, iid);
   if (carta(estado, iid).efeito === "big-animal") marcarBigMP2(estado, j, iid);
   gatilhoZoologico(estado, j, iid);
+}
+
+// Careca o Dragão Careca: monstro Invocado (Normal ou Especial) em Posição de Ataque no campo do oponente
+// dele perde 2000 de ATK; se o ATK chegar a 0 por isso, é destruído
+function gatilhoDragaoCareca(estado, iid, ev) {
+  const loc = localizar(estado, iid);
+  if (!loc || loc.zona !== "monstros" || !loc.obj.face || loc.obj.pos !== "atk") return;
+  const k = oponente(loc.j);
+  const dragao = estado.jogadores[k].monstros.find((m) => m && m.face && carta(estado, m.iid).efeito === "careca-dragao" && !bloqueado(estado, k, m.iid));
+  if (!dragao) return;
+  const antes = atkAtual(estado, iid);
+  loc.obj.menosAtk = (loc.obj.menosAtk || 0) + 2000;
+  ev.push({ t: "efeito", j: k, iid: dragao.iid, alvos: [iid] });
+  if (antes > 0 && atkAtual(estado, iid) <= 0) destruir(estado, iid, ev, "efeito");
 }
 
 // Big Animal: ao ser Invocado, na Fase Principal 2 deste turno pode recuperar do Cemitério
@@ -1018,11 +1045,19 @@ function mudarPosicao(estado, j, { slot }, ev) {
 // Depois que um monstro é Invocado: primeiro as armadilhas do oponente, depois o efeito do monstro.
 // (O efeito de Invocação resolve mesmo se a armadilha destruir o monstro, como numa corrente.)
 function aposInvocar(estado, j, iid, modo, ev) {
-  const semResposta = carta(estado, iid).efeito === "obelisco" && (modo === "normal" || modo === "tributo");
+  const semResposta = (carta(estado, iid).efeito === "obelisco" || carta(estado, iid).semResposta) && (modo === "normal" || modo === "tributo");
   if (!semResposta) verificarArmadilhas(estado, "invocacao", { j, iid, modo }, ev);
   if (estado.vencedor !== null) return;
   const c = carta(estado, iid);
 
+  // O Emanuel Careca de ICE: ao entrar por Invocação-Normal, pode pagar PV até ficar com 100 e ganhar isso de ATK/DEF
+  if ((modo === "normal" || modo === "tributo") && c.efeito === "emanuel-ice" && estado.jogadores[j].pl > 100 && !estado.pendente) {
+    const valor = estado.jogadores[j].pl - 100;
+    estado.pendente = {
+      tipo: "alvo", efeito: "emanuel-pagar", jogador: j, origem: iid, candidatos: [iid], min: 0, max: 1,
+      titulo: `O Emanuel Careca de ICE: escolha ele para pagar ${valor} PV (você fica com 100) e ele ganha ${valor} de ATK e DEF. Para não pagar, confirme sem escolher.`,
+    };
+  }
   // Defense Careca: Invocado por Invocação-Normal ou Flip, muda para a Posição de Defesa
   if (c.efeito === "defense-careca" && ["normal", "tributo", "flip"].includes(modo)) {
     const m = localizar(estado, iid);
@@ -1032,6 +1067,8 @@ function aposInvocar(estado, j, iid, modo, ev) {
       ev.push({ t: "posicao", j, iid, pos: "def" });
     }
   }
+  // Careca o Dragão Careca do oponente: quem entrou em Ataque perde 2000 de ATK (depois do Defense Careca ir para Defesa)
+  if (modo === "normal" || modo === "tributo") gatilhoDragaoCareca(estado, iid, ev);
 
   if ((modo === "normal" || modo === "tributo") && c.efeito === "davi" && !usou(estado, j, "davi-devolver")) {
     const loc = localizar(estado, iid);
@@ -1277,7 +1314,7 @@ export function requisitosMagia(estado, j, iid) {
         : null;
     }
     case "lamento": {
-      const candidatos = p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && (!carta(estado, x).somenteEspecial || liberado(estado, x)) && podeControlarMais(estado, j, x));
+      const candidatos = p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && !carta(estado, x).naoEspecial && (!carta(estado, x).somenteEspecial || liberado(estado, x)) && podeControlarMais(estado, j, x));
       if (!candidatos.length || zonaLivre(p.monstros) < 0 || p.pl <= 800) return null;
       return { alvos: { candidatos, min: 1, max: 1, titulo: "Lamento Prematuro (paga 800 PV): escolha o monstro do seu Cemitério que volta" } };
     }
@@ -1350,7 +1387,7 @@ export function requisitosMagia(estado, j, iid) {
       const vistos = new Set();
       const candidatos = p.deck.filter((x) => {
         const m = carta(estado, x);
-        if (m.categoria !== "monstro" || m.atk > 1500 || m.somenteEspecial || vistos.has(m.id) || !podeControlarMais(estado, j, x)) return false;
+        if (m.categoria !== "monstro" || m.atk > 1500 || m.somenteEspecial || m.naoEspecial || vistos.has(m.id) || !podeControlarMais(estado, j, x)) return false;
         vistos.add(m.id);
         return true;
       });
@@ -2092,6 +2129,15 @@ export function efeitoAtivavel(estado, j, iid) {
         confirmar: "Chaos Kelvor: pagar 1000 PV e mandar para o Cemitério TODAS as cartas das duas mãos e dos dois campos (as suas também, inclusive o Kelvor)? Depois você não ativa mais nada neste turno.",
       };
     }
+    case "emanuel-ice": {
+      if (!ehFasePrincipal(estado) || p.pl <= 1000) return null;
+      const candidatos = monstrosEmCampo(estado).filter((x) => x !== iid && alvoDeEfeitoDeMonstro(estado, j, x));
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: pagar 1000 PV e destruir 1 monstro do campo",
+        alvos: { candidatos, min: 1, max: 1, titulo: "O Emanuel Careca de ICE (paga 1000 PV): escolha o monstro que vai ser destruído" },
+      };
+    }
     case "doutor-daiki": {
       if (!ehFasePrincipal(estado) || p.pl <= 1000 || zonaLivre(p.monstros) < 0) return null;
       const candidatos = fusoesDoDoutor(estado, j);
@@ -2216,6 +2262,13 @@ function efeitoMonstro(estado, j, { iid, alvos = [], pos = "atk" }, ev) {
       m.semAtaque = estado.turno;
       banir(estado, alvos[0], ev);
       break;
+    case "emanuel-ice": {
+      const p = estado.jogadores[j];
+      p.pl -= 1000;
+      ev.push({ t: "custo", j, valor: 1000, pl: p.pl });
+      destruir(estado, alvos[0], ev, "efeito");
+      break;
+    }
     case "doutor-daiki": {
       const p = estado.jogadores[j];
       p.pl -= 1000;
@@ -2764,7 +2817,7 @@ function passarTurno(estado, ev) {
   // Obelisco que entrou por Invocação-Especial: vai para o Cemitério na Fase Final
   estado.jogadores.forEach((q, k) => {
     q.monstros.forEach((m) => {
-      if (m && m.especial && carta(estado, m.iid).efeito === "obelisco") {
+      if (m && m.especial && (carta(estado, m.iid).efeito === "obelisco" || carta(estado, m.iid).cemiterioSeEspecial)) {
         ev.push({ t: "efeito", j: k, iid: m.iid });
         removerDoCampo(estado, m.iid, ev, "regra");
       }
@@ -2875,6 +2928,17 @@ function resolverEscolha(estado, j, alvos, ev) {
     return null;
   }
   if (!alvos.length) return null; // escolheu não fazer nada
+  if (pend.efeito === "emanuel-pagar") {
+    const p = estado.jogadores[j];
+    const m = localizar(estado, pend.origem);
+    if (!m || m.zona !== "monstros" || p.pl <= 100) return null;
+    const valor = p.pl - 100;
+    p.pl = 100;
+    ev.push({ t: "custo", j, valor, pl: p.pl });
+    m.obj.bonusPago = (m.obj.bonusPago || 0) + valor;
+    ev.push({ t: "efeito", j, iid: pend.origem });
+    return null;
+  }
   ev.push({ t: "efeito", j, iid: pend.origem, alvos });
   if (pend.efeito === "flip-descartar") {
     for (const alvo of alvos) descartar(estado, oponente(j), alvo, ev);
@@ -2925,7 +2989,7 @@ export function escolhaAutomatica(estado, pend) {
   if (pend.efeito === "flip-descartar" || pend.efeito === "flip-buscar-magia") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "davi-cemiterio" || pend.efeito === "thales" || pend.efeito === "big" || pend.efeito === "john-invocar") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "zoologico") return pend.candidatos.filter((x) => localizar(estado, x).j !== pend.jogador).slice(0, 1);
-  if (pend.efeito === "midas-invocar") return [];
+  if (pend.efeito === "midas-invocar" || pend.efeito === "emanuel-pagar") return [];
   if (pend.efeito === "revolucao") return pend.candidatos.slice(0, pend.max);
   if (pend.efeito === "destino") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "fusao") return paresDeFusao(estado, j, pend.fusao)[0] || [];

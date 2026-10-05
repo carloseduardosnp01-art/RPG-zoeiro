@@ -4,7 +4,7 @@
    Usado pelo catálogo, pelo deck e pela arena.
    ========================================================================== */
 
-import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610041702";
+import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610042103";
 
 // Emblema do careca (logo, verso das cartas e ícone do site)
 export const SVG_CARECA = `
@@ -104,7 +104,7 @@ function tamanhoTexto(texto) {
   if (n < 295) return "2.75cqw";
   if (n < 330) return "2.45cqw";
   if (n < 440) return "2.2cqw";
-  if (n < 500) return "2.05cqw";
+  if (n < 480) return "2.05cqw";
   if (n < 560) return "1.95cqw";
   // Mago Dragão Sonho do BIG: o maior texto do jogo
   return "1.75cqw";
@@ -203,18 +203,22 @@ ${linhas.b}`;
 
   const seloStats = el("div", "carta__selo-stats");
   if (c.categoria === "monstro") {
-    const atk = opcoes.atk ?? c.atk;
+    // ATK/DEF "?" (os deuses que crescem no campo): fora do campo aparece "?"
+    const atk = opcoes.atk ?? (c.statsVariaveis ? "?" : c.atk);
+    const def = opcoes.def ?? (c.statsVariaveis ? "?" : c.def);
     const stats = el("p", "carta__stats");
     const sAtk = el("span", "", `ATK/${atk}`);
-    const sDef = el("span", "", `DEF/${c.def}`);
+    const sDef = el("span", "", `DEF/${def}`);
     if (atk > c.atk) sAtk.classList.add("stat-mais");
     if (atk < c.atk) sAtk.classList.add("stat-menos");
+    if (def > c.def) sDef.classList.add("stat-mais");
+    if (def < c.def) sDef.classList.add("stat-menos");
     stats.append(sAtk, sDef);
     caixa.append(stats);
 
     const bAtk = el("span", "", String(atk));
     if (atk > c.atk) bAtk.classList.add("stat-mais");
-    const bDef = el("small", "", String(c.def));
+    const bDef = el("small", "", String(def));
     seloStats.append(bAtk, bDef);
   } else {
     seloStats.textContent = c.categoria === "magia" ? "MAGIA" : "ARMADILHA";
@@ -256,6 +260,6 @@ export function criarVerso(classe = "", versoId = null) {
 
 // Texto curto de ATK/DEF ou categoria (para listas e leitores de tela)
 export function resumoCarta(c) {
-  if (c.categoria === "monstro") return `${nomeCategoria(c)} · Nível ${c.nivel} · ATK ${c.atk} / DEF ${c.def}`;
+  if (c.categoria === "monstro") return `${nomeCategoria(c)} · Nível ${c.nivel} · ATK ${c.statsVariaveis ? "?" : c.atk} / DEF ${c.statsVariaveis ? "?" : c.def}`;
   return `${nomeCategoria(c)} ${nomeSubtipo(c)}`;
 }

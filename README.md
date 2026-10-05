@@ -300,6 +300,8 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT083 | Daiki Místico | Monstro Normal · LUZ · Mago · Nv 4 · 800/2000 | – | Elfo de pouco ataque e muita defesa |
 | ZOE-PT084 | Defense Careca | Efeito · TREVAS · Guerreiro · Nv 6 · 1550/2500 | – | Invocado por Invocação-Normal ou Flip vai para Defesa; ataca mesmo em Defesa, usando o ATK |
 | ZOE-PT085 | Doutor Daiki **(limitada a 1)** | Efeito · TREVAS · Mago · Nv 1 · 300/300 | – | Botão Efeito (Ataque ou Defesa): paga 1000 PV e Invoca 1 Fusão de Nível 6 ou menos do Deck Adicional; ela não ataca direto e volta no fim do turno |
+| ZOE-PT086 | Careca o Dragão Careca **(limitada a 1)** | Efeito · DIVINO · Besta Divina · Nv 10 · ?/? | – | 3 tributos, não pode ser baixado, ninguém responde à Invocação-Normal; 1000 de ATK/DEF por carta na sua mão; monstro do oponente Invocado (Normal ou Especial) em Ataque perde 2000 de ATK e, se zerar, é destruído; se entrou por Invocação-Especial, vai para o Cemitério na Fase Final |
+| ZOE-PT087 | O Emanuel Careca de ICE **(limitada a 1)** | Efeito · DIVINO · Besta Divina · Nv 10 · ?/? | – | 3 tributos, não pode ser baixado nem Invocado por Invocação-Especial, ninguém responde à Invocação-Normal; ao entrar pode pagar PV até ficar com 100 e ganha isso de ATK/DEF; botão Efeito: paga 1000 PV e destrói 1 monstro do campo |
 
 **Atributos:** TERRA, TREVAS, LUZ, ÁGUA (水), VENTO e DIVINO. Desde 04/10/2026 não existem mais GELO (os Manoel do Gelo viraram ÁGUA; o "gelo" do Pote do Gelo é ÁGUA ou "Gelo" no nome) nem INTERNET (o W — Guerreiro virou TERRA, e o WI-FI Grátis passou a dar o bônus para TERRA). O Nível "na hora" (`nivelAtual` em `js/motor.js`, por causa da Geada da Peste) é o que vale para os tributos e para os efeitos que olham o Nível na mão e no campo.
 
@@ -308,6 +310,7 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 - O **Chaos Kelvor** e o **Miro, o Sulista Calvo** pedem confirmação antes de ativar o efeito (os dois limpam a mesa, inclusive as suas cartas).
 - O **Mago Dragão Sonho do BIG** só pode ser Invocado por Invocação-Fusão (`"somenteFusao": true` em `data/cartas.json`): nenhum outro efeito o coloca no campo, nem depois de ele ter entrado pela Suruba.
 - As proteções do **Mago Dragão Sonho do BIG** são automáticas, como as armadilhas. "Efeito da mão" vale para Magias ativadas da mão e para efeitos ativados da mão (Miqueas Animal, Manoel do Gelo Careca); "do Cemitério", para George, Thangan e Davi Animal. Os usos do turno são um só, para as duas proteções.
+- **Os deuses (Obelisco, Careca o Dragão Careca e O Emanuel Careca de ICE):** `"tributos": 3`, `"naoBaixa": true` (não pode ser baixado) e `"semResposta": true` (nenhuma Armadilha responde à Invocação-Normal). `"cemiterioSeEspecial": true` manda para o Cemitério na Fase Final quem entrou por Invocação-Especial; `"naoEspecial": true` impede Lamento Prematuro e Bora Bill de trazer a carta. Com `"statsVariaveis": true` a carta mostra ATK/DEF **"?"** fora do campo; no campo aparecem os valores de verdade (`atkAtual`/`defAtual`, que somam `bonusDosDeuses` em `js/motor.js`).
 - O **Black Luster Daiki** e o **Chaos Kelvor** entram do mesmo jeito que o Daiki, Chaos Calvo: da mão, banindo 1 monstro de LUZ e 1 de TREVAS do seu Cemitério.
 
 **Cartas "Animal":** todo monstro com "Animal" no nome conta como "Animal" para esses efeitos. Para criar uma Magia/Armadilha que o Thales Animal consiga buscar, coloque `"mencionaIrmaos": true` nela em `data/cartas.json`.
@@ -376,7 +379,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
 ├── supabase/banco.sql    # Banco de dados: tabelas, funções e permissões (cole no SQL Editor do Supabase)
-├── data/cartas.json      # As 85 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
+├── data/cartas.json      # As 87 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
 ├── data/noticias.json    # As notícias (a mais nova aparece primeiro)
 ├── img/noticias/         # Cartazes das notícias
 ├── img/cartas/           # Artes recortadas (WebP 640×640)

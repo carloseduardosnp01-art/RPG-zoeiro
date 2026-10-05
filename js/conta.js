@@ -13,13 +13,13 @@
    antiga é levado para o banco na hora, com a mesma senha.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610042119";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610042119";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610042119";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610042119";
-import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610042119";
-import { precoNaLoja } from "./motor.js?v=202610042119";
-import { COSMETICOS, ehCosmetico, precoCosmetico, visualDe } from "./cosmeticos.js?v=202610042119";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610042342";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610042342";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610042342";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610042342";
+import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610042342";
+import { precoNaLoja } from "./motor.js?v=202610042342";
+import { COSMETICOS, ehCosmetico, precoCosmetico, visualDe } from "./cosmeticos.js?v=202610042342";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";

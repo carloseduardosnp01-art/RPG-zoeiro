@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610042119";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610042119";
-import { el, esperar, aviso } from "./util.js?v=202610042119";
-import { tocar } from "./som.js?v=202610042119";
-import { abrirDetalhes } from "./catalogo.js?v=202610042119";
-import * as adm from "./admin.js?v=202610042119";
-import { PREMIOS } from "./premios.js?v=202610042119";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610042119";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610042119";
+} from "./motor.js?v=202610042342";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610042342";
+import { el, esperar, aviso } from "./util.js?v=202610042342";
+import { tocar } from "./som.js?v=202610042342";
+import { abrirDetalhes } from "./catalogo.js?v=202610042342";
+import * as adm from "./admin.js?v=202610042342";
+import { PREMIOS } from "./premios.js?v=202610042342";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610042342";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610042342";
 
 const raiz = document.querySelector("#arena");
 
@@ -51,7 +51,7 @@ const ENTRADAS_LENDARIAS = {
 // Frase da entrada dos deuses (atributo DIVINO), cada um na cor da sua moldura
 const ENTRADAS_DIVINAS = {
   "obelisco-o-imenso": "O DEUS IMENSO DESPERTOU!",
-  "careca-o-dragao-careca": "O DRAGÃO CARECA RASGOU OS CÉUS!",
+  "careca-o-dragao-careca": "SLIF, O DRAGÃO CARECA DO CÉU, RASGOU AS NUVENS!",
   "o-emanuel-careca-de-ice": "O SOL CARECA NASCEU!",
 };
 
@@ -67,7 +67,7 @@ const FRASES = {
   "geada": "GEADA DA PESTE!",
   "defense-careca": "MURALHA CARECA!",
   "doutor-daiki": "INJEÇÃO DE FUSÃO!",
-  "careca-dragao": "O DRAGÃO CARECA RUGIU: -2000 DE ATK!",
+  "careca-dragao": "SLIF RUGIU: -2000 DE ATK!",
   "emanuel-ice": "O EMANUEL DE ICE CONGELOU TUDO!",
   vapo: "VAPO!",
   "forca-careca": "FORÇA CARECA!",

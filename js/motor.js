@@ -381,11 +381,11 @@ export function atkAtual(estado, iid) {
       if (m && m.face && m.equipadoEm === iid && carta(estado, m.iid).efeito === "gole") atk *= 2;
     }
   }
-  if (loc && loc.zona === "monstros" && loc.obj.menosAtk) atk -= loc.obj.menosAtk; // Careca o Dragão Careca
+  if (loc && loc.zona === "monstros" && loc.obj.menosAtk) atk -= loc.obj.menosAtk; // Slif o Dragão Careca do Céu
   return Math.max(0, atk);
 }
 
-// ATK/DEF "?" dos deuses: Careca o Dragão Careca ganha 1000 por carta na mão de quem o controla;
+// ATK/DEF "?" dos deuses: Slif o Dragão Careca do Céu ganha 1000 por carta na mão de quem o controla;
 // O Emanuel Careca de ICE, os PV pagos quando entrou
 function bonusDosDeuses(estado, iid) {
   const c = carta(estado, iid);
@@ -794,7 +794,7 @@ function aposEspecial(estado, j, iid, ev) {
   gatilhoZoologico(estado, j, iid);
 }
 
-// Careca o Dragão Careca: monstro Invocado (Normal ou Especial) em Posição de Ataque no campo do oponente
+// Slif o Dragão Careca do Céu: monstro Invocado (Normal ou Especial) em Posição de Ataque no campo do oponente
 // dele perde 2000 de ATK; se o ATK chegar a 0 por isso, é destruído
 function gatilhoDragaoCareca(estado, iid, ev) {
   const loc = localizar(estado, iid);
@@ -1067,7 +1067,7 @@ function aposInvocar(estado, j, iid, modo, ev) {
       ev.push({ t: "posicao", j, iid, pos: "def" });
     }
   }
-  // Careca o Dragão Careca do oponente: quem entrou em Ataque perde 2000 de ATK (depois do Defense Careca ir para Defesa)
+  // Slif o Dragão Careca do Céu do oponente: quem entrou em Ataque perde 2000 de ATK (depois do Defense Careca ir para Defesa)
   if (modo === "normal" || modo === "tributo") gatilhoDragaoCareca(estado, iid, ev);
 
   if ((modo === "normal" || modo === "tributo") && c.efeito === "davi" && !usou(estado, j, "davi-devolver")) {

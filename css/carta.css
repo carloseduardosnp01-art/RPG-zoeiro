@@ -41,7 +41,7 @@
   box-shadow: inset 0 0 0 .5cqw rgba(200, 215, 255, .25), 0 1.5cqw 4cqw rgba(0, 0, 0, .45);
 }
 
-/* Careca o Dragão Careca: o deus vermelho (escamas e manchas de fogo) */
+/* Slif o Dragão Careca do Céu: o deus vermelho (escamas e manchas de fogo) */
 .carta[data-moldura="divino"][data-tema="vermelho"] { --moldura: #b8342b; --moldura-escura: #5c0d09; --caixa: #f7e4df; }
 .carta[data-moldura="divino"][data-tema="vermelho"] .carta__corpo {
   background:

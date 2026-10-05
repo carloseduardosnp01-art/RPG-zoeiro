@@ -1144,7 +1144,8 @@
     "texto": "Requer 3 Tributos para Invocação-Normal (não pode ser Baixado). A Invocação-Normal deste card não pode ser negada. Quando Invocado por Invocação-Normal, cards e efeitos não podem ser ativados. Nenhum dos jogadores pode escolher este card como alvo de efeitos de card. Uma vez por turno, durante a Fase Final, se este card foi Invocado por Invocação-Especial: envie-o para o Cemitério. Você pode Tributar 2 monstros; destrua todos os monstros que seu oponente controla. Este card não pode declarar um ataque no turno em que este efeito for ativado.",
     "comoFunciona": "Limitada a 1. Precisa de 3 tributos e não pode ser baixado. Quando ele entra por Invocação-Normal, nenhuma Armadilha responde (nem Armadilha do Big, nem ADM Ditador). Efeitos que escolhem alvo não pegam ele (Careca do PT, Controle Carecal, Daiki, Sai Daqui, Armadura de Gelo, equipamentos...); efeitos que pegam todos (Vapo!, Força Careca, Mil Facas) pegam. Se ele voltar por Invocação-Especial (Lamento Prematuro), vai para o Cemitério na Fase Final. Botão \"Efeito\": tribute 2 outros monstros seus e destrua todos os monstros do oponente; nesse turno ele não ataca.",
     "frase": "O punho do deus imenso não pede licença.",
-    "raridade": "Ultra Rara",
+    "raridade": "Secreta",
+    "tema": "azul",
     "def": 4000,
     "copias": 0,
     "imagem": "img/cartas/obelisco-o-imenso.webp"
@@ -1557,7 +1558,8 @@
     "texto": "Requer 3 Tributos para ser Invocado por Invocação-Normal (não pode ser Baixado Normalmente). A Invocação-Normal deste card não pode ser negada. Quando Invocado por Invocação-Normal, cards e efeitos não podem ser ativados. Uma vez por turno, durante a Fase Final, se este card foi Invocado por Invocação-Especial: envie-o para o Cemitério. Ganha 1000 de ATK/DEF para cada card na sua mão. Se um ou mais monstros forem Invocados por Invocação-Normal ou Especial no campo do seu oponente em Posição de Ataque: esses monstros perdem 2000 de ATK e, depois, se algum deles tiver o ATK reduzido a 0 como resultado, destrua-o.",
     "comoFunciona": "Limitada a 1. Precisa de 3 tributos e não pode ser baixado. Quando ele entra por Invocação-Normal, nenhuma Armadilha responde (nem Armadilha do Big, nem ADM Ditador). O ATK e a DEF dele são 1000 vezes as cartas na sua mão, e mudam na hora conforme a mão cresce ou diminui (fora do campo aparece \"?\"): com 4 cartas na mão ele fica 4000/4000; com a mão vazia, 0/0. Enquanto ele estiver com a face para cima no seu campo, todo monstro que o oponente Invocar por Invocação-Normal ou Especial em Posição de Ataque perde 2000 de ATK; se isso zerar o ATK, o monstro é destruído. Monstro baixado, em Defesa ou virado por Flip não perde nada. Se ele voltar por Invocação-Especial (Lamento Prematuro, por exemplo), vai para o Cemitério na Fase Final.",
     "frase": "Quanto mais carta na mão, mais careca o rugido.",
-    "raridade": "Ultra Rara",
+    "raridade": "Secreta",
+    "tema": "vermelho",
     "copias": 0,
     "imagem": "img/cartas/careca-o-dragao-careca.webp"
   },
@@ -1582,7 +1584,8 @@
     "texto": "Não pode ser Invocado por Invocação-Especial. Requer 3 Tributos para ser Invocado por Invocação-Normal (não pode ser Baixado Normalmente). A Invocação-Normal deste card não pode ser negada. Quando Invocado por Invocação-Normal, outros cards e efeitos não podem ser ativados. Quando este card for Invocado por Invocação-Normal: você pode pagar PV até restarem apenas 100; este card ganha ATK/DEF igual aos PV pagos. Você pode pagar 1000 PV e, depois, escolha 1 monstro no campo; destrua o alvo.",
     "comoFunciona": "Limitada a 1. Precisa de 3 tributos e não pode ser baixado; nenhuma Armadilha responde quando ele entra. Nada traz ele de volta do Cemitério (nem Lamento Prematuro, nem Bora Bill). Ao entrar, aparece a escolha: clique nele para pagar os PV até ficar com 100 (ele ganha esse valor de ATK e DEF: com 8000 PV, fica 7900/7900) ou confirme sem escolher para não pagar (aí ele fica 0/0). Fora do campo o ATK/DEF aparece \"?\". Botão \"Efeito\", na Fase Principal: paga 1000 PV (precisa ter mais de 1000) e destrói 1 monstro do campo, seu ou do oponente. Dá para usar mais de uma vez no turno, pagando de novo. Efeito com alvo: não pega o Obelisco.",
     "frase": "Pagou com a vida, cobrou com o gelo.",
-    "raridade": "Ultra Rara",
+    "raridade": "Secreta",
+    "tema": "dourado",
     "copias": 0,
     "imagem": "img/cartas/o-emanuel-careca-de-ice.webp"
   }

@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610042103";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610042103";
-import { el, esperar, aviso } from "./util.js?v=202610042103";
-import { tocar } from "./som.js?v=202610042103";
-import { abrirDetalhes } from "./catalogo.js?v=202610042103";
-import * as adm from "./admin.js?v=202610042103";
-import { PREMIOS } from "./premios.js?v=202610042103";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610042103";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610042103";
+} from "./motor.js?v=202610042111";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610042111";
+import { el, esperar, aviso } from "./util.js?v=202610042111";
+import { tocar } from "./som.js?v=202610042111";
+import { abrirDetalhes } from "./catalogo.js?v=202610042111";
+import * as adm from "./admin.js?v=202610042111";
+import { PREMIOS } from "./premios.js?v=202610042111";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610042111";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610042111";
 
 const raiz = document.querySelector("#arena");
 
@@ -46,6 +46,13 @@ const ENTRADAS_LENDARIAS = {
   "black-luster-daiki": "RECEBEU ALTA DO HOSPÍCIO!",
   "mago-dragao-sonho-do-big": "O SONHO DO BIG VIROU REALIDADE!",
   "miro-sulista-calvo": "O SULISTA CALVO DESCEU DO CÉU!",
+};
+
+// Frase da entrada dos deuses (atributo DIVINO), cada um na cor da sua moldura
+const ENTRADAS_DIVINAS = {
+  "obelisco-o-imenso": "O DEUS IMENSO DESPERTOU!",
+  "careca-o-dragao-careca": "O DRAGÃO CARECA RASGOU OS CÉUS!",
+  "o-emanuel-careca-de-ice": "O SOL CARECA NASCEU!",
 };
 
 const FRASES = {
@@ -1339,6 +1346,10 @@ async function tocarEventos(eventos, estadoNovo) {
           await entradaLendaria(estadoNovo, ev);
           break;
         }
+        if (c.atributo === "DIVINO") {
+          await entradaDivina(estadoNovo, ev);
+          break;
+        }
         tocar("invocacao");
         const frase = ev.modo === "fusao" ? "INVOCAÇÃO-FUSÃO!" : ev.modo === "tributo" ? "INVOCAÇÃO-TRIBUTO!" : ev.modo === "especial" ? (FRASES[c.efeito] || "INVOCAÇÃO-ESPECIAL!") : ev.modo === "flip" ? "INVOCAÇÃO-FLIP!" : "INVOCAÇÃO!";
         await corte(estadoNovo, ev.iid, ev.j, frase, "invocacao", ev.j === sessao.eu ? 650 : 950);
@@ -1513,6 +1524,34 @@ function entradaLendaria(estado, ev) {
     flashBranco();
     tremerTela();
   }, 400);
+  return esperar(duracao).then(() => fundo.remove());
+}
+
+// Deus (atributo DIVINO) entrando em campo: surge num clarão na cor dele (azul, vermelho ou dourado),
+// com raios girando, um halo e trovão
+function entradaDivina(estado, ev) {
+  const c = carta(estado, ev.iid);
+  const duracao = 2400;
+  tocar("divino");
+  const fundo = el("div", "corte");
+  fundo.dataset.tipo = "divino";
+  fundo.dataset.tema = c.tema || "azul";
+  fundo.style.setProperty("--dur", `${duracao}ms`);
+  const conteudo = el("div", "corte__conteudo");
+  const cartaEl = el("div", "corte__carta divino__carta");
+  cartaEl.append(criarCarta(c, { lazy: false }));
+  conteudo.append(
+    el("div", "corte__quem", nomeJogador(sessao.estado, ev.j)),
+    el("div", "divino__selo", "✦ DEUS DA ZOEIRA ✦"),
+    cartaEl,
+    el("div", "corte__frase", ENTRADAS_DIVINAS[c.id] || "UM DEUS DESCEU AO CAMPO!"),
+  );
+  fundo.append(el("div", "divino__raios"), el("div", "divino__halo"), conteudo);
+  document.body.append(fundo);
+  setTimeout(() => {
+    flashBranco();
+    tremerTela();
+  }, 300);
   return esperar(duracao).then(() => fundo.remove());
 }
 

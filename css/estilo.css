@@ -775,6 +775,11 @@ a:hover {
 .selo-raridade[data-raridade="rara"] { color: #dfe7ee; border-color: #9aa6b1; }
 .selo-raridade[data-raridade="super"] { color: #8ee6ff; border-color: #3aa6c9; }
 .selo-raridade[data-raridade="ultra"] { color: var(--ouro-claro); border-color: var(--ouro); }
+.selo-raridade[data-raridade="secreta"] {
+  color: #1d1f26;
+  border-color: #e9edf5;
+  background: linear-gradient(100deg, #f4f6fb, #ffd9ef 30%, #fff3bf 45%, #cffff0 60%, #d6e3ff 75%, #f4f6fb);
+}
 .selo-raridade[data-raridade="lendaria"] {
   color: #fff;
   border-color: transparent;

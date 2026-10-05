@@ -4,7 +4,7 @@
    Usado pelo catálogo, pelo deck e pela arena.
    ========================================================================== */
 
-import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610042103";
+import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610042111";
 
 // Emblema do careca (logo, verso das cartas e ícone do site)
 export const SVG_CARECA = `
@@ -38,6 +38,7 @@ const RARIDADES = {
   Rara: "rara",
   "Super Rara": "super",
   "Ultra Rara": "ultra",
+  Secreta: "secreta",
   "Lendária da Zoeira": "lendaria",
 };
 
@@ -54,7 +55,7 @@ const ehVire = (c) => Boolean(c.efeito && c.efeito.startsWith("flip-"));
 
 export function moldura(c) {
   if (c.categoria === "monstro") {
-    if (c.atributo === "DIVINO") return "divino"; // cartas de Deus: moldura azul (continuam no deck normal)
+    if (c.atributo === "DIVINO") return "divino"; // cartas de Deus: moldura azul, vermelha ou dourada ("tema")
     return c.subtipo === "fusao" ? "fusao" : c.subtipo === "normal" ? "normal" : "efeito";
   }
   return c.categoria;
@@ -140,6 +141,7 @@ export function criarCarta(c, opcoes = {}) {
   raiz.dataset.moldura = moldura(c);
   raiz.dataset.subtipo = c.subtipo;
   raiz.dataset.raridade = chaveRaridade(c);
+  if (c.tema) raiz.dataset.tema = c.tema; // cor da moldura dos deuses
   raiz.dataset.cartaId = c.id;
 
   const corpo = el("div", "carta__corpo");

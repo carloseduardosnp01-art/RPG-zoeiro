@@ -3,7 +3,7 @@
    Efeitos sonoros sintetizados com Web Audio (nenhum arquivo de áudio).
    ========================================================================== */
 
-import { guardar } from "./util.js?v=202610042103";
+import { guardar } from "./util.js?v=202610042111";
 
 let contexto = null;
 let ligado = guardar.ler("zoeira-som", true);
@@ -83,6 +83,13 @@ const EFEITOS = {
     ruido({ dur: 0.6, vol: 0.18, atraso: 0.4, grave: true });
     [523, 659, 784, 1046, 1318, 1568].forEach((f, i) => tom({ freq: f, dur: 0.3, tipo: "triangle", vol: 0.08, atraso: 0.42 + i * 0.07 }));
     [1046, 1318, 1568].forEach((f) => tom({ freq: f, dur: 1.1, tipo: "sine", vol: 0.045, atraso: 0.9 }));
+  },
+  // deus entrando: ronco grave, trovão e um acorde de metais
+  divino: () => {
+    tom({ freq: 45, fim: 110, dur: 0.7, tipo: "sawtooth", vol: 0.07 });
+    ruido({ dur: 0.9, vol: 0.3, atraso: 0.28, grave: true });
+    [196, 247, 294, 392].forEach((f) => tom({ freq: f, dur: 1.3, tipo: "sawtooth", vol: 0.035, atraso: 0.32 }));
+    [784, 988, 1175].forEach((f, i) => tom({ freq: f, dur: 0.9, tipo: "triangle", vol: 0.05, atraso: 0.5 + i * 0.09 }));
   },
   vapo: () => {
     tom({ freq: 1400, fim: 40, dur: 0.9, tipo: "sawtooth", vol: 0.08 });

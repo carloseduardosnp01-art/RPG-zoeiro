@@ -1283,6 +1283,95 @@ button.fase:not(:disabled):hover {
   to { box-shadow: 0 0 0 3px rgba(200, 245, 255, .95), 0 0 40px 14px rgba(111, 224, 255, .9), 0 0 100px 30px rgba(255, 110, 200, .6); }
 }
 
+/* ---------- Entrada dos deuses (atributo DIVINO) ---------- */
+.corte[data-tipo="divino"] {
+  --cor: 80, 120, 255;
+  --cor2: 205, 220, 255;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 50%, rgba(var(--cor), .5), rgba(5, 4, 14, .94) 72%);
+}
+
+.corte[data-tipo="divino"][data-tema="vermelho"] { --cor: 230, 45, 35; --cor2: 255, 196, 140; }
+.corte[data-tipo="divino"][data-tema="dourado"] { --cor: 255, 186, 40; --cor2: 255, 246, 205; }
+
+.corte[data-tipo="divino"] .corte__conteudo {
+  position: relative;
+  animation-name: divino-entrada;
+}
+
+.divino__raios {
+  position: absolute;
+  inset: -60%;
+  background: repeating-conic-gradient(from 0deg,
+    rgba(var(--cor2), .3) 0 4deg, transparent 4deg 11deg,
+    rgba(var(--cor), .42) 11deg 15deg, transparent 15deg 22deg);
+  animation: lendaria-raios var(--dur, 2.4s) linear forwards;
+}
+
+.divino__halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(80vmin, 560px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--cor2), .9) 0 18%, rgba(var(--cor), .55) 38%, transparent 68%);
+  transform: translate(-50%, -50%) scale(.2);
+  opacity: 0;
+  animation: divino-halo var(--dur, 2.4s) ease-out forwards;
+}
+
+.divino__selo {
+  padding: 0 .5rem;
+  color: rgb(var(--cor2));
+  font-family: var(--fonte-titulo);
+  font-size: clamp(.95rem, 3.4vw, 1.45rem);
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-align: center;
+  text-shadow: 0 2px 0 #000, 0 0 14px rgba(var(--cor), .95), 0 0 30px rgba(var(--cor), .7);
+}
+
+.corte__carta.divino__carta {
+  width: min(270px, 62vw);
+  border-radius: .9rem;
+  animation: divino-aura 1s ease-in-out infinite alternate;
+}
+
+@keyframes divino-entrada {
+  0% { opacity: 0; transform: scale(2.2); filter: brightness(4) blur(6px); }
+  18% { opacity: 1; transform: scale(.94); filter: brightness(1.7) blur(0); }
+  28% { transform: scale(1.03); filter: brightness(1); }
+  34%, 86% { opacity: 1; transform: scale(1); filter: brightness(1); }
+  100% { opacity: 0; transform: scale(1.15); }
+}
+
+@keyframes divino-halo {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.2); }
+  14% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  80% { opacity: .75; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4); }
+}
+
+@keyframes divino-aura {
+  from { box-shadow: 0 0 0 3px rgba(var(--cor2), .95), 0 0 28px 10px rgba(var(--cor), .85); }
+  to { box-shadow: 0 0 0 3px rgba(var(--cor2), 1), 0 0 55px 18px rgba(var(--cor), 1), 0 0 120px 40px rgba(var(--cor), .45); }
+}
+
+/* Deus em campo: aura pulsando na cor da moldura */
+.no-campo .carta[data-moldura="divino"] {
+  --aura: 90, 130, 255;
+  animation: divino-campo 2.8s ease-in-out infinite;
+}
+
+.no-campo .carta[data-moldura="divino"][data-tema="vermelho"] { --aura: 255, 70, 45; }
+.no-campo .carta[data-moldura="divino"][data-tema="dourado"] { --aura: 255, 200, 70; }
+
+@keyframes divino-campo {
+  0%, 100% { box-shadow: 0 0 5px 1px rgba(var(--aura), .7); }
+  50% { box-shadow: 0 0 12px 4px rgba(var(--aura), .95); }
+}
+
 /* Lendária em campo: aura arco-íris pulsando em volta da carta */
 .no-campo .carta[data-raridade="lendaria"] {
   animation: lendaria-campo 2.6s ease-in-out infinite;
@@ -2045,13 +2134,17 @@ button.fase:not(:disabled):hover {
   .raios-luz,
   .flash-branco,
   .lendaria__raios,
-  .lendaria__faiscas span {
+  .lendaria__faiscas span,
+  .divino__raios,
+  .divino__halo {
     animation-duration: .01ms !important;
   }
 
   .lendaria__selo,
   .lendaria__carta,
-  .no-campo .carta[data-raridade="lendaria"] {
+  .divino__carta,
+  .no-campo .carta[data-raridade="lendaria"],
+  .no-campo .carta[data-moldura="divino"] {
     animation: none !important;
   }
 }

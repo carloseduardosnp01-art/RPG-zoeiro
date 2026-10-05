@@ -366,7 +366,7 @@ export function atkAtual(estado, iid) {
   const loc = localizar(estado, iid);
   if (loc && loc.zona === "monstros" && loc.obj.marcadores) atk += 300 * loc.obj.marcadores;
   if (loc && loc.zona === "monstros" && tipoAtual(estado, iid) === "Besta Alada") atk += 200 * zoologicosAtivos(estado);
-  if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "TERRA") atk += 500 * camposAtivos(estado, "wifi");
+  if (loc && loc.zona === "monstros" && loc.obj.face && tipoAtual(estado, iid) === "Internet") atk += 500 * camposAtivos(estado, "wifi"); // WI-FI Grátis
   if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "ÁGUA") atk += 200 * camposAtivos(estado, "geada");
   if (loc && loc.zona === "monstros" && loc.obj.face && ehW(c)) atk += 200 * camposAtivos(estado, "w-rede");
   if (loc && loc.zona === "monstros" && loc.obj.maisAtk) atk += loc.obj.maisAtk; // Os Irmãos
@@ -420,12 +420,13 @@ export function defAtual(estado, iid) {
   const loc = localizar(estado, iid);
   let def = c.def + bonusDosDeuses(estado, iid);
   if (loc && loc.zona === "monstros" && tipoAtual(estado, iid) === "Besta Alada") def += 200 * zoologicosAtivos(estado);
-  if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "TERRA") def -= 400 * camposAtivos(estado, "wifi");
+  if (loc && loc.zona === "monstros" && loc.obj.face && tipoAtual(estado, iid) === "Internet") def -= 400 * camposAtivos(estado, "wifi"); // WI-FI Grátis
   if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "ÁGUA") def += 200 * camposAtivos(estado, "geada");
   return Math.max(0, def);
 }
 
-// Quantas Magias de Campo com esse efeito estão ativas (dos dois lados): WI-FI Grátis, Geada da Peste
+// Quantas Magias de Campo com esse efeito estão ativas (dos dois lados): WI-FI Grátis (Tipo Internet),
+// Geada da Peste (ÁGUA), W — A Rede Central (monstros "W")
 const camposAtivos = (estado, efeito) => estado.jogadores.filter((p) => p.campo && p.campo.face && carta(estado, p.campo.iid).efeito === efeito).length;
 
 // Quantos "Zoológico Animal" com a face para cima existem no campo (dos dois lados)

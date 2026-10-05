@@ -6,7 +6,7 @@
    e presentes de ADM vão assinados; sem assinatura válida, não vale.
    ========================================================================== */
 
-import { guardar } from "./util.js?v=202610050107";
+import { guardar } from "./util.js?v=202610050155";
 
 // Chaves públicas dos ADMs (as secretas ficam só com eles). Para trocar uma chave,
 // gere um par novo e troque aqui: a antiga deixa de valer na hora.

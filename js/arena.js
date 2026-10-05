@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610050107";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610050107";
-import { el, esperar, aviso } from "./util.js?v=202610050107";
-import { tocar } from "./som.js?v=202610050107";
-import { abrirDetalhes } from "./catalogo.js?v=202610050107";
-import * as adm from "./admin.js?v=202610050107";
-import { PREMIOS } from "./premios.js?v=202610050107";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610050107";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610050107";
+} from "./motor.js?v=202610050155";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610050155";
+import { el, esperar, aviso } from "./util.js?v=202610050155";
+import { tocar } from "./som.js?v=202610050155";
+import { abrirDetalhes } from "./catalogo.js?v=202610050155";
+import * as adm from "./admin.js?v=202610050155";
+import { PREMIOS } from "./premios.js?v=202610050155";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610050155";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610050155";
 
 const raiz = document.querySelector("#arena");
 
@@ -69,6 +69,10 @@ const FRASES = {
   "doutor-daiki": "INJEÇÃO DE FUSÃO!",
   "careca-dragao": "SLIF RUGIU: -2000 DE ATK!",
   "w-hacker": "ACESSO LIBERADO!",
+  "soul-chapado": "ALMA CHAPADA!",
+  "cigarrin-gostoso": "UM TRAGUINHO E DUAS CARTAS!",
+  cigarrin: "VAI UM CIGARRIN?",
+  recrutador: "REFORÇO CHEGANDO!",
   "w-miqueas": "RUNAS QUEBRADAS!",
   "w-midas": "DADOS ROUBADOS!",
   "w-rede": "REDE CENTRAL CONECTADA!",
@@ -702,7 +706,7 @@ function zonaCarta(estado, j, zona, slot) {
   const visivel = obj.face || meu;
   b.setAttribute("aria-label", visivel ? `${c.nome}${zona === "monstros" ? ` (${obj.pos === "atk" ? "Ataque" : "Defesa"})` : ""}` : "Carta virada para baixo");
   if (visivel) ligarPrevia(b, obj.iid);
-  if (meu && opcoesMinhas(estado, obj.iid).length) b.dataset.acao = "true";
+  if (opcoesMinhas(estado, obj.iid).length) b.dataset.acao = "true"; // inclui o Vai um cigarrin? do oponente
   b.addEventListener("click", () => clicarCarta(obj.iid, b, visivel));
   z.append(b);
   return z;
@@ -969,7 +973,7 @@ function descreverEvento(estado, ev) {
       : { texto: `↩️ ${nome(ev.iid)} voltou para o campo de ${quem(ev.j)}.`, classe: minha };
     case "ganhoPV": return { texto: `💚 ${quem(ev.j)} ganhou ${ev.valor} LP (${ev.pl}).`, classe: minha };
     case "recuperada": return { texto: `${quem(ev.j)} adicionou ${nome(ev.iid)} do Cemitério à mão.`, classe: minha };
-    case "protegido": return { texto: `🪽 ${ev.j === eu ? "Você não sofreu" : `${quem(ev.j)} não sofreu`} ${ev.valor} de dano de batalha (${ev.por || "Karecoh Alado"}).`, classe: "log--armadilha" };
+    case "protegido": return { texto: `🪽 ${ev.j === eu ? "Você não sofreu" : `${quem(ev.j)} não sofreu`} ${ev.valor} de dano${ev.geral ? "" : " de batalha"} (${ev.por || "Karecoh Alado"}).`, classe: "log--armadilha" };
     case "posicao": return { texto: `${nome(ev.iid)} mudou para ${ev.pos === "atk" ? "Ataque" : "Defesa"}.`, classe: minha };
     case "descarte": return { texto: `${quem(ev.j)} descartou ${nome(ev.iid)}.`, classe: minha };
     case "expirou": return { texto: `${nome(ev.iid)} apagou a luz: acabaram os turnos.` };

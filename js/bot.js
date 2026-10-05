@@ -8,9 +8,10 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao, ehW, semAtaqueDireto,
-} from "./motor.js?v=202610050107";
+} from "./motor.js?v=202610050155";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
+const zonaLivre = (p) => p.monstros.findIndex((m) => !m); // primeira zona de monstro livre (-1 se não tem)
 
 // Próxima ação do bot (ou null se não for a vez dele)
 export function jogadaDoBot(estado, j) {
@@ -234,6 +235,41 @@ function* jogadasPrincipais(estado, j) {
     if (!op) continue;
     const melhor = [...op.alvos.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0];
     if (carta(estado, melhor).atk >= 1500) yield { tipo: "ativar", iid: mg.iid, alvos: [melhor] };
+  }
+
+  // 1f7. Soul Chapado na mão: manda o Grande Mestre (ou a Feiticeira) do deck e traz ele do Cemitério
+  for (const { iid, c } of mao) {
+    if (c.efeito !== "soul-chapado" || zonaLivre(p) < 0) continue;
+    const op = opcoes(iid).find((x) => x.acao.modo === "cemiterio");
+    if (!op) continue;
+    const ids = (x) => estado.cartas[x];
+    const alvo = op.alvos.candidatos.find((x) => ids(x) === "grande-mestre") || op.alvos.candidatos.find((x) => ids(x) === "feiticeira-careca");
+    if (alvo) yield { tipo: "efeitoMao", iid, modo: "cemiterio", alvos: [alvo] };
+  }
+
+  // 1f8. Cigarrin Gostoso: troca um Monstro Normal fraco por 2 cartas
+  for (const { iid, c } of mao) {
+    if (c.efeito !== "cigarrin-gostoso" || p.deck.length <= 5) continue;
+    const op = opcoes(iid).find((x) => x.id === "ativar");
+    if (!op) continue;
+    const fraco = [...op.alvos.candidatos].sort((a, b) => atkAtual(estado, a) - atkAtual(estado, b))[0];
+    if (atkAtual(estado, fraco) < 1500) yield { tipo: "ativar", iid, alvos: [fraco] };
+  }
+
+  // 1f9. Vai um cigarrin?: ativa quando estou perdendo nos PV; com ele no campo (de qualquer lado),
+  // paga 1000 para destruir se ele protege o oponente, ou para comprar se sobra PV
+  const oP = estado.jogadores[o];
+  for (const { iid, c } of mao) {
+    if (c.efeito === "cigarrin" && p.pl < oP.pl && opcoes(iid).some((x) => x.id === "ativar")) yield { tipo: "ativar", iid };
+  }
+  for (const q of [p, oP]) {
+    for (const mg of q.magias) {
+      if (!mg || !mg.face || carta(estado, mg.iid).efeito !== "cigarrin") continue;
+      const ops = opcoes(mg.iid).filter((x) => x.acao.tipo === "cigarrin");
+      const quer = (escolha) => ops.find((x) => x.acao.escolha === escolha);
+      if (oP.pl < p.pl && p.pl > 2500 && quer("destruir")) yield quer("destruir").acao;
+      else if (p.pl >= 5000 && p.deck.length > 5 && quer("comprar")) yield quer("comprar").acao;
+    }
   }
 
   // 1g. Controle Carecal: pega o monstro mais forte do oponente para atacar com ele
@@ -475,6 +511,7 @@ const VALOR_NA_MAO = {
   "flip-descartar": 5, "flip-comprar": 4, karecoh: 4, egoismo: 6, zoologico: 5,
   "armadura-gelo": 7, obelisco: 6, fusao: 5, "careca-dragao": 6, "emanuel-ice": 6,
   "w-hacker": 4, vagabundos: 6, "w-miqueas": 6, "w-midas": 5, "w-rede": 5, "os-irmaos": 6,
+  "soul-chapado": 5, "cigarrin-gostoso": 4, cigarrin: 3, recrutador: 4,
   sugadao: 7, "hoje-nao": 6, "bora-bill": 4, thangan: 5, hacker: 7, "w-laminas": 5,
   berinjela: 4, revolucao: 6, rafaza: 5, negao: 6, "flip-parasita": 5, litro: 3, daiki: 7,
   controle: 7, menino: 4, "mestre-caos": 6, upstart: 3, jinreca: 6, "mil-facas": 6, irmaollow: 5,
@@ -516,6 +553,8 @@ function escolherAlvos(estado, j, pend) {
     return atkAtual(estado, deles[0]) >= 1500 ? [meus[0], deles[0]] : [];
   }
   if (pend.efeito === "midas-invocar") return [];
+  // Soul Chapado: traz o mais forte (Grande Mestre antes da Feiticeira)
+  if (pend.efeito === "soul-reviver") return [[...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0]];
   // W — O Hacker: descarta a carta que menos faz falta
   if (pend.efeito === "w-hacker-descarte") return [[...pend.candidatos].sort((a, b) => valorNaMao(estado, j, a) - valorNaMao(estado, j, b))[0]];
   // W — Miqueas: entra sempre; destrói a melhor Magia/Armadilha do oponente (nunca a minha, se puder)

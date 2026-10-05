@@ -663,6 +663,7 @@ function executarAcao(estado, j, acao, ev) {
     }
     case "efeitoMonstro": return efeitoMonstro(estado, j, acao, ev);
     case "efeitoMao": return efeitoMao(estado, j, acao, ev);
+    case "cigarrin": return usarCigarrin(estado, j, acao, ev);
     case "virar": return invocarFlip(estado, j, acao, ev);
     case "mudarPosicao": return mudarPosicao(estado, j, acao, ev);
     case "ativar": return ativarMagia(estado, j, acao, ev);
@@ -941,7 +942,7 @@ function invocarBig(estado, j, { iid }, ev) {
 
 // Ações que "ativam" um card ou efeito (Chaos Kelvor: proibidas no turno do efeito dele)
 function ativaAlgo(estado, acao) {
-  if (["ativar", "efeitoMonstro", "efeitoMao", "reliquia"].includes(acao.tipo)) return true;
+  if (["ativar", "efeitoMonstro", "efeitoMao", "reliquia", "cigarrin"].includes(acao.tipo)) return true;
   return acao.tipo === "invocarEspecial" && carta(estado, acao.iid)?.efeito === "gelo-careca";
 }
 const marcarAtivacao = (estado, j) => (estado.jogadores[j].ativouNoTurno = estado.turno);
@@ -1442,7 +1443,15 @@ export function requisitosMagia(estado, j, iid) {
     case "wifi":
     case "geada":
     case "w-rede":
+    case "cigarrin":
       return { alvos: null };
+    case "cigarrin-gostoso": {
+      // 1 Monstro Normal (sem efeito) com a face para cima que você controla
+      const candidatos = p.monstros.filter((m) => m && m.face && carta(estado, m.iid).subtipo === "normal").map((m) => m.iid);
+      return candidatos.length && p.deck.length >= 2
+        ? { alvos: { candidatos, min: 1, max: 1, titulo: "Cigarrin Gostoso: escolha 1 Monstro Normal (sem efeito) com a face para cima que você controla para mandar para o Cemitério" } }
+        : null;
+    }
     case "calvo-in": {
       const candidatos = p.mao.filter((x) => x !== iid && carta(estado, x).categoria === "monstro" && nivelAtual(estado, x) === 8);
       return candidatos.length && p.deck.length >= 2
@@ -1659,6 +1668,13 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
     case "geada":
     case "w-rede":
       break; // fica na Zona de Campo; o efeito é contínuo
+    case "cigarrin":
+      break; // Magia Contínua: fica no campo
+    case "cigarrin-gostoso":
+      enviarProCemiterio(estado, alvos[0], ev);
+      comprar(estado, j, 2, ev);
+      mandarProCemiterio(estado, iid, ev);
+      break;
     case "litro":
       p.pl += 2000;
       ev.push({ t: "ganhoPV", j, valor: 2000, pl: p.pl });
@@ -2117,6 +2133,10 @@ function processarGatilhos(estado, ev) {
       gatilhoW(estado, g, meuTurno, ev);
       continue;
     }
+    if (g.tipo === "recrutador") {
+      recrutar(estado, g, ev);
+      continue;
+    }
     if (g.tipo === "davi-cemiterio") {
       if (localizar(estado, g.iid)?.zona === "cemiterio" && negadoPorMagoDragao(estado, dono, g.iid, ev)) continue;
       candidatos = estado.jogadores[dono].deck.filter((x) => {
@@ -2361,6 +2381,19 @@ export function efeitoAtivavel(estado, j, iid) {
         alvos: { candidatos, min: 1, max: 1, titulo: "O Emanuel Careca de ICE (paga 1000 PV): escolha o monstro que vai ser destruído" },
       };
     }
+    case "soul-chapado": {
+      // até 2 Magias/Armadilhas da mão e/ou do seu campo para o Cemitério; compra a mesma quantidade
+      if (!ehFasePrincipal(estado) || usou(estado, j, "soul-campo") || !p.deck.length) return null;
+      const candidatos = [
+        ...p.mao.filter((x) => carta(estado, x).categoria !== "monstro"),
+        ...[...p.magias, p.campo].filter(Boolean).map((x) => x.iid),
+      ];
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: mandar até 2 Magias/Armadilhas (mão ou campo) para o Cemitério e comprar a mesma quantidade",
+        alvos: { candidatos, min: 1, max: Math.min(2, candidatos.length, p.deck.length), titulo: "Soul Chapado: escolha 1 ou 2 Magias/Armadilhas da sua mão ou do seu campo para mandar para o Cemitério (você compra a mesma quantidade)" },
+      };
+    }
     case "os-irmaos": {
       if (!ehFasePrincipal(estado) || usou(estado, j, "os-irmaos")) return null;
       const candidatos = p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro");
@@ -2514,6 +2547,14 @@ function efeitoMonstro(estado, j, { iid, alvos = [], pos = "atk" }, ev) {
       destruir(estado, alvos[0], ev, "efeito");
       break;
     }
+    case "soul-chapado":
+      marcarUso(estado, j, "soul-campo");
+      for (const alvo of alvos) {
+        if (estado.jogadores[j].mao.includes(alvo)) descartar(estado, j, alvo, ev);
+        else enviarProCemiterio(estado, alvo, ev);
+      }
+      comprar(estado, j, alvos.length, ev);
+      break;
     case "os-irmaos":
       marcarUso(estado, j, "os-irmaos");
       for (const alvo of alvos) banirDoCemiterio(estado, alvo, ev);
@@ -2609,7 +2650,61 @@ export function podeUsarMiqueas(estado, j, iid) {
     p.deck.some((x) => ehAnimalZoologico(carta(estado, x)));
 }
 
-function efeitoMao(estado, j, { iid }, ev) {
+// Soul Chapado (na mão, 1 vez por turno): manda 1 Mago de Nível 6+ do deck para o Cemitério e depois
+// entra por Invocação-Especial (modo "especial") ou vai para o Cemitério e pode trazer 1 "Grande Mestre"
+// ou 1 "Feiticeira Careca" do Cemitério (modo "cemiterio")
+export function requisitosSoulMao(estado, j, iid) {
+  const p = estado.jogadores[j];
+  if (!ehFasePrincipal(estado) || estado.vez !== j || !p.mao.includes(iid) || carta(estado, iid).efeito !== "soul-chapado") return null;
+  if (usou(estado, j, "soul-mao") || bloqueado(estado, j, iid)) return null;
+  const vistos = new Set();
+  const candidatos = p.deck.filter((x) => {
+    const m = carta(estado, x);
+    return m.categoria === "monstro" && m.tipo === "Mago" && m.nivel >= 6 && !vistos.has(m.id) && vistos.add(m.id);
+  });
+  return candidatos.length
+    ? { candidatos, min: 1, max: 1, titulo: "Soul Chapado: escolha 1 monstro Mago de Nível 6 ou mais do seu deck para mandar para o Cemitério" }
+    : null;
+}
+const SOUL_REVIVE = ["grande-mestre", "feiticeira-careca"]; // o "Dark Magician" e a "Dark Magician Girl" do jogo
+
+function efeitoMaoSoul(estado, j, { iid, alvos = [], modo }, ev) {
+  const req = requisitosSoulMao(estado, j, iid);
+  if (!req) return "O Soul Chapado precisa de um monstro Mago de Nível 6 ou mais no deck (1 vez por turno).";
+  if (modo !== "especial" && modo !== "cemiterio") return "Escolha um dos efeitos do Soul Chapado.";
+  const p = estado.jogadores[j];
+  if (modo === "especial" && zonaLivre(p.monstros) < 0) return "Não há zona de monstro livre.";
+  if (alvos.length !== 1 || !req.candidatos.includes(alvos[0])) return "Escolha 1 monstro Mago de Nível 6 ou mais do deck.";
+  marcarUso(estado, j, "soul-mao");
+  marcarAtivacao(estado, j);
+  ev.push({ t: "efeito", j, iid });
+  // o Mago vai do deck para o Cemitério
+  p.deck.splice(p.deck.indexOf(alvos[0]), 1);
+  p.cemiterio.push(alvos[0]);
+  ev.push({ t: "aoCemiterio", j, iid: alvos[0] });
+  chegouAoCemiterio(estado, j, alvos[0], ev);
+  if (negadoPorMagoDragao(estado, j, iid, ev)) return null;
+  if (modo === "especial") {
+    p.mao.splice(p.mao.indexOf(iid), 1);
+    const slot = zonaLivre(p.monstros);
+    p.monstros[slot] = { iid, pos: "def", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+    ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
+    aposEspecial(estado, j, iid, ev);
+    return null;
+  }
+  descartar(estado, j, iid, ev);
+  const candidatos = p.cemiterio.filter((x) => SOUL_REVIVE.includes(estado.cartas[x]) && podeControlarMais(estado, j, x));
+  if (candidatos.length && zonaLivre(p.monstros) >= 0) {
+    estado.pendente = {
+      tipo: "alvo", efeito: "soul-reviver", jogador: j, origem: iid, candidatos, min: 0, max: 1,
+      titulo: "Soul Chapado: você pode Invocar 1 \"Grande Mestre\" ou 1 \"Feiticeira Careca\" do seu Cemitério",
+    };
+  }
+  return null;
+}
+
+function efeitoMao(estado, j, { iid, alvos = [], modo }, ev) {
+  if (carta(estado, iid)?.efeito === "soul-chapado") return efeitoMaoSoul(estado, j, { iid, alvos, modo }, ev);
   if (!podeUsarMiqueas(estado, j, iid)) return "Não há \"Zoológico Animal\" no seu deck para buscar.";
   if (bloqueado(estado, j, iid)) return "O Mago Dragão do oponente não deixa você ativar cartas com esse nome.";
   marcarAtivacao(estado, j);
@@ -2806,9 +2901,98 @@ function danoBatalha(estado, j, valor, ev) {
 function dano(estado, j, valor, ev) {
   if (valor <= 0) return;
   const p = estado.jogadores[j];
+  // Vai um cigarrin? com a face para cima no campo: o duelista com menos PV não sofre dano
+  if (p.pl < estado.jogadores[oponente(j)].pl && cigarrinNoCampo(estado)) {
+    ev.push({ t: "protegido", j, valor, por: "Vai um cigarrin?", geral: true });
+    return;
+  }
   p.pl = Math.max(0, p.pl - valor);
   ev.push({ t: "dano", j, valor, pl: p.pl });
   if (p.pl === 0) encerrar(estado, oponente(j), "pl", ev);
+}
+
+
+// Vai um cigarrin? com a face para cima (de qualquer lado)
+const cigarrinNoCampo = (estado) => estado.jogadores.some((p) => p.magias.some((m) => m && m.face && carta(estado, m.iid).efeito === "cigarrin"));
+
+// Vai um cigarrin?: 1 vez por turno, na Fase Principal, o duelista DA VEZ (seja de quem for a carta)
+// paga 1000 PV e escolhe: comprar 1, destruir a carta ou dar 1000 PV ao oponente
+export function podeUsarCigarrin(estado, j, iid) {
+  const loc = localizar(estado, iid);
+  return Boolean(
+    loc && loc.zona === "magias" && loc.obj.face && carta(estado, iid).efeito === "cigarrin" &&
+    estado.vez === j && quemAge(estado) === j && !estado.pendente && ehFasePrincipal(estado) &&
+    loc.obj.usoTurno !== estado.turno && estado.jogadores[j].pl > 1000 && estado.jogadores[j].semAtivar !== estado.turno,
+  );
+}
+
+function opcoesCigarrin(estado, j, iid) {
+  if (!podeUsarCigarrin(estado, j, iid)) return [];
+  const lista = [];
+  if (estado.jogadores[j].deck.length) lista.push({ id: "efeito", rotulo: "Pagar 1000 PV: comprar 1 carta", acao: { tipo: "cigarrin", iid, escolha: "comprar" } });
+  lista.push({ id: "efeito", rotulo: "Pagar 1000 PV: destruir o Vai um cigarrin?", acao: { tipo: "cigarrin", iid, escolha: "destruir" } });
+  lista.push({ id: "efeito", rotulo: "Pagar 1000 PV: o oponente ganha 1000 PV", acao: { tipo: "cigarrin", iid, escolha: "oponente" } });
+  return lista;
+}
+
+function usarCigarrin(estado, j, { iid, escolha }, ev) {
+  if (!podeUsarCigarrin(estado, j, iid)) return "O Vai um cigarrin? só pode ser usado 1 vez por turno, na Fase Principal de quem está jogando, pagando 1000 PV (precisa ter mais de 1000).";
+  if (!["comprar", "destruir", "oponente"].includes(escolha)) return "Escolha um dos efeitos.";
+  const p = estado.jogadores[j];
+  if (escolha === "comprar" && !p.deck.length) return "Seu deck está vazio.";
+  marcarAtivacao(estado, j);
+  localizar(estado, iid).obj.usoTurno = estado.turno;
+  p.pl -= 1000;
+  ev.push({ t: "custo", j, valor: 1000, pl: p.pl });
+  ev.push({ t: "efeito", j, iid });
+  if (escolha === "comprar") comprar(estado, j, 1, ev);
+  else if (escolha === "destruir") destruir(estado, iid, ev, "efeito");
+  else {
+    const o = estado.jogadores[oponente(j)];
+    o.pl += 1000;
+    ev.push({ t: "ganhoPV", j: oponente(j), valor: 1000, pl: o.pl });
+  }
+  return null;
+}
+
+// Carta do campo vai para o Cemitério sem ser destruída (Soul Chapado, Cigarrin Gostoso)
+function enviarProCemiterio(estado, iid, ev) {
+  if (!noCampo(estado, iid)) return;
+  removerDoCampo(estado, iid, ev, "enviada");
+  ev.push({ t: "enviada", j: donoDe(iid), iid });
+}
+
+// Monstro do Cemitério de j volta por Invocação-Especial (Soul Chapado)
+function invocarDoCemiterio(estado, j, iid, ev, pos = "atk") {
+  const p = estado.jogadores[j];
+  const slot = zonaLivre(p.monstros);
+  const i = p.cemiterio.indexOf(iid);
+  if (slot < 0 || i < 0) return;
+  p.cemiterio.splice(i, 1);
+  p.monstros[slot] = { iid, pos, face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+  ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
+  aposEspecial(estado, j, iid, ev);
+}
+
+// Mystic Daikizinho / Shining Zoom: destruído em batalha e enviado para o Cemitério -> Invoca 1 monstro
+// sorteado do deck, do mesmo atributo dele, com 1500 ou menos de ATK, em Posição de Ataque
+function recrutar(estado, g, ev) {
+  if (localizar(estado, g.iid)?.zona !== "cemiterio") return; // banido em vez de ir para o Cemitério: nada acontece
+  const p = estado.jogadores[g.j];
+  const atributo = carta(estado, g.iid).atributo;
+  const slot = zonaLivre(p.monstros);
+  const opcoes = p.deck.filter((x) => {
+    const c = carta(estado, x);
+    return c.categoria === "monstro" && c.atributo === atributo && c.atk <= 1500 && !c.somenteEspecial && !c.naoEspecial && !ehFusao(c) && podeControlarMais(estado, g.j, x);
+  });
+  if (!opcoes.length || slot < 0) return;
+  const escolhido = opcoes[Math.floor(sorteioDoEstado(estado)() * opcoes.length)];
+  p.deck.splice(p.deck.indexOf(escolhido), 1);
+  embaralhar(p.deck, sorteioDoEstado(estado));
+  p.monstros[slot] = { iid: escolhido, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+  ev.push({ t: "efeito", j: g.j, iid: g.iid });
+  ev.push({ t: "invocacao", j: g.j, iid: escolhido, modo: "especial", slot });
+  aposEspecial(estado, g.j, escolhido, ev);
 }
 
 
@@ -2834,6 +3018,10 @@ function destruir(estado, iid, ev, causa) {
     if (q.campo && q.campo.face && carta(estado, q.campo.iid).efeito === "w-rede" && !(estado.gatilhos || []).some((g) => g.tipo === "w-rede" && g.j === loc.j)) {
       (estado.gatilhos ||= []).push({ tipo: "w-rede", j: loc.j, iid: q.campo.iid, turno: estado.turno });
     }
+  }
+  // Mystic Daikizinho / Shining Zoom destruído em batalha: chama 1 monstro do deck (resolve depois da batalha)
+  if (loc.zona === "monstros" && causa === "batalha" && carta(estado, iid).efeito === "recrutador" && !bloqueado(estado, loc.j, iid)) {
+    (estado.gatilhos ||= []).push({ tipo: "recrutador", j: loc.j, iid, turno: estado.turno });
   }
   // W — Midas, o Ladrão de Dados destruído em batalha: quem controlava compra 1 carta
   if (loc.zona === "monstros" && causa === "batalha" && carta(estado, iid).efeito === "w-midas" && !bloqueado(estado, loc.j, iid) && estado.vencedor === null) {
@@ -3271,6 +3459,10 @@ function resolverEscolha(estado, j, alvos, ev) {
     for (const alvo of alvos) devolverParaMao(estado, alvo, ev);
     return null;
   }
+  if (pend.efeito === "soul-reviver") {
+    invocarDoCemiterio(estado, j, alvos[0], ev);
+    return null;
+  }
   if (pend.efeito === "w-hacker-descarte") {
     descartar(estado, j, alvos[0], ev);
     return null;
@@ -3300,7 +3492,7 @@ export function escolhaAutomatica(estado, pend) {
   if (pend.efeito === "davi-cemiterio" || pend.efeito === "thales" || pend.efeito === "big" || pend.efeito === "john-invocar") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "zoologico") return pend.candidatos.filter((x) => localizar(estado, x).j !== pend.jogador).slice(0, 1);
   if (pend.efeito === "midas-invocar" || pend.efeito === "emanuel-pagar") return [];
-  if (["w-hacker-descarte", "w-miqueas-invocar", "w-midas", "w-rede"].includes(pend.efeito)) return pend.candidatos.slice(0, 1);
+  if (["w-hacker-descarte", "w-miqueas-invocar", "w-midas", "w-rede", "soul-reviver"].includes(pend.efeito)) return pend.candidatos.slice(0, 1);
   if (pend.efeito === "revolucao") return pend.candidatos.slice(0, pend.max);
   if (pend.efeito === "destino") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "fusao") return paresDeFusao(estado, j, pend.fusao)[0] || [];
@@ -3320,10 +3512,12 @@ export function opcoesDaCarta(estado, j, iid) {
   const opcoes = [];
   if (quemAge(estado) !== j || estado.pendente || estado.vez !== j) return opcoes;
   const loc = localizar(estado, iid);
-  if (!loc || loc.j !== j) return opcoes;
+  if (!loc) return opcoes;
+  if (loc.j !== j) return opcoesCigarrin(estado, j, iid); // o Vai um cigarrin? do oponente também é seu na sua vez
   const c = carta(estado, iid);
   const p = estado.jogadores[j];
   const principal = ehFasePrincipal(estado);
+  opcoes.push(...opcoesCigarrin(estado, j, iid));
 
   if (loc.zona === "mao" && principal) {
     if (c.categoria === "monstro") {
@@ -3346,6 +3540,13 @@ export function opcoesDaCarta(estado, j, iid) {
       }
       if (podeInvocarBig(estado, j, iid)) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial (tem \"Animal\" de Nível 5+)", acao: { tipo: "invocarEspecial", iid } });
+      }
+      const soul = c.efeito === "soul-chapado" && requisitosSoulMao(estado, j, iid);
+      if (soul) {
+        if (zonaLivre(p.monstros) >= 0) {
+          opcoes.push({ id: "efeito", rotulo: "Efeito da mão: mandar 1 Mago Nv 6+ do deck ao Cemitério e Invocar este card em Defesa", acao: { tipo: "efeitoMao", iid, modo: "especial" }, alvos: soul });
+        }
+        opcoes.push({ id: "efeito", rotulo: "Efeito da mão: mandar 1 Mago Nv 6+ do deck e este card ao Cemitério e trazer o Grande Mestre ou a Feiticeira Careca", acao: { tipo: "efeitoMao", iid, modo: "cemiterio" }, alvos: soul });
       }
       if (podeUsarMiqueas(estado, j, iid)) {
         opcoes.push({ id: "efeito", rotulo: "Efeito: descartar para buscar \"Zoológico Animal\"", acao: { tipo: "efeitoMao", iid } });

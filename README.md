@@ -308,6 +308,11 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT091 | W — Midas, o Ladrão de Dados **(limitada a 1)** | Efeito · TERRA · Internet · Nv 3 · 1400/1000 | – | Ao entrar, vê as Magias/Armadilhas da mão do oponente e pode fazer ele descartar 1 (o Midas perde 200 de ATK); destruído em batalha: compra 1 |
 | ZOE-PT092 | W — A Rede Central **(limitada a 2)** | Magia de Campo | – | Monstros "W" +200 de ATK; botão Efeito (1 vez por turno): Invoca 1 "W" da mão; "W" seu destruído: pega 1 carta "W" do Cemitério |
 | ZOE-PT093 | Os Irmãos **(limitada a 1)** | Efeito · TREVAS · Guerreiro · Nv 4 · 1800/2000 | – | Botão Efeito (1 vez por turno): bane até 2 monstros do seu Cemitério, +300 de ATK cada; o oponente só pode atacar eles; com uma carta "Alquimista" no campo, seus monstros não são destruídos em batalha |
+| ZOE-PT094 | Soul Chapado | Efeito · TREVAS · Mago · Nv 1 · 0/0 | – | Na mão (1 vez por turno): manda 1 Mago Nv 6+ do deck ao Cemitério e entra em Defesa, ou vai junto e traz o Grande Mestre / a Feiticeira Careca do Cemitério; no campo (1 vez por turno): manda até 2 Magias/Armadilhas (mão ou campo) ao Cemitério e compra a mesma quantidade |
+| ZOE-PT095 | Cigarrin Gostoso | Magia Normal | – | Manda 1 Monstro Normal seu com a face para cima ao Cemitério e compra 2 |
+| ZOE-PT096 | Vai um cigarrin? **(limitada a 1)** | Magia Contínua | – | Quem tem menos PV não sofre dano; 1 vez por turno o duelista da vez (de qualquer lado) paga 1000 PV e compra 1, destrói a carta ou dá 1000 PV ao oponente |
+| ZOE-PT097 | Mystic Daikizinho | Efeito · TREVAS · Planta · Nv 4 · 1400/1100 | – | Destruído em batalha (e no Cemitério): chama 1 TREVAS sorteado com até 1500 de ATK do deck, em Ataque |
+| ZOE-PT098 | Shining Zoom | Efeito · LUZ · Fada · Nv 4 · 1400/800 | – | Destruído em batalha (e no Cemitério): chama 1 LUZ sorteado com até 1500 de ATK do deck, em Ataque |
 
 **Atributos:** TERRA, TREVAS, LUZ, ÁGUA (水), VENTO e DIVINO. Desde 04/10/2026 não existem mais GELO (os Manoel do Gelo viraram ÁGUA; o "gelo" do Pote do Gelo é ÁGUA ou "Gelo" no nome) nem INTERNET como atributo: os monstros "W" são TERRA e do **Tipo Internet** (o antigo Ciberso), e é esse Tipo que ganha o bônus do WI-FI Grátis. O Nível "na hora" (`nivelAtual` em `js/motor.js`, por causa da Geada da Peste) é o que vale para os tributos e para os efeitos que olham o Nível na mão e no campo.
 
@@ -387,7 +392,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
 ├── supabase/banco.sql    # Banco de dados: tabelas, funções e permissões (cole no SQL Editor do Supabase)
-├── data/cartas.json      # As 93 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
+├── data/cartas.json      # As 98 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
 ├── data/noticias.json    # As notícias (a mais nova aparece primeiro)
 ├── img/noticias/         # Cartazes das notícias
 ├── img/cartas/           # Artes recortadas (WebP 640×640)

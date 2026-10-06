@@ -1,5 +1,21 @@
 [
   {
+    "id": "reino-dos-carecas-temporada-1",
+    "publicada": "2026-10-06",
+    "evento": "2026-11-01",
+    "categoria": "👑 Ranked",
+    "titulo": "Novo modo competitivo: Reino dos Carecas · Temporada 1",
+    "imagem": "img/noticias/reino-dos-carecas-temporada-1.webp",
+    "largura": 900,
+    "altura": 1125,
+    "alt": "Cartaz do novo modo competitivo Reino dos Carecas, Temporada 1: três troféus em forma de estátua (prata, ouro e bronze). Recompensas: 1º lugar 100 Careca Coins e Troféu Ouro, 2º lugar 60 e Troféu Prata, 3º lugar 30 e Troféu Bronze. Vitória: +1 ponto e +5 Careca Coins; derrota: +1 Careca Coin.",
+    "texto": "👑 NOVO MODO COMPETITIVO! 👑\nChegou o Reino dos Carecas, o ranked do Duelo da Zoeira! ⚔️\nNa aba ⚔️ Duelos, clique em \"Procurar partida\": o jogo acha outro duelista que também está procurando. Se ninguém aparecer em 60 segundos, você encara o Bot Careca (e vale igual)! 🤖\n🏆 Vitória: +1 ponto e +5 Careca Coins\n🪙 Derrota: +1 Careca Coin\n🎁 Recompensas da Temporada 1 (até 01/11/2026):\n🥇 1º lugar: 100 Careca Coins + Troféu Ouro\n🥈 2º lugar: 60 Careca Coins + Troféu Prata\n🥉 3º lugar: 30 Careca Coins + Troféu Bronze\n🚫 Tem ban list: confira na aba Duelos quais cartas não podem estar no deck.\nEntre na fila e prove quem é o careca supremo! 🔥",
+    "botao": {
+      "texto": "👑 Entrar na fila",
+      "href": "#arena"
+    }
+  },
+  {
     "id": "os-3-deuses",
     "publicada": "2026-10-04",
     "categoria": "🃏 Cartas novas",

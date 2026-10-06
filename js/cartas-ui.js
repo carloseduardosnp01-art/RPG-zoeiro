@@ -4,7 +4,7 @@
    Usado pelo catálogo, pelo deck e pela arena.
    ========================================================================== */
 
-import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610061340";
+import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610061350";
 
 // Emblema do careca (logo, verso das cartas e ícone do site)
 export const SVG_CARECA = `

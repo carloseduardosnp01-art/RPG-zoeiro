@@ -12,20 +12,20 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede, presencaGerenciada } from "./rede.js?v=202610050155";
-import * as conta from "./conta.js?v=202610050155";
-import { bancoLigado, chamar } from "./banco.js?v=202610050155";
-import * as adm from "./admin.js?v=202610050155";
-import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610050155";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610050155";
-import { abrirPremio } from "./visor-premio.js?v=202610050155";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610050155";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610050155";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610050155";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610050155";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610050155";
-import { tocar } from "./som.js?v=202610050155";
-import { comMoldura, visualDe } from "./cosmeticos.js?v=202610050155";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede, presencaGerenciada } from "./rede.js?v=202610061340";
+import * as conta from "./conta.js?v=202610061340";
+import { bancoLigado, chamar } from "./banco.js?v=202610061340";
+import * as adm from "./admin.js?v=202610061340";
+import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610061340";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610061340";
+import { abrirPremio } from "./visor-premio.js?v=202610061340";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610061340";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610061340";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610061340";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610061340";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610061340";
+import { tocar } from "./som.js?v=202610061340";
+import { comMoldura, visualDe } from "./cosmeticos.js?v=202610061340";
 
 const SID = gerarId(12); // identifica esta aba
 
@@ -226,7 +226,8 @@ function desenharBotaoConta(usuario) {
 async function publicarPresenca() {
   const u = conta.usuarioAtual();
   if (!u) return;
-  const dados = await adm.assinarPresenca({ sid: SID, ...conta.cartaoPublico(u), status: s.statusDuelo, t: Date.now() });
+  const naFila = s.statusDuelo === "fila" ? { fila: fila.desde, temporada: fila.temporada, versao: versaoDasCartas() } : {};
+  const dados = await adm.assinarPresenca({ sid: SID, ...conta.cartaoPublico(u), status: s.statusDuelo, ...naFila, t: Date.now() });
   publicar(T.presenca(SID), dados, { reter: true });
 }
 
@@ -930,7 +931,7 @@ async function receberPremio(dados) {
 }
 
 // Aviso de ADM no chat (assinado)
-async function avisarChat(texto) {
+export async function avisarChat(texto) {
   const u = conta.usuarioAtual();
   if (!u || !adm.souAdm(u.chave)) return;
   enviarGlobal(await adm.assinarMsg({ id: gerarId(), tipo: "aviso", de: conta.cartaoPublico(), texto, t: Date.now() }));
@@ -1230,7 +1231,7 @@ function abrirPerfil(cartao) {
   cheio.style.width = `${progressoNivel(p.xp || 0) * 100}%`;
   barra.append(cheio);
   info.append(barra);
-  const status = online ? (online.status === "duelando" ? "🟠 Duelando agora" : "🟢 Online") : "⚫ Offline";
+  const status = online ? (online.status === "duelando" ? "🟠 Duelando agora" : online.status === "fila" ? "👑 Na fila do Reino dos Carecas" : "🟢 Online") : "⚫ Offline";
   info.append(el("div", "pj__status", status));
   topo.append(comMoldura(img, visualDe(p).moldura), info);
 
@@ -1328,7 +1329,8 @@ function desenharOnline() {
     b.type = "button";
     b.dataset.eu = String(p.chave === u.chave);
     b.dataset.status = p.status;
-    b.setAttribute("aria-label", `${p.nick}, nível ${p.nivel}${p.status === "duelando" ? ", duelando" : ""}. Abrir opções`);
+    b.setAttribute("aria-label", `${p.nick}, nível ${p.nivel}${p.status === "duelando" ? ", duelando" : p.status === "fila" ? ", na fila do ranked" : ""}. Abrir opções`);
+    if (p.status === "fila") b.title = "Na fila do Reino dos Carecas";
     const avatar = el("span", "avatar");
     const img = el("img");
     img.src = `img/cartas/${p.avatar}.webp`;
@@ -1649,6 +1651,12 @@ function receberDM(dados) {
     case "desafio":
       receberDesafio(dados);
       break;
+    case "ranked-pedido":
+      receberPedidoRanked(dados);
+      break;
+    case "ranked-ocupado":
+      if (fila.pedido?.id === dados.duelo) pedidoFalhou(dados.de.chave);
+      break;
     case "aceite": {
       const d = s.desafios.get(dados.duelo);
       if (!d || !d.meu || d.estado !== "pendente") return;
@@ -1696,7 +1704,7 @@ function desafiar(cartao) {
 }
 
 function receberDesafio(dados) {
-  if (arenaAtiva() || s.statusDuelo !== "livre") {
+  if (arenaAtiva() || s.statusDuelo !== "livre") { // inclui quem está na fila do ranked
     enviarDM(dados.de.chave, { tipo: "recusa", duelo: dados.duelo, motivo: "ocupado" });
     return;
   }
@@ -1791,7 +1799,7 @@ function aceitarDesafio(d) {
 }
 
 // Quem desafiou cria o duelo: cada um joga com o próprio deck (o motor confere se vale)
-async function comecarComoAnfitriao(d, oponente, deckOponente, reliquia) {
+async function comecarComoAnfitriao(d, oponente, deckOponente, reliquia, extra = {}) {
   // a relíquia do oponente só vale com a assinatura do ADM (e tem que ser dele)
   const reliquiaOponente = reliquia && reliquia.para === oponente.chave && ehReliquia(reliquia.item) && (await conta.premioValido(reliquia)) ? reliquia : null;
   if (!Array.isArray(deckOponente) || problemaDoDeck(deckOponente, { comLimite: false })) {
@@ -1805,6 +1813,7 @@ async function comecarComoAnfitriao(d, oponente, deckOponente, reliquia) {
     ],
     semente: crypto.getRandomValues(new Uint32Array(1))[0],
   });
+  Object.assign(estado, extra); // ranked: { ranked: número da temporada }
   publicar(topicosDuelo(d.id).estado, { seq: estado.seq, estado, eventos, autor: SID }, { reter: true });
   entrarNoDuelo(estado, eventos);
 }
@@ -1821,6 +1830,11 @@ function entrarNoDuelo(estado, eventos) {
   const sessao = criarSessaoOnline({ estado, eventos, minha: { chave: u.chave, sid: SID } });
   const eu = sessao.eu;
   const oponente = estado.jogadores[1 - eu];
+  if (estado.ranked) {
+    conta.rankedEntrar(estado.id, oponente.chave).then((r) => {
+      if (r?.erro) aviso("Este duelo não vai contar no Reino dos Carecas (o servidor não confirmou a partida).", "erro", 9000);
+    }).catch(() => aviso("Sem conexão com o servidor do jogo: este duelo pode não contar no Reino dos Carecas.", "erro", 9000));
+  }
   abrirArena(sessao, {
     aoTerminar: (final, meuIndice) => terminarDuelo(final, meuIndice),
     aoSair: () => {
@@ -1830,7 +1844,13 @@ function entrarNoDuelo(estado, eventos) {
       if (eu === 0 && !estado.torneio) publicar(topicosDuelo(estado.id).estado, null, { reter: true });
       location.hash = "#salao";
     },
-    revanche: estado.torneio ? undefined : () => {
+    rotuloRevanche: estado.ranked ? "👑 Buscar outra partida" : undefined,
+    revanche: estado.ranked ? () => {
+      mudarStatusDuelo("livre");
+      guardar.apagar(DUELO_ATIVO);
+      fecharArena();
+      document.dispatchEvent(new CustomEvent("ranked-de-novo"));
+    } : estado.torneio ? undefined : () => {
       mudarStatusDuelo("livre");
       guardar.apagar(DUELO_ATIVO);
       fecharArena();
@@ -1844,7 +1864,9 @@ function entrarNoDuelo(estado, eventos) {
 function terminarDuelo(estado, eu) {
   if (ehTag(estado)) return terminarTag(estado, eu);
   const venceu = estado.vencedor === eu;
-  const { xp, coins } = conta.registrarResultado({ dueloId: estado.id, venceu, oponente: estado.jogadores[1 - eu], motivo: estado.motivo, tipo: estado.torneio ? "torneio" : null });
+  const ranked = Boolean(estado.ranked);
+  const { xp, coins } = conta.registrarResultado({ dueloId: estado.id, venceu, oponente: estado.jogadores[1 - eu], motivo: estado.motivo, tipo: estado.torneio ? "torneio" : null, ranked });
+  if (ranked) contarRanked(estado.id, venceu);
   mudarStatusDuelo("livre");
   guardar.apagar(DUELO_ATIVO);
   desenharPerfil();
@@ -1858,10 +1880,110 @@ function terminarDuelo(estado, eu) {
       desistencia: `🏆 ${v} fez ${d} desistir na Arena!`,
       wo: `🏆 ${v} venceu ${d} por W.O.!`,
     };
-    const texto = frases[estado.motivo] || `🏆 ${v} venceu ${d} na Arena!`;
+    const texto = ranked ? `👑 ${v} venceu ${d} no Reino dos Carecas!` : frases[estado.motivo] || `🏆 ${v} venceu ${d} na Arena!`;
     enviarGlobal({ id: gerarId(), tipo: "sistema", texto, t: Date.now() });
   }
-  return { xp, coins };
+  return ranked ? { xp, ranked: { venceu } } : { xp, coins };
+}
+
+// Manda o resultado do duelo do ranked para o banco (que soma os pontos e as Careca Coins)
+export function contarRanked(id, venceu) {
+  conta.rankedResultado(id, venceu).then((r) => {
+    if (r?.pendente) aviso("👑 Vitória registrada! Ela entra no Reino dos Carecas quando o oponente confirmar (ou em 5 minutos).", "ok", 9000);
+    else if (r?.erro === "rapido") aviso("Vitória rápida demais contra o Bot: não contou no Reino dos Carecas.", "erro", 9000);
+    else if (r?.erro && r.erro !== "ja_contado") aviso("O servidor não contou este duelo no Reino dos Carecas.", "erro", 9000);
+    document.dispatchEvent(new CustomEvent("ranked-mudou"));
+  }).catch(() => aviso("Sem conexão: o resultado do Reino dos Carecas não foi enviado.", "erro", 9000));
+}
+
+
+/* ---------- Reino dos Carecas: fila do ranked ---------- */
+
+// Quem está na fila aparece na presença (status "fila", com a hora em que entrou). O mais novo
+// manda um pedido ao mais antigo; o mais antigo aceita o primeiro pedido e cria o duelo. Assim
+// dois jogadores nunca criam dois duelos um para o outro ao mesmo tempo.
+const fila = { buscando: false, desde: 0, temporada: null, banidas: [], pedido: null, tentados: new Map(), timer: null, avisar: () => {} };
+
+export const estadoDaFila = () => ({ buscando: fila.buscando, desde: fila.desde, pedindo: Boolean(fila.pedido) });
+
+export async function entrarNaFila({ temporada, banidas = [], aoMudar }) {
+  if (!conta.usuarioAtual()) throw new Error("Entre na sua conta (Salão Online) para jogar o Reino dos Carecas.");
+  if (arenaAtiva()) throw new Error("Termine (ou saia) do duelo atual antes de entrar na fila.");
+  if (minhaMesa()) throw new Error("Saia da mesa de Tag 2vs2 antes de entrar na fila.");
+  if (s.statusDuelo !== "livre" && s.statusDuelo !== "fila") throw new Error("Você está entrando em outro duelo agora.");
+  if (!(await garantirConexao())) throw new Error("Sem conexão com o servidor do jogo.");
+  clearInterval(fila.timer);
+  Object.assign(fila, { buscando: true, desde: Date.now(), temporada, banidas, pedido: null, avisar: aoMudar || (() => {}) });
+  fila.tentados.clear();
+  mudarStatusDuelo("fila");
+  fila.timer = setInterval(tentarParear, 2000);
+  setTimeout(tentarParear, 1500);
+}
+
+export function sairDaFila() {
+  clearInterval(fila.timer);
+  const estava = fila.buscando;
+  fila.buscando = false;
+  if (fila.pedido) {
+    clearTimeout(fila.pedido.limite);
+    fila.pedido.cancelar();
+    fila.pedido = null;
+  }
+  if (estava && s.statusDuelo === "fila") mudarStatusDuelo("livre");
+}
+
+function tentarParear() {
+  const u = conta.usuarioAtual();
+  if (!fila.buscando || fila.pedido || arenaAtiva() || !u) return;
+  const agora = Date.now();
+  const naFila = [...s.online.values()].filter((p) => p.status === "fila" && p.chave !== u.chave && Number(p.fila) > 0 && p.sid &&
+    p.versao === versaoDasCartas() && p.temporada === fila.temporada && !((fila.tentados.get(p.chave) || 0) > agora) &&
+    (presencaGerenciada() || agora - p.t <= PRESENCA_VALIDA));
+  naFila.sort((a, b) => a.fila - b.fila || a.chave.localeCompare(b.chave));
+  const alvo = naFila[0];
+  if (!alvo) return;
+  // eu sou o mais antigo: espero o outro me pedir
+  if (fila.desde < alvo.fila || (fila.desde === alvo.fila && u.chave < alvo.chave)) return;
+  const id = gerarId(10);
+  // já fica ouvindo o duelo: quando o anfitrião publicar o estado, é só entrar
+  const cancelar = assinar(topicosDuelo(id).estado, (dados) => {
+    if (!dados || !dados.estado || fila.pedido?.id !== id) return;
+    clearTimeout(fila.pedido.limite);
+    fila.pedido = null;
+    setTimeout(() => cancelar(), 0);
+    clearInterval(fila.timer);
+    fila.buscando = false;
+    fila.avisar();
+    entrarNoDuelo(dados.estado, dados.eventos || []);
+  });
+  fila.pedido = { id, para: alvo.chave, cancelar, limite: setTimeout(() => fila.pedido?.id === id && pedidoFalhou(alvo.chave), 8000) };
+  enviarDM(alvo.chave, { tipo: "ranked-pedido", duelo: id, sid: alvo.sid, versao: versaoDasCartas(), temporada: fila.temporada, deck: deckAtual(), reliquia: conta.reliquiaEquipada() });
+  fila.avisar();
+}
+
+// O outro não respondeu ou já estava em duelo: tenta outra pessoa (ele fica de fora por um tempo)
+function pedidoFalhou(chave) {
+  if (!fila.pedido) return;
+  clearTimeout(fila.pedido.limite);
+  fila.pedido.cancelar();
+  fila.pedido = null;
+  fila.tentados.set(chave, Date.now() + 15000);
+  fila.avisar();
+}
+
+// Sou o mais antigo da fila e alguém me pediu: aceito o primeiro e crio o duelo
+function receberPedidoRanked(dados) {
+  if (dados.sid !== SID) return; // é para outra aba minha
+  const recusar = (motivo) => enviarDM(dados.de.chave, { tipo: "ranked-ocupado", duelo: dados.duelo, motivo });
+  if (!fila.buscando || fila.pedido || arenaAtiva()) return recusar("ocupado");
+  if (dados.versao !== versaoDasCartas() || dados.temporada !== fila.temporada) return recusar("versao");
+  const deck = Array.isArray(dados.deck) ? dados.deck : null;
+  if (!deck || problemaDoDeck(deck) || deck.some((id) => fila.banidas.includes(id))) return recusar("deck");
+  const temporada = fila.temporada;
+  sairDaFila();
+  fila.avisar();
+  mudarStatusDuelo("aguardando");
+  comecarComoAnfitriao({ id: dados.duelo }, dados.de, deck, dados.reliquia, { ranked: temporada });
 }
 
 // Depois de recarregar a página: volta para o duelo que estava em andamento

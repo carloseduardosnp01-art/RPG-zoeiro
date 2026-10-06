@@ -4,23 +4,24 @@
    pelo endereço (#inicio, #catalogo, #deck, #regras, #salao, #arena).
    ========================================================================== */
 
-import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610050155";
-import { iniciarCatalogo } from "./catalogo.js?v=202610050155";
-import { iniciarEditorDeck } from "./editor-deck.js?v=202610050155";
-import { deckAtual } from "./deck.js?v=202610050155";
-import { iniciarSalao, ativarSalao } from "./salao.js?v=202610050155";
-import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610050155";
-import { criarSessaoBot } from "./sessao.js?v=202610050155";
-import * as conta from "./conta.js?v=202610050155";
-import { alternarSom, somLigado } from "./som.js?v=202610050155";
-import { aviso } from "./util.js?v=202610050155";
-import { iniciarNoticias } from "./noticias.js?v=202610050155";
-import { iniciarLoja } from "./loja.js?v=202610050155";
-import { iniciarAviso } from "./aviso.js?v=202610050155";
-import { iniciarRoleta } from "./roleta.js?v=202610050155";
+import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610061340";
+import { iniciarCatalogo } from "./catalogo.js?v=202610061340";
+import { iniciarEditorDeck } from "./editor-deck.js?v=202610061340";
+import { deckAtual } from "./deck.js?v=202610061340";
+import { iniciarSalao, ativarSalao } from "./salao.js?v=202610061340";
+import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610061340";
+import { criarSessaoBot } from "./sessao.js?v=202610061340";
+import * as conta from "./conta.js?v=202610061340";
+import { alternarSom, somLigado } from "./som.js?v=202610061340";
+import { aviso } from "./util.js?v=202610061340";
+import { iniciarNoticias } from "./noticias.js?v=202610061340";
+import { iniciarLoja } from "./loja.js?v=202610061340";
+import { iniciarAviso } from "./aviso.js?v=202610061340";
+import { iniciarRoleta } from "./roleta.js?v=202610061340";
+import { iniciarRanked } from "./ranked.js?v=202610061340";
 
 // Número da versão (atualizado por ferramentas/nova-versao.py a cada envio)
-const VERSAO = "202610050155";
+const VERSAO = "202610061340";
 
 const TELAS = ["inicio", "noticias", "catalogo", "deck", "regras", "salao", "arena"];
 
@@ -70,6 +71,7 @@ async function iniciar() {
   iniciarLoja(cartas);
   iniciarAviso();
   iniciarRoleta(cartas);
+  iniciarRanked(cartas);
   ligarBotoes();
   addEventListener("hashchange", mostrarTela);
   document.addEventListener("arena-mudou", atualizarFaixa);

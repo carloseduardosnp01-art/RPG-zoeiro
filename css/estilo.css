@@ -3383,6 +3383,295 @@ a:hover {
   color: var(--ouro-claro);
 }
 
+/* ---------- Duelos: Reino dos Carecas (ranked) ---------- */
+.arena-vazia.duelos {
+  padding-top: 2.5rem;
+  padding-bottom: 3rem;
+  text-align: left;
+}
+
+.reino,
+.duelos__amistoso {
+  padding: 1.4rem;
+  background:
+    radial-gradient(ellipse at 15% 0%, rgba(246, 215, 124, .12), transparent 55%),
+    linear-gradient(180deg, var(--painel-2), var(--painel));
+  border: 1px solid var(--borda);
+  border-radius: 1rem;
+  box-shadow: 0 .8rem 2rem rgba(0, 0, 0, .35);
+}
+
+#reino {
+  border-color: var(--borda-forte);
+  box-shadow: 0 0 0 1px rgba(246, 215, 124, .12), 0 .8rem 2.4rem rgba(0, 0, 0, .45), 0 0 2.5rem rgba(224, 180, 74, .12);
+}
+
+.duelos__amistoso {
+  text-align: center;
+}
+
+.duelos__amistoso .arena-vazia__emblema {
+  width: 84px;
+  height: 84px;
+}
+
+.reino__topo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.reino__coroa {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  font-size: 1.9rem;
+  background: radial-gradient(circle, rgba(246, 215, 124, .35), rgba(156, 116, 36, .15) 70%);
+  border: 1px solid var(--borda-forte);
+  border-radius: 50%;
+  box-shadow: 0 0 1.2rem rgba(246, 215, 124, .35);
+}
+
+.reino__titulo {
+  margin: 0;
+  color: var(--ouro-claro);
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-size: clamp(1.4rem, 3.6vw, 1.9rem);
+}
+
+.reino__sub {
+  margin: 0;
+  color: var(--texto-suave);
+}
+
+.reino__meu {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .6rem;
+  margin-bottom: 1rem;
+}
+
+.reino__meu:empty {
+  display: none;
+}
+
+.reino__caixinha {
+  padding: .6rem .4rem;
+  text-align: center;
+  background: rgba(0, 0, 0, .28);
+  border: 1px solid var(--borda);
+  border-radius: .7rem;
+}
+
+.reino__caixinha strong {
+  display: block;
+  color: var(--ouro-claro);
+  font-family: var(--fonte-titulo);
+  font-size: 1.45rem;
+  line-height: 1.1;
+}
+
+.reino__caixinha span {
+  color: var(--texto-suave);
+  font-size: .8rem;
+}
+
+.reino__acao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  background: rgba(0, 0, 0, .25);
+  border: 1px dashed var(--borda);
+  border-radius: .8rem;
+}
+
+.reino__jogar {
+  min-width: min(100%, 16rem);
+}
+
+.reino__busca {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  color: var(--ouro-claro);
+  font-size: 1.1rem;
+}
+
+.reino__contador {
+  font-variant-numeric: tabular-nums;
+  color: var(--texto);
+}
+
+.reino__radar {
+  width: .9rem;
+  height: .9rem;
+  background: var(--verde);
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(31, 191, 117, .7);
+  animation: reino-radar 1.4s ease-out infinite;
+}
+
+@keyframes reino-radar {
+  to { box-shadow: 0 0 0 .9rem rgba(31, 191, 117, 0); }
+}
+
+.reino__trilho {
+  width: min(100%, 20rem);
+  height: .4rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .08);
+  border-radius: 1rem;
+}
+
+.reino__barra {
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--ouro-escuro), var(--ouro-claro));
+  transition: width 1s linear;
+}
+
+.reino__dica,
+.reino__aviso {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: .85rem;
+}
+
+.reino__regras {
+  padding-left: 1.2rem;
+  margin-bottom: 1rem;
+  color: var(--texto);
+  font-size: .92rem;
+}
+
+.reino__regras li + li {
+  margin-top: .25rem;
+}
+
+.reino__ban h4,
+.reino__ranking-titulo {
+  color: var(--ouro-claro);
+  font-family: var(--fonte-titulo);
+  font-size: 1.05rem;
+}
+
+.reino__banidas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-bottom: .4rem;
+}
+
+.reino__banida {
+  padding: .2rem .65rem;
+  color: #ffd2d2;
+  font-size: .82rem;
+  background: rgba(224, 49, 59, .16);
+  border: 1px solid rgba(224, 49, 59, .5);
+  border-radius: 1rem;
+}
+
+button.reino__banida--tirar:hover,
+button.reino__banida--tirar:focus-visible {
+  background: rgba(224, 49, 59, .35);
+}
+
+.reino__tabela {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.reino__linha {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr auto auto;
+  gap: .6rem;
+  align-items: center;
+  padding: .45rem .6rem;
+  border-bottom: 1px solid rgba(224, 180, 74, .12);
+}
+
+.reino__linha[data-podio] {
+  background: rgba(246, 215, 124, .06);
+}
+
+.reino__linha[data-eu="true"] {
+  background: rgba(31, 191, 117, .14);
+  border-radius: .5rem;
+}
+
+.reino__pos {
+  text-align: center;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.reino__linha[data-podio] .reino__pos {
+  font-size: 1.2rem;
+}
+
+.reino__nick {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reino__vd {
+  color: var(--texto-suave);
+  font-size: .8rem;
+}
+
+.reino__pontos {
+  color: var(--ouro-claro);
+  font-variant-numeric: tabular-nums;
+}
+
+.reino__ultima {
+  padding: .7rem .9rem;
+  margin-top: 1rem;
+  font-size: .9rem;
+  background: rgba(0, 0, 0, .25);
+  border: 1px solid var(--borda);
+  border-radius: .7rem;
+}
+
+.reino__ultima h5 {
+  margin-bottom: .4rem;
+  color: var(--ouro-claro);
+  font-size: .95rem;
+}
+
+.reino__adm {
+  padding: .8rem 1rem;
+  margin-top: 1rem;
+  background: rgba(169, 158, 230, .08);
+  border: 1px solid rgba(169, 158, 230, .4);
+  border-radius: .7rem;
+}
+
+.reino__adm summary {
+  color: var(--lilas);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.usuario-online[data-status="fila"] { color: var(--ouro-claro); }
+.usuario-online[data-status="fila"] .usuario-online__bolinha { background: var(--ouro); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reino__radar { animation: none; }
+  .reino__barra { transition: none; }
+}
+
 /* ---------- Rodapé ---------- */
 .rodape {
   padding: 1.3rem 0;

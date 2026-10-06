@@ -20,6 +20,22 @@ export const PREMIOS = {
     imagem: "img/premios/trofeu-bronze.webp", grande: "img/premios/trofeu-bronze-grande.webp",
     texto: "Dado ao 3º lugar: venceu a disputa de terceiro lugar do torneio.",
   },
+  // Reino dos Carecas (ranked): top 3 da temporada. Quem confirma é o banco (não tem assinatura de ADM).
+  "reino-ouro": {
+    tipo: "trofeu", nome: "Troféu do Reino dos Carecas (Ouro)", posicao: "1º lugar da temporada", emoji: "👑", ordem: 1, reino: true,
+    imagem: "img/premios/trofeu-ouro.webp", grande: "img/premios/trofeu-ouro-grande.webp",
+    texto: "Dado ao rei do Reino dos Carecas: terminou a temporada do ranked em 1º lugar.",
+  },
+  "reino-prata": {
+    tipo: "trofeu", nome: "Troféu do Reino dos Carecas (Prata)", posicao: "2º lugar da temporada", emoji: "👑", ordem: 2, reino: true,
+    imagem: "img/premios/trofeu-prata.webp", grande: "img/premios/trofeu-prata-grande.webp",
+    texto: "Dado ao 2º lugar da temporada do ranked Reino dos Carecas.",
+  },
+  "reino-bronze": {
+    tipo: "trofeu", nome: "Troféu do Reino dos Carecas (Bronze)", posicao: "3º lugar da temporada", emoji: "👑", ordem: 3, reino: true,
+    imagem: "img/premios/trofeu-bronze.webp", grande: "img/premios/trofeu-bronze-grande.webp",
+    texto: "Dado ao 3º lugar da temporada do ranked Reino dos Carecas.",
+  },
   "careca-do-milenio": {
     tipo: "reliquia",
     nome: "Careca do Milênio",

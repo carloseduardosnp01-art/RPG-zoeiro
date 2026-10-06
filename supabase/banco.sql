@@ -149,11 +149,11 @@ language sql immutable set search_path = '' as $$
               else 0 end
 $$;
 
--- O perfil sempre leva a chave e o nick certos da conta. O campo "roleta" é do servidor:
--- o que o navegador mandar ali é jogado fora (salvar_perfil põe o resumo de verdade).
+-- O perfil sempre leva a chave e o nick certos da conta. Os campos "roleta" e "ranked" são do
+-- servidor: o que o navegador mandar ali é jogado fora (salvar_perfil põe o resumo de verdade).
 create or replace function zoeira.perfil_limpo(p jsonb, p_chave text, p_nick text) returns jsonb
 language sql immutable set search_path = '' as $$
-  select ((case when jsonb_typeof(p) = 'object' then p else '{}'::jsonb end) - 'roleta')
+  select ((case when jsonb_typeof(p) = 'object' then p else '{}'::jsonb end) - 'roleta' - 'ranked')
          || jsonb_build_object('chave', p_chave, 'nick', p_nick)
 $$;
 
@@ -297,6 +297,7 @@ declare
   j zoeira.jogadores;
   v_perfil jsonb;
   v_roleta jsonb;
+  v_ranked jsonb;
 begin
   if v_chave is null then
     return jsonb_build_object('erro', 'sessao');
@@ -312,6 +313,10 @@ begin
   v_roleta := zoeira.resumo_roleta(j.chave);
   if v_roleta is not null then
     v_perfil := v_perfil || jsonb_build_object('roleta', v_roleta);
+  end if;
+  v_ranked := zoeira.resumo_ranked(j.chave);
+  if v_ranked is not null then
+    v_perfil := v_perfil || jsonb_build_object('ranked', v_ranked);
   end if;
   update zoeira.jogadores
      set perfil = v_perfil, versao = j.versao + 1, atualizado_em = now(),
@@ -592,6 +597,344 @@ exception when unique_violation then
 end $$;
 
 
+/* ---------- Reino dos Carecas (ranked) ----------
+   Temporadas encerradas pelos ADMs (o ADM encerra e já abre a próxima). Vitória vale 1 ponto e
+   5 Careca Coins; derrota, 0 ponto e 1 Careca Coin. Os pontos e as moedas do modo ficam aqui
+   (o navegador não consegue mexer) e vão para o perfil no campo "ranked", como a roleta.
+   Contra gente de verdade, a vitória só conta quando o perdedor confirma a derrota (ou depois
+   de 5 minutos sem resposta dele, quando ele some no meio do duelo); se os dois disserem que
+   venceram, ninguém ganha. Contra o Bot, um duelo largado no meio vira derrota quando o
+   jogador começa outro, e vitória com menos de 1 minuto de duelo não vale. */
+
+create table if not exists zoeira.ranked_temporadas (
+  numero       integer primary key,
+  nome         text not null,
+  inicio       timestamptz not null default now(),
+  fim_previsto date,                                   -- só informativo: quem encerra é um ADM
+  encerrada_em timestamptz,
+  banidas      jsonb not null default '[]'::jsonb      -- ids das cartas proibidas no modo
+);
+
+create table if not exists zoeira.ranked_partidas (
+  id           text primary key check (id ~ '^[A-Za-z0-9_-]{4,40}$'),
+  temporada    integer not null,
+  tipo         text not null check (tipo in ('pvp', 'bot')),
+  jogadores    text[] not null,                        -- quem confirmou que está nesta partida
+  oponentes    jsonb not null default '{}'::jsonb,     -- chave -> chave do oponente que ela informou
+  resultados   jsonb not null default '{}'::jsonb,     -- chave -> 'venceu' ou 'perdeu'
+  contadas     text[] not null default '{}',           -- chaves cujo resultado já entrou nos pontos
+  criada_em    timestamptz not null default now(),
+  reportada_em timestamptz                             -- primeiro resultado que chegou
+);
+create index if not exists ranked_partidas_por_data on zoeira.ranked_partidas (criada_em);
+
+create table if not exists zoeira.ranked_pontos (
+  temporada  integer not null,
+  chave      text not null references zoeira.jogadores (chave) on delete cascade,
+  pontos     integer not null default 0,
+  vitorias   integer not null default 0,
+  derrotas   integer not null default 0,
+  coins      integer not null default 0,
+  atualizado timestamptz not null default now(),
+  primary key (temporada, chave)
+);
+
+create table if not exists zoeira.ranked_premios (
+  temporada integer not null,
+  chave     text not null references zoeira.jogadores (chave) on delete cascade,
+  posicao   integer not null check (posicao between 1 and 3),
+  coins     integer not null,
+  quando    timestamptz not null default now(),
+  primary key (temporada, chave)
+);
+
+alter table zoeira.ranked_temporadas enable row level security;
+alter table zoeira.ranked_partidas   enable row level security;
+alter table zoeira.ranked_pontos     enable row level security;
+alter table zoeira.ranked_premios    enable row level security;
+
+-- Temporada 1: de hoje até 01/11/2026 (o ADM encerra no painel), com a ban list inicial
+insert into zoeira.ranked_temporadas (numero, nome, fim_previsto, banidas)
+values (1, 'Temporada 1', '2026-11-01', '["controle-carecal", "espanta-trouxas", "vai-um-cigarrin"]'::jsonb)
+on conflict do nothing;
+
+create or replace function zoeira.temporada_aberta() returns integer
+language sql stable security definer set search_path = '' as $$
+  select t.numero from zoeira.ranked_temporadas t where t.encerrada_em is null order by t.numero desc limit 1
+$$;
+
+-- Tudo o que o jogador ganhou no modo (vai no perfil, campo "ranked"); null se nunca jogou
+create or replace function zoeira.resumo_ranked(p_chave text) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  with duelos as (select coalesce(sum(p.coins), 0) as coins, count(*) as n
+                    from zoeira.ranked_pontos p where p.chave = p_chave),
+       premios as (select coalesce(sum(r.coins), 0) as coins,
+                          coalesce(jsonb_agg(jsonb_build_object('temporada', r.temporada, 'posicao', r.posicao,
+                                                                'nome', t.nome,
+                                                                't', (extract(epoch from r.quando) * 1000)::bigint)
+                                             order by r.temporada), '[]'::jsonb) as trofeus,
+                          count(*) as n
+                     from zoeira.ranked_premios r join zoeira.ranked_temporadas t on t.numero = r.temporada
+                    where r.chave = p_chave)
+  select case when d.n = 0 and pr.n = 0 then null
+              else jsonb_build_object('coins', d.coins + pr.coins, 'trofeus', pr.trofeus) end
+    from duelos d, premios pr
+$$;
+
+-- Põe o resumo novo no perfil guardado (muda a versão, como a roleta). Devolve { perfil, versao }.
+create or replace function zoeira.gravar_resumo_ranked(p_chave text) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_resumo jsonb := zoeira.resumo_ranked(p_chave);
+  v_perfil jsonb;
+  v_versao integer;
+begin
+  update zoeira.jogadores
+     set perfil = case when v_resumo is null then perfil - 'ranked' else perfil || jsonb_build_object('ranked', v_resumo) end,
+         versao = versao + 1, atualizado_em = now()
+   where chave = p_chave
+  returning perfil, versao into v_perfil, v_versao;
+  return jsonb_build_object('perfil', v_perfil, 'versao', v_versao);
+end $$;
+
+-- Soma o resultado de um jogador numa partida (uma vez só; só se a temporada ainda estiver aberta)
+create or replace function zoeira.contar_ranked(p_id text, p_chave text, p_venceu boolean) returns boolean
+language plpgsql security definer set search_path = '' as $$
+declare
+  p zoeira.ranked_partidas;
+begin
+  select * into p from zoeira.ranked_partidas where id = p_id for update;
+  if not found or p_chave = any (p.contadas) then
+    return false;
+  end if;
+  update zoeira.ranked_partidas set contadas = array_append(contadas, p_chave) where id = p_id;
+  if not exists (select 1 from zoeira.ranked_temporadas t where t.numero = p.temporada and t.encerrada_em is null) then
+    return false;
+  end if;
+  insert into zoeira.ranked_pontos (temporada, chave, pontos, vitorias, derrotas, coins)
+  values (p.temporada, p_chave, case when p_venceu then 1 else 0 end, case when p_venceu then 1 else 0 end,
+          case when p_venceu then 0 else 1 end, case when p_venceu then 5 else 1 end)
+  on conflict (temporada, chave) do update
+     set pontos = zoeira.ranked_pontos.pontos + excluded.pontos,
+         vitorias = zoeira.ranked_pontos.vitorias + excluded.vitorias,
+         derrotas = zoeira.ranked_pontos.derrotas + excluded.derrotas,
+         coins = zoeira.ranked_pontos.coins + excluded.coins,
+         atualizado = now();
+  perform zoeira.gravar_resumo_ranked(p_chave);
+  return true;
+end $$;
+
+-- Vitórias contra gente de verdade que ninguém contestou em 5 minutos (o perdedor sumiu)
+create or replace function zoeira.varrer_ranked() returns void
+language plpgsql security definer set search_path = '' as $$
+declare
+  p zoeira.ranked_partidas;
+  v_chave text;
+begin
+  for p in select * from zoeira.ranked_partidas
+            where tipo = 'pvp' and reportada_em < now() - interval '5 minutes'
+              and criada_em > now() - interval '2 days' and cardinality(contadas) < 2 loop
+    if cardinality(p.jogadores) <> 2 then
+      continue;
+    end if;
+    foreach v_chave in array p.jogadores loop
+      if p.resultados ->> v_chave = 'venceu' and not (v_chave = any (p.contadas))
+         and not (p.resultados ? (select x from unnest(p.jogadores) x where x <> v_chave limit 1)) then
+        perform zoeira.contar_ranked(p.id, v_chave, true);
+      end if;
+    end loop;
+  end loop;
+end $$;
+
+-- Começa (ou confirma) uma partida do modo. p_oponente null = contra o Bot.
+create or replace function public.ranked_entrar(p_token text, p_id text, p_oponente text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_chave text := zoeira.chave_da_sessao(p_token);
+  v_temporada integer := zoeira.temporada_aberta();
+  p zoeira.ranked_partidas;
+  v record;
+begin
+  if v_chave is null then
+    return jsonb_build_object('erro', 'sessao');
+  end if;
+  if v_temporada is null then
+    return jsonb_build_object('erro', 'sem_temporada');
+  end if;
+  if p_id is null or p_id !~ '^[A-Za-z0-9_-]{4,40}$' then
+    return jsonb_build_object('erro', 'id');
+  end if;
+  if p_oponente is null then
+    -- Bot: duelo contra o Bot largado no meio vira derrota
+    for v in select id from zoeira.ranked_partidas
+              where tipo = 'bot' and v_chave = any (jogadores) and not (v_chave = any (contadas)) and id <> p_id loop
+      perform zoeira.contar_ranked(v.id, v_chave, false);
+    end loop;
+    insert into zoeira.ranked_partidas (id, temporada, tipo, jogadores) values (p_id, v_temporada, 'bot', array[v_chave])
+    on conflict (id) do nothing;
+    select * into p from zoeira.ranked_partidas where id = p_id;
+    if p.tipo <> 'bot' or not (v_chave = any (p.jogadores)) then
+      return jsonb_build_object('erro', 'id');
+    end if;
+    return jsonb_build_object('ok', true, 'temporada', p.temporada);
+  end if;
+  if p_oponente = v_chave or not exists (select 1 from zoeira.jogadores where chave = p_oponente) then
+    return jsonb_build_object('erro', 'oponente');
+  end if;
+  insert into zoeira.ranked_partidas (id, temporada, tipo, jogadores, oponentes)
+  values (p_id, v_temporada, 'pvp', array[v_chave], jsonb_build_object(v_chave, p_oponente))
+  on conflict (id) do nothing;
+  select * into p from zoeira.ranked_partidas where id = p_id for update;
+  if p.tipo <> 'pvp' then
+    return jsonb_build_object('erro', 'id');
+  end if;
+  if not (v_chave = any (p.jogadores)) then
+    -- o segundo jogador: tem que ser o oponente que o primeiro informou, e vice-versa
+    if cardinality(p.jogadores) <> 1 or p.oponentes ->> p.jogadores[1] <> v_chave or p.jogadores[1] <> p_oponente then
+      return jsonb_build_object('erro', 'oponente');
+    end if;
+    update zoeira.ranked_partidas
+       set jogadores = array_append(jogadores, v_chave), oponentes = oponentes || jsonb_build_object(v_chave, p_oponente)
+     where id = p_id;
+  end if;
+  return jsonb_build_object('ok', true, 'temporada', p.temporada);
+end $$;
+
+-- Resultado de uma partida do modo, contado pelo próprio jogador
+create or replace function public.ranked_resultado(p_token text, p_id text, p_venceu boolean)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_chave text := zoeira.chave_da_sessao(p_token);
+  p zoeira.ranked_partidas;
+  v_outro text;
+  v_contou boolean := false;
+  v_res jsonb;
+begin
+  if v_chave is null then
+    return jsonb_build_object('erro', 'sessao');
+  end if;
+  if p_venceu is null then
+    return jsonb_build_object('erro', 'resultado');
+  end if;
+  perform zoeira.varrer_ranked();
+  select * into p from zoeira.ranked_partidas where id = p_id for update;
+  if not found or not (v_chave = any (p.jogadores)) then
+    return jsonb_build_object('erro', 'partida');
+  end if;
+  if p.resultados ? v_chave or v_chave = any (p.contadas) then
+    return jsonb_build_object('erro', 'ja_contado');
+  end if;
+  update zoeira.ranked_partidas
+     set resultados = resultados || jsonb_build_object(v_chave, case when p_venceu then 'venceu' else 'perdeu' end),
+         reportada_em = coalesce(reportada_em, now())
+   where id = p_id;
+  if p.tipo = 'bot' then
+    if p_venceu and p.criada_em > now() - interval '1 minute' then
+      update zoeira.ranked_partidas set contadas = array_append(contadas, v_chave) where id = p_id;
+      return jsonb_build_object('erro', 'rapido');
+    end if;
+    v_contou := zoeira.contar_ranked(p_id, v_chave, p_venceu);
+  elsif cardinality(p.jogadores) = 2 then
+    v_outro := (select x from unnest(p.jogadores) x where x <> v_chave limit 1);
+    if not p_venceu then
+      v_contou := zoeira.contar_ranked(p_id, v_chave, false);
+      if p.resultados ->> v_outro = 'venceu' then
+        perform zoeira.contar_ranked(p_id, v_outro, true);
+      end if;
+    elsif p.resultados ->> v_outro = 'perdeu' then
+      v_contou := zoeira.contar_ranked(p_id, v_chave, true);
+    end if;
+    -- os dois disseram que venceram: ninguém ganha (o primeiro também não)
+  end if;
+  v_res := jsonb_build_object('ok', true, 'contado', v_contou, 'pendente', not v_contou and p_venceu and p.tipo = 'pvp');
+  if v_contou then
+    v_res := v_res || (select jsonb_build_object('perfil', j.perfil, 'versao', j.versao) from zoeira.jogadores j where j.chave = v_chave);
+  end if;
+  return v_res;
+end $$;
+
+-- Tabela pública: temporada aberta (com a ban list), classificação e o pódio da última encerrada
+create or replace function public.ranked_tabela()
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  t zoeira.ranked_temporadas;
+  u zoeira.ranked_temporadas;
+begin
+  perform zoeira.varrer_ranked();
+  select * into t from zoeira.ranked_temporadas where numero = zoeira.temporada_aberta();
+  select * into u from zoeira.ranked_temporadas where encerrada_em is not null order by numero desc limit 1;
+  return jsonb_build_object(
+    'temporada', case when t.numero is null then null else jsonb_build_object(
+      'numero', t.numero, 'nome', t.nome, 'inicio', t.inicio, 'fim', t.fim_previsto, 'banidas', t.banidas) end,
+    'ranking', coalesce((select jsonb_agg(jsonb_build_object('chave', x.chave, 'nick', j.nick, 'pontos', x.pontos,
+                                                             'vitorias', x.vitorias, 'derrotas', x.derrotas)
+                                          order by x.pontos desc, x.vitorias desc, x.derrotas, x.atualizado)
+                           from (select * from zoeira.ranked_pontos where temporada = t.numero
+                                  order by pontos desc, vitorias desc, derrotas, atualizado limit 100) x
+                           join zoeira.jogadores j on j.chave = x.chave), '[]'::jsonb),
+    'ultima', case when u.numero is null then null else jsonb_build_object(
+      'numero', u.numero, 'nome', u.nome,
+      'podio', coalesce((select jsonb_agg(jsonb_build_object('posicao', r.posicao, 'chave', r.chave, 'nick', j.nick, 'coins', r.coins)
+                                          order by r.posicao)
+                           from zoeira.ranked_premios r join zoeira.jogadores j on j.chave = r.chave
+                          where r.temporada = u.numero), '[]'::jsonb)) end);
+end $$;
+
+-- ADM: encerra a temporada aberta (top 3 levam 100/60/30 Careca Coins e o troféu) e abre a próxima
+create or replace function public.ranked_encerrar(p_token text, p_fim_proxima date)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_chave text := zoeira.chave_da_sessao(p_token);
+  t zoeira.ranked_temporadas;
+  v record;
+  v_pos integer := 0;
+  v_coins integer[] := array[100, 60, 30];
+  v_podio jsonb := '[]'::jsonb;
+begin
+  if v_chave is null or not zoeira.eh_adm(v_chave) then
+    return jsonb_build_object('erro', 'adm');
+  end if;
+  perform zoeira.varrer_ranked();
+  select * into t from zoeira.ranked_temporadas where numero = zoeira.temporada_aberta() for update;
+  if not found then
+    return jsonb_build_object('erro', 'sem_temporada');
+  end if;
+  for v in select x.chave, j.nick from zoeira.ranked_pontos x join zoeira.jogadores j on j.chave = x.chave
+            where x.temporada = t.numero and x.pontos > 0
+            order by x.pontos desc, x.vitorias desc, x.derrotas, x.atualizado limit 3 loop
+    v_pos := v_pos + 1;
+    insert into zoeira.ranked_premios (temporada, chave, posicao, coins) values (t.numero, v.chave, v_pos, v_coins[v_pos])
+    on conflict do nothing;
+    v_podio := v_podio || jsonb_build_array(jsonb_build_object('posicao', v_pos, 'chave', v.chave, 'nick', v.nick, 'coins', v_coins[v_pos]));
+  end loop;
+  update zoeira.ranked_temporadas set encerrada_em = now() where numero = t.numero;
+  for v in select r.chave from zoeira.ranked_premios r where r.temporada = t.numero loop
+    perform zoeira.gravar_resumo_ranked(v.chave);
+  end loop;
+  insert into zoeira.ranked_temporadas (numero, nome, fim_previsto, banidas)
+  values (t.numero + 1, 'Temporada ' || (t.numero + 1), coalesce(p_fim_proxima, current_date + 21), t.banidas);
+  return jsonb_build_object('ok', true, 'encerrada', t.numero, 'nome', t.nome, 'podio', v_podio, 'nova', t.numero + 1);
+end $$;
+
+-- ADM: troca a ban list (e a data prevista de fim) da temporada aberta
+create or replace function public.ranked_configurar(p_token text, p_banidas jsonb, p_fim date)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_chave text := zoeira.chave_da_sessao(p_token);
+begin
+  if v_chave is null or not zoeira.eh_adm(v_chave) then
+    return jsonb_build_object('erro', 'adm');
+  end if;
+  if jsonb_typeof(p_banidas) <> 'array' or jsonb_array_length(p_banidas) > 200
+     or exists (select 1 from jsonb_array_elements(p_banidas) x where jsonb_typeof(x) <> 'string' or x #>> '{}' !~ '^[a-z0-9-]{2,60}$') then
+    return jsonb_build_object('erro', 'banidas');
+  end if;
+  update zoeira.ranked_temporadas set banidas = p_banidas, fim_previsto = coalesce(p_fim, fim_previsto)
+   where numero = zoeira.temporada_aberta();
+  return jsonb_build_object('ok', true);
+end $$;
+
+
 /* ---------- Funções de ADM (conferem que quem chamou é ADM) ---------- */
 
 -- Senha provisória para quem esqueceu. Se a conta não existe aqui ainda (jogador que não
@@ -767,6 +1110,16 @@ update zoeira.jogadores j
  where j.perfil ? 'roleta' or exists (select 1 from zoeira.roleta r where r.chave = j.chave);
 
 
+-- O resumo do Reino dos Carecas no perfil de cada um é sempre o que está nas tabelas
+update zoeira.jogadores j
+   set perfil = case when zoeira.resumo_ranked(j.chave) is not null
+                     then j.perfil || jsonb_build_object('ranked', zoeira.resumo_ranked(j.chave))
+                     else j.perfil - 'ranked' end
+ where j.perfil ? 'ranked'
+    or exists (select 1 from zoeira.ranked_pontos x where x.chave = j.chave)
+    or exists (select 1 from zoeira.ranked_premios x where x.chave = j.chave);
+
+
 /* ---------- Permissões ---------- */
 
 -- O site (anon/authenticated) não enxerga o esquema zoeira nem as funções internas
@@ -806,7 +1159,12 @@ declare
     'public.roleta_hoje(text)',
     'public.girar_roleta(text)',
     'public.gravar_retida(text, text)',
-    'public.ler_retidas(text)'
+    'public.ler_retidas(text)',
+    'public.ranked_entrar(text, text, text)',
+    'public.ranked_resultado(text, text, boolean)',
+    'public.ranked_tabela()',
+    'public.ranked_encerrar(text, date)',
+    'public.ranked_configurar(text, jsonb, date)'
   ];
 begin
   foreach f in array funcoes loop

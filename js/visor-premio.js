@@ -4,9 +4,9 @@
    de quem é, de qual torneio, quando e por qual ADM foi entregue.
    ========================================================================== */
 
-import { el } from "./util.js?v=202610050155";
-import { PREMIOS, ehReliquia } from "./premios.js?v=202610050155";
-import { nomeDoAdmin } from "./admin.js?v=202610050155";
+import { el } from "./util.js?v=202610061340";
+import { PREMIOS, ehReliquia } from "./premios.js?v=202610061340";
+import { nomeDoAdmin } from "./admin.js?v=202610061340";
 
 let encerrarAberto = null;
 
@@ -37,7 +37,7 @@ export function abrirPremio(premio, dono, origem) {
   palco.append(el("span", "visor-premio__brilho"), img);
 
   const texto = el("div", "visor-premio__texto");
-  texto.append(el("p", "visor-premio__tipo", reliquia ? "🔺 Relíquia do Milênio" : `${info.emoji} Troféu de torneio`));
+  texto.append(el("p", "visor-premio__tipo", reliquia ? "🔺 Relíquia do Milênio" : info.reino ? "👑 Troféu do ranked" : `${info.emoji} Troféu de torneio`));
   texto.append(el("h3", "visor-premio__nome", info.nome));
   if (!reliquia) texto.append(el("p", "visor-premio__posicao", info.posicao));
   if (reliquia && info.habilidade) texto.append(el("p", "visor-premio__habilidade", `✨ ${info.habilidade}`));
@@ -45,9 +45,9 @@ export function abrirPremio(premio, dono, origem) {
 
   const ficha = el("dl", "visor-premio__ficha");
   linha(ficha, "Dono", `${dono.tag ? `[${dono.tag}] ` : ""}${dono.nick}`);
-  const daRoleta = premio.origem === "roleta";
+  const daRoleta = premio.origem === "roleta" || premio.origem === "ranked"; // confirmados pelo banco, sem ADM
   linha(ficha, daRoleta ? "Origem" : "Torneio", premio.torneio);
-  if (premio.t) linha(ficha, daRoleta ? "Ganha em" : "Entregue em", new Date(premio.t).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }));
+  if (premio.t) linha(ficha, daRoleta ? "Ganho em" : "Entregue em", new Date(premio.t).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }));
   if (!daRoleta) linha(ficha, "Entregue por", `${nomeDoAdmin(premio.de)} (ADM)`);
   if (reliquia) linha(ficha, "Situação", dono.reliquia === premio.id ? "Equipada: vai junto para os duelos" : "Guardada");
   texto.append(ficha);

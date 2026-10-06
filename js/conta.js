@@ -13,13 +13,13 @@
    antiga é levado para o banco na hora, com a mesma senha.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610050155";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610050155";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610050155";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610050155";
-import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610050155";
-import { precoNaLoja } from "./motor.js?v=202610050155";
-import { COSMETICOS, ehCosmetico, precoCosmetico, visualDe } from "./cosmeticos.js?v=202610050155";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610061340";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610061340";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610061340";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610061340";
+import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610061340";
+import { precoNaLoja } from "./motor.js?v=202610061340";
+import { COSMETICOS, ehCosmetico, precoCosmetico, visualDe } from "./cosmeticos.js?v=202610061340";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -412,6 +412,9 @@ export function mesclarPerfis(a, b) {
   perfil.compras = [...compras.values()];
   // roleta: o resumo é do servidor; fica a cópia com mais giros
   if (roletaDe(a).giros || roletaDe(b).giros) perfil.roleta = (roletaDe(b).giros > roletaDe(a).giros ? b : a).roleta;
+  // Reino dos Carecas: o resumo também é do servidor (moedas e troféus só aumentam)
+  const pesoRanked = (p) => rankedDe(p).coins + 100000 * rankedDe(p).trofeus.length;
+  if (pesoRanked(a) || pesoRanked(b)) perfil.ranked = (pesoRanked(b) > pesoRanked(a) ? b : a).ranked;
   // aviso: vale a confirmação de versão mais nova, seja de qual aparelho for
   const ciente = [a.ciente, b.ciente].filter((x) => Number(x?.versao) > 0).sort((x, y) => y.versao - x.versao)[0];
   if (ciente) perfil.ciente = ciente;
@@ -455,6 +458,7 @@ async function limparRemoto(remoto, temLocal) {
     // ninguém "compra" pelos outros no servidor público (gastaria as moedas deles)
     compras: temLocal ? [] : comprasDe(remoto),
     roleta: temLocal ? undefined : remoto.roleta,
+    ranked: temLocal ? undefined : remoto.ranked,
   };
 }
 
@@ -678,12 +682,12 @@ export const XP_DERROTA = 40;
 export const FATOR_BOT = 0.3; // contra o bot: 30% do XP de uma partida online
 
 // Careca Coins: vitória contra gente de verdade (1vs1 ou Tag 2vs2) vale 5; contra o Bot, 1.
-// Saldo = ganhas nos duelos + presentes de ADM - gastas. Os totais só aumentam, então juntar
+// Saldo = ganhas nos duelos + presentes de ADM + roleta + Reino dos Carecas - gastas. Os totais só aumentam, então juntar
 // cópias do perfil (outra aba, outro aparelho) pelo maior valor nunca perde nem duplica moeda.
 export const COINS_VITORIA = 5;
 export const COINS_VITORIA_BOT = 1;
 export const saldoCoins = (p) =>
-  Math.max(0, (p?.coinsGanhas || 0) + presentesDe(p).reduce((t, x) => t + x.coins, 0) + roletaDe(p).coins - (p?.coinsGastas || 0)
+  Math.max(0, (p?.coinsGanhas || 0) + presentesDe(p).reduce((t, x) => t + x.coins, 0) + roletaDe(p).coins + rankedDe(p).coins - (p?.coinsGastas || 0)
     - comprasDe(p).reduce((t, x) => t + x.preco, 0));
 
 /* ---------- Loja: cartas compradas com Careca Coins ---------- */
@@ -735,7 +739,8 @@ export function equiparCosmetico(tipo, id) {
 // Soma o resultado de um duelo (uma vez por duelo). Devolve { xp, coins } ganhos.
 // contraBot: vale só 30% do XP e não conta vitória/derrota (o ranking de vitórias é só online)
 // oponente: { nick, tag } para o histórico de duelos; motivo: "pl", "deck", "desistencia", "wo"
-export function registrarResultado({ dueloId, venceu, contraBot = false, oponente = null, motivo = null, tipo = null }) {
+// ranked: duelo do Reino dos Carecas (as Careca Coins dele vêm do servidor, não daqui)
+export function registrarResultado({ dueloId, venceu, contraBot = false, oponente = null, motivo = null, tipo = null, ranked = false }) {
   if (!usuario) return { xp: 0, coins: 0 };
   const feitos = guardar.ler(CHAVE_RESULTADOS, []);
   if (feitos.includes(dueloId)) return { xp: 0, coins: 0 };
@@ -743,7 +748,7 @@ export function registrarResultado({ dueloId, venceu, contraBot = false, oponent
 
   const base = venceu ? XP_VITORIA : XP_DERROTA;
   const ganho = contraBot ? Math.round(base * FATOR_BOT) : base;
-  const coins = venceu ? (contraBot ? COINS_VITORIA_BOT : COINS_VITORIA) : 0;
+  const coins = ranked || !venceu ? 0 : contraBot ? COINS_VITORIA_BOT : COINS_VITORIA;
   usuario = {
     ...usuario,
     vitorias: usuario.vitorias + (!contraBot && venceu ? 1 : 0),
@@ -756,7 +761,7 @@ export function registrarResultado({ dueloId, venceu, contraBot = false, oponent
     id: dueloId,
     t: Date.now(),
     venceu,
-    tipo: contraBot ? "bot" : tipo || "online",
+    tipo: ranked ? "ranked" : contraBot ? "bot" : tipo || "online",
     contra: oponente ? { nick: oponente.nick, tag: oponente.tag || "", chave: oponente.chave || null } : null,
     motivo,
     xp: ganho,
@@ -813,25 +818,75 @@ export function roletaDe(p) {
 export const reliquiasDaRoleta = (p) => roletaDe(p).reliquias.map((x) => ({
   id: x.id, item: "careca-do-milenio", para: p.chave, torneio: "🎡 Roleta Diária", t: x.t, origem: "roleta",
 }));
-export const todosOsPremios = (p) => [...premiosDe(p), ...reliquiasDaRoleta(p)];
+export const todosOsPremios = (p) => [...premiosDe(p), ...reliquiasDaRoleta(p), ...rankedDe(p).trofeus.map((t) => trofeuDoRanked(t, p.chave))];
+
+/* ---------- Reino dos Carecas (ranked): pontos, moedas e troféus são do servidor ---------- */
+
+export function rankedDe(p) {
+  const r = p?.ranked && typeof p.ranked === "object" ? p.ranked : {};
+  return {
+    coins: Number.isInteger(r.coins) && r.coins > 0 ? r.coins : 0,
+    trofeus: Array.isArray(r.trofeus) ? r.trofeus.filter((t) => t && Number.isInteger(t.temporada) && [1, 2, 3].includes(t.posicao)) : [],
+  };
+}
+// Troféu do top 3 de uma temporada no formato dos prêmios (quem confirma é o banco, não o ADM)
+const TROFEUS_DO_REINO = ["reino-ouro", "reino-prata", "reino-bronze"];
+const trofeuDoRanked = (t, chave) => ({
+  id: `reino-t${t.temporada}-${chave}`, item: TROFEUS_DO_REINO[t.posicao - 1], para: chave,
+  torneio: `👑 Reino dos Carecas · ${t.nome || `Temporada ${t.temporada}`}`, t: t.t || 0, origem: "ranked",
+});
+
+// O perfil que o banco devolveu depois de mexer no resumo (roleta, ranked) entra no perfil daqui
+function aplicarPerfilDoBanco(chave, r) {
+  if (usuario?.chave !== chave || !temConteudo(r.perfil)) return;
+  banco.versao = r.versao;
+  guardarBanco();
+  resumosDoBanco.delete(chave);
+  usuario = mesclarPerfis(usuario, r.perfil);
+  guardarLocalmente();
+  publicar(topicoPerfil(chave), usuario, { reter: true }); // ranking ao vivo
+  if (JSON.stringify(usuario) !== JSON.stringify(r.perfil)) salvarNoBanco(0);
+  avisar();
+}
+
+// Temporada aberta (com a ban list), classificação e pódio da última temporada
+export const rankedTabela = () => chamar("ranked_tabela", {});
+// Começa/confirma uma partida do modo (oponente null = Bot). Devolve { ok, temporada } ou { erro }.
+export const rankedEntrar = (id, oponente) => chamarComSessao("ranked_entrar", { p_id: id, p_oponente: oponente || null });
+// Resultado da partida: o banco soma os pontos e as moedas e devolve o perfil atualizado
+export async function rankedResultado(id, venceu) {
+  const chave = usuario?.chave;
+  const r = await chamarComSessao("ranked_resultado", { p_id: id, p_venceu: Boolean(venceu) });
+  if (r?.contado) aplicarPerfilDoBanco(chave, r);
+  return r;
+}
+// ADM: encerrar a temporada (prêmios do top 3) e abrir a próxima; trocar a ban list
+export const rankedEncerrar = (fimProxima) => chamarComSessao("ranked_encerrar", { p_fim_proxima: fimProxima || null });
+export const rankedConfigurar = (banidas, fim) => chamarComSessao("ranked_configurar", { p_banidas: banidas, p_fim: fim || null });
 
 // Resumo da roleta de um jogador direto do banco (guardado por 1 minuto)
 const resumosDoBanco = new Map();
-export function roletaNoBanco(chave, { deNovo = false } = {}) {
+function perfilDoBanco(chave, deNovo) {
   if (!bancoLigado() || typeof chave !== "string") return Promise.resolve(null);
   if (deNovo) resumosDoBanco.delete(chave);
   let pedido = resumosDoBanco.get(chave);
   if (!pedido) {
-    pedido = chamar("perfil_publico", { p_chave: chave }).then((p) => roletaDe(p)).catch(() => null);
+    pedido = chamar("perfil_publico", { p_chave: chave }).catch(() => null);
     resumosDoBanco.set(chave, pedido);
     setTimeout(() => resumosDoBanco.delete(chave), 60000);
   }
   return pedido;
 }
+export const roletaNoBanco = (chave, { deNovo = false } = {}) => perfilDoBanco(chave, deNovo).then((p) => (p ? roletaDe(p) : null));
+const rankedNoBanco = (chave) => perfilDoBanco(chave, false).then((p) => (p ? rankedDe(p) : null));
 
 // Prêmio de verdade? O do ADM pela assinatura; a relíquia da roleta, pelo resumo no banco.
 export async function premioValido(x) {
   if (!x || typeof x !== "object") return false;
+  if (x.origem === "ranked") {
+    const r = await rankedNoBanco(x.para);
+    return Boolean(r?.trofeus.some((t) => trofeuDoRanked(t, x.para).id === x.id && TROFEUS_DO_REINO[t.posicao - 1] === x.item));
+  }
   if (x.origem !== "roleta") return verificarPremio(x);
   if (x.item !== "careca-do-milenio") return false;
   return Boolean((await roletaNoBanco(x.para))?.reliquias.some((r) => r.id === x.id));
@@ -844,16 +899,7 @@ export const roletaDeHoje = () => chamarComSessao("roleta_hoje");
 export async function girarRoleta() {
   const chave = usuario?.chave;
   const r = await chamarComSessao("girar_roleta");
-  if (r?.ok && usuario?.chave === chave && temConteudo(r.perfil)) {
-    banco.versao = r.versao;
-    guardarBanco();
-    resumosDoBanco.delete(chave);
-    usuario = mesclarPerfis(usuario, r.perfil);
-    guardarLocalmente();
-    publicar(topicoPerfil(chave), usuario, { reter: true }); // ranking ao vivo
-    if (JSON.stringify(usuario) !== JSON.stringify(r.perfil)) salvarNoBanco(0);
-    avisar();
-  }
+  if (r?.ok) aplicarPerfilDoBanco(chave, r);
   return r;
 }
 

@@ -1080,7 +1080,8 @@ function dragoesParaMetalico(estado, j) {
   const serve = (x, doCemiterio) => {
     const c = carta(estado, x);
     return c.categoria === "monstro" && c.tipo === "Dragão" && c.efeito !== "miro-metalico"
-      && (!c.somenteEspecial || (doCemiterio && liberado(estado, x))) && podeControlarMais(estado, j, x);
+      && (!c.somenteEspecial || (doCemiterio && liberado(estado, x))) && podeControlarMais(estado, j, x)
+      && !(doCemiterio && tributoDoTirano(estado, j, x) === false); // Tirano do Cemitério: só com 1 Dragão de tributo
   };
   return [...p.mao.filter((x) => serve(x, false)), ...p.cemiterio.filter((x) => serve(x, true))];
 }
@@ -2838,6 +2839,7 @@ function efeitoMonstro(estado, j, { iid, alvos = [], pos = "atk" }, ev) {
       const p = estado.jogadores[j];
       const alvo = alvos[0];
       const origem = p.mao.includes(alvo) ? p.mao : p.cemiterio;
+      if (origem === p.cemiterio) oferecerTributoDoTirano(estado, j, alvo, ev); // Dragão Adm Ditador Tirano
       origem.splice(origem.indexOf(alvo), 1);
       const slot = zonaLivre(p.monstros);
       p.monstros[slot] = { iid: alvo, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };

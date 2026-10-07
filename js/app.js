@@ -4,24 +4,24 @@
    pelo endereço (#inicio, #catalogo, #deck, #regras, #salao, #arena).
    ========================================================================== */
 
-import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610070042";
-import { iniciarCatalogo } from "./catalogo.js?v=202610070042";
-import { iniciarEditorDeck } from "./editor-deck.js?v=202610070042";
-import { deckAtual } from "./deck.js?v=202610070042";
-import { iniciarSalao, ativarSalao } from "./salao.js?v=202610070042";
-import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610070042";
-import { criarSessaoBot } from "./sessao.js?v=202610070042";
-import * as conta from "./conta.js?v=202610070042";
-import { alternarSom, somLigado } from "./som.js?v=202610070042";
-import { aviso } from "./util.js?v=202610070042";
-import { iniciarNoticias } from "./noticias.js?v=202610070042";
-import { iniciarLoja } from "./loja.js?v=202610070042";
-import { iniciarAviso } from "./aviso.js?v=202610070042";
-import { iniciarRoleta } from "./roleta.js?v=202610070042";
-import { iniciarRanked } from "./ranked.js?v=202610070042";
+import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610070055";
+import { iniciarCatalogo } from "./catalogo.js?v=202610070055";
+import { iniciarEditorDeck } from "./editor-deck.js?v=202610070055";
+import { deckAtual } from "./deck.js?v=202610070055";
+import { iniciarSalao, ativarSalao } from "./salao.js?v=202610070055";
+import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610070055";
+import { criarSessaoBot } from "./sessao.js?v=202610070055";
+import * as conta from "./conta.js?v=202610070055";
+import { alternarSom, somLigado } from "./som.js?v=202610070055";
+import { aviso } from "./util.js?v=202610070055";
+import { iniciarNoticias } from "./noticias.js?v=202610070055";
+import { iniciarLoja } from "./loja.js?v=202610070055";
+import { iniciarAviso } from "./aviso.js?v=202610070055";
+import { iniciarRoleta } from "./roleta.js?v=202610070055";
+import { iniciarRanked } from "./ranked.js?v=202610070055";
 
 // Número da versão (atualizado por ferramentas/nova-versao.py a cada envio)
-const VERSAO = "202610070042";
+const VERSAO = "202610070055";
 
 const TELAS = ["inicio", "noticias", "catalogo", "deck", "regras", "salao", "arena"];
 

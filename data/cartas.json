@@ -1194,7 +1194,6 @@
     "tipo": "Dragão",
     "atk": 3000,
     "efeito": "miro-dragoes",
-    "limite": 1,
     "somenteEspecial": true,
     "nomeNoCampo": "Grande Mestre",
     "materiais": [
@@ -1206,7 +1205,7 @@
       }
     ],
     "texto": "\"Grande Mestre\" + \"Dragão Sulista Safado Olhos Nada Azuis\". O nome deste card se torna \"Grande Mestre\" enquanto ele estiver no campo. Seu oponente não pode escolher Magias/Armadilhas que você controla como alvo de efeitos de card e, além disso, elas não podem ser destruídas pelos efeitos de card do seu oponente.",
-    "comoFunciona": "Limitada a 1. Monstro de Fusão: fica no Deck Adicional e entra pela \"Suruba\", com 1 \"Grande Mestre\" e 1 \"Dragão Sulista Safado Olhos Nada Azuis\" (da mão ou do campo). No campo ele se chama \"Grande Mestre\" (vale para As Mil Facas do Mestre e para a Berinjela do Imenso). Com ele de face para cima, o oponente não consegue mirar nem destruir com efeitos as suas Magias e Armadilhas (Soco do Big, Sugadão, Zoológico, W — Hackeando...). Se fosse voltar para a mão, volta para o Deck Adicional.",
+    "comoFunciona": "Monstro de Fusão: fica no Deck Adicional e entra pela \"Suruba\", com 1 \"Grande Mestre\" e 1 \"Dragão Sulista Safado Olhos Nada Azuis\" (da mão ou do campo). No campo ele se chama \"Grande Mestre\" (vale para As Mil Facas do Mestre e para a Berinjela do Imenso). Com ele de face para cima, o oponente não consegue mirar nem destruir com efeitos as suas Magias e Armadilhas (Soco do Big, Sugadão, Zoológico, W — Hackeando...). Se fosse voltar para a mão, volta para o Deck Adicional.",
     "frase": "Três cabeças, uma sela e o bigode mais respeitado do céu.",
     "raridade": "Ultra Rara",
     "def": 2500,

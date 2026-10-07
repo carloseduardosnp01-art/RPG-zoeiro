@@ -17,10 +17,10 @@
    duas jogadas ao mesmo tempo.
    ========================================================================== */
 
-import { novoDuelo, aplicar, quemAge, carta, ErroJogada, membroAtivo } from "./motor.js?v=202610070229";
-import { jogadaDoBot } from "./bot.js?v=202610070229";
-import { PREFIXO, publicar, assinar, pedirRetido, aoStatus, intervaloDoSinal } from "./rede.js?v=202610070229";
-import { esperar, gerarId } from "./util.js?v=202610070229";
+import { novoDuelo, aplicar, quemAge, carta, ErroJogada, membroAtivo } from "./motor.js?v=202610070301";
+import { jogadaDoBot } from "./bot.js?v=202610070301";
+import { PREFIXO, publicar, assinar, pedirRetido, aoStatus, intervaloDoSinal } from "./rede.js?v=202610070301";
+import { esperar, gerarId } from "./util.js?v=202610070301";
 
 export const SEM_SINAL_AVISO = 20;  // segundos sem sinal do oponente para avisar
 export const SEM_SINAL_WO = 60;     // segundos sem sinal para poder pedir W.O.
@@ -60,8 +60,44 @@ const FALAS_BOT = {
 
 const sortear = (lista) => lista[Math.floor(Math.random() * lista.length)];
 
+// Duelo contra o Bot guardado no navegador a cada jogada: um F5 (ou a aba recarregando) volta para ele.
+// Some quando o duelo acaba ou quando o jogador sai da arena.
+const CHAVE_BOT = "zoeira-duelo-bot";
+
+function guardarDueloBot(estado) {
+  try {
+    if (estado.vencedor !== null) localStorage.removeItem(CHAVE_BOT);
+    else localStorage.setItem(CHAVE_BOT, JSON.stringify({ estado, t: Date.now() }));
+  } catch { /* sem espaço ou navegador sem armazenamento: só não guarda */ }
+}
+
+function apagarDueloBot() {
+  try {
+    localStorage.removeItem(CHAVE_BOT);
+  } catch { /* nada */ }
+}
+
+// Duelo contra o Bot que estava em andamento nesta conta (ou null). Vale por 12 horas.
+export function dueloBotGuardado(chave) {
+  try {
+    const salvo = JSON.parse(localStorage.getItem(CHAVE_BOT) || "null");
+    const estado = salvo?.estado;
+    const valido = estado && estado.vencedor === null && Array.isArray(estado.jogadores) && estado.jogadores[1]?.chave === "bot-careca" &&
+      estado.jogadores[0]?.chave === (chave || "voce") && Date.now() - (salvo.t || 0) < 12 * 3600 * 1000;
+    if (!valido) {
+      if (salvo) apagarDueloBot();
+      return null;
+    }
+    return estado;
+  } catch {
+    apagarDueloBot();
+    return null;
+  }
+}
+
 // deck: lista de ids do deck do jogador (o bot sempre usa o deck padrão)
-export function criarSessaoBot(perfil, deck) {
+// estadoGuardado: continua um duelo que estava em andamento (depois de recarregar a página)
+export function criarSessaoBot(perfil, deck, estadoGuardado = null) {
   const eu = {
     chave: perfil?.chave || "voce",
     nick: perfil?.nick || "Você",
@@ -73,11 +109,13 @@ export function criarSessaoBot(perfil, deck) {
     deck,
   };
   const bot = { chave: "bot-careca", nick: "Bot Careca", tag: "BOT", avatar: "careca-cast-surpresa", nivel: 99, bot: true };
-  const { estado, eventos } = novoDuelo({
-    id: "treino-" + gerarId(6),
-    jogadores: [eu, bot],
-    semente: crypto.getRandomValues(new Uint32Array(1))[0],
-  });
+  const { estado, eventos } = estadoGuardado
+    ? { estado: estadoGuardado, eventos: [] }
+    : novoDuelo({
+      id: "treino-" + gerarId(6),
+      jogadores: [eu, bot],
+      semente: crypto.getRandomValues(new Uint32Array(1))[0],
+    });
 
   const base = criarBase();
   let ativo = true;
@@ -92,6 +130,7 @@ export function criarSessaoBot(perfil, deck) {
     eventosIniciais: eventos,
 
     iniciar() {
+      guardarDueloBot(sessao.estado);
       agendarBot();
     },
 
@@ -106,12 +145,14 @@ export function criarSessaoBot(perfil, deck) {
 
     encerrar() {
       ativo = false;
+      apagarDueloBot(); // saiu da arena: não volta mais para este duelo
     },
   };
 
   function aplicarEEmitir(j, acao) {
     const r = aplicar(sessao.estado, j, acao);
     sessao.estado = r.estado;
+    guardarDueloBot(r.estado);
     base.emitir("atualizar", r.estado, r.eventos);
     comentar(r.eventos);
     agendarBot();
@@ -151,6 +192,7 @@ export function criarSessaoBot(perfil, deck) {
         try {
           const r = aplicar(sessao.estado, 1, acao);
           sessao.estado = r.estado;
+          guardarDueloBot(r.estado);
           base.emitir("atualizar", r.estado, r.eventos);
           comentar(r.eventos);
         } catch (erro) {
@@ -158,6 +200,7 @@ export function criarSessaoBot(perfil, deck) {
           acao = { tipo: "tempo" }; // nunca deve acontecer, mas o bot não pode travar o jogo
           const r = aplicar(sessao.estado, 1, acao);
           sessao.estado = r.estado;
+          guardarDueloBot(r.estado);
           base.emitir("atualizar", r.estado, r.eventos);
         }
       }

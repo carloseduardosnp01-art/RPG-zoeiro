@@ -4,24 +4,24 @@
    pelo endereço (#inicio, #catalogo, #deck, #regras, #salao, #arena).
    ========================================================================== */
 
-import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610070229";
-import { iniciarCatalogo } from "./catalogo.js?v=202610070229";
-import { iniciarEditorDeck } from "./editor-deck.js?v=202610070229";
-import { deckAtual } from "./deck.js?v=202610070229";
-import { iniciarSalao, ativarSalao } from "./salao.js?v=202610070229";
-import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610070229";
-import { criarSessaoBot } from "./sessao.js?v=202610070229";
-import * as conta from "./conta.js?v=202610070229";
-import { alternarSom, somLigado } from "./som.js?v=202610070229";
-import { aviso } from "./util.js?v=202610070229";
-import { iniciarNoticias } from "./noticias.js?v=202610070229";
-import { iniciarLoja } from "./loja.js?v=202610070229";
-import { iniciarAviso } from "./aviso.js?v=202610070229";
-import { iniciarRoleta } from "./roleta.js?v=202610070229";
-import { iniciarRanked } from "./ranked.js?v=202610070229";
+import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610070301";
+import { iniciarCatalogo } from "./catalogo.js?v=202610070301";
+import { iniciarEditorDeck } from "./editor-deck.js?v=202610070301";
+import { deckAtual } from "./deck.js?v=202610070301";
+import { iniciarSalao, ativarSalao } from "./salao.js?v=202610070301";
+import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610070301";
+import { criarSessaoBot, dueloBotGuardado } from "./sessao.js?v=202610070301";
+import * as conta from "./conta.js?v=202610070301";
+import { alternarSom, somLigado } from "./som.js?v=202610070301";
+import { aviso } from "./util.js?v=202610070301";
+import { iniciarNoticias } from "./noticias.js?v=202610070301";
+import { iniciarLoja } from "./loja.js?v=202610070301";
+import { iniciarAviso } from "./aviso.js?v=202610070301";
+import { iniciarRoleta } from "./roleta.js?v=202610070301";
+import { iniciarRanked, retomarBotRanked } from "./ranked.js?v=202610070301";
 
 // Número da versão (atualizado por ferramentas/nova-versao.py a cada envio)
-const VERSAO = "202610070229";
+const VERSAO = "202610070301";
 
 const TELAS = ["inicio", "noticias", "catalogo", "deck", "regras", "salao", "arena"];
 
@@ -72,6 +72,7 @@ async function iniciar() {
   iniciarAviso();
   iniciarRoleta(cartas);
   iniciarRanked(cartas);
+  retomarDueloBot();
   ligarBotoes();
   addEventListener("hashchange", mostrarTela);
   document.addEventListener("arena-mudou", atualizarFaixa);
@@ -124,7 +125,8 @@ function atualizarFaixa() {
   document.body.classList.toggle("em-duelo", naArena && arenaAtiva());
 }
 
-function iniciarTreino() {
+// estadoGuardado: continua o treino que estava em andamento antes de recarregar a página
+function iniciarTreino(estadoGuardado = null) {
   const sessao = sessaoAtual();
   if (sessao && sessao.tipo === "online" && sessao.estado.vencedor === null) {
     aviso("Você está num duelo online! Termine ele antes de treinar.", "erro");
@@ -133,15 +135,24 @@ function iniciarTreino() {
   }
   const u = conta.usuarioAtual();
   const perfil = u ? { ...conta.cartaoPublico(u), reliquia: conta.reliquiaEquipada(u) } : null;
-  const treino = () => {
-    abrirArena(criarSessaoBot(perfil, deckAtual()), {
+  const treino = (guardado = null) => {
+    abrirArena(criarSessaoBot(perfil, deckAtual(), guardado), {
       aoTerminar: (estado, eu) => xpDoTreino(estado, eu),
       aoSair: () => (location.hash = "#inicio"),
-      revanche: treino,
+      revanche: () => treino(),
     });
     location.hash = "#arena";
   };
-  treino();
+  treino(estadoGuardado);
+}
+
+// Recarregou a página (F5) no meio de um duelo contra o Bot: volta para ele
+function retomarDueloBot() {
+  const estado = dueloBotGuardado(conta.usuarioAtual()?.chave);
+  if (!estado || arenaAtiva()) return;
+  if (estado.ranked) retomarBotRanked(estado);
+  else iniciarTreino(estado);
+  aviso("Voltando para o seu duelo contra o Bot Careca...", "ok");
 }
 
 // Treino dá 30% do XP online. Desistir antes do 3º turno não dá XP (para ninguém farmar desistindo).

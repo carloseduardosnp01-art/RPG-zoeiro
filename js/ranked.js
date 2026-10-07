@@ -7,15 +7,15 @@
    (supabase/banco.sql, funções ranked_*): o navegador só pede.
    ========================================================================== */
 
-import * as conta from "./conta.js?v=202610070229";
-import * as adm from "./admin.js?v=202610070229";
-import { entrarNaFila, sairDaFila, estadoDaFila, contarRanked, avisarChat } from "./salao.js?v=202610070229";
-import { criarSessaoBot } from "./sessao.js?v=202610070229";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610070229";
-import { deckAtual } from "./deck.js?v=202610070229";
-import { cartaPorId, problemaDoDeck } from "./motor.js?v=202610070229";
-import { el, aviso } from "./util.js?v=202610070229";
-import { tocar } from "./som.js?v=202610070229";
+import * as conta from "./conta.js?v=202610070301";
+import * as adm from "./admin.js?v=202610070301";
+import { entrarNaFila, sairDaFila, estadoDaFila, contarRanked, avisarChat } from "./salao.js?v=202610070301";
+import { criarSessaoBot } from "./sessao.js?v=202610070301";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610070301";
+import { deckAtual } from "./deck.js?v=202610070301";
+import { cartaPorId, problemaDoDeck } from "./motor.js?v=202610070301";
+import { el, aviso } from "./util.js?v=202610070301";
+import { tocar } from "./som.js?v=202610070301";
 
 export const ESPERA_BOT = 60; // segundos na fila antes do duelo contra o Bot Careca
 export const PREMIOS_TOP3 = [100, 60, 30];
@@ -138,6 +138,35 @@ function cancelar() {
   desenhar();
 }
 
+// Recarregou a página no meio do duelo do ranked contra o Bot: continua (a partida já está aberta no banco)
+export function retomarBotRanked(estado) {
+  const u = conta.usuarioAtual();
+  if (!u || arenaAtiva()) return;
+  abrirArena(criarSessaoBot({ ...conta.cartaoPublico(u), reliquia: conta.reliquiaEquipada(u) }, deckAtual(), estado), opcoesDoBotRanked());
+  location.hash = "#arena";
+}
+
+function opcoesDoBotRanked() {
+  return {
+    aoTerminar: (estado, eu) => {
+      const venceu = estado.vencedor === eu;
+      const { xp } = conta.registrarResultado({ dueloId: estado.id, venceu, contraBot: true, oponente: estado.jogadores[1 - eu], motivo: estado.motivo, ranked: true });
+      contarRanked(estado.id, venceu);
+      return { xp, ranked: { venceu } };
+    },
+    aoSair: () => {
+      location.hash = "#arena";
+      carregar();
+    },
+    rotuloRevanche: "👑 Buscar outra partida",
+    revanche: () => {
+      fecharArena();
+      location.hash = "#arena";
+      buscar();
+    },
+  };
+}
+
 async function jogarContraBot() {
   const u = conta.usuarioAtual();
   const t = r.tabela?.temporada;
@@ -159,24 +188,7 @@ async function jogarContraBot() {
     return;
   }
   aviso("🤖 Ninguém apareceu na fila: você vai encarar o Bot Careca (vale pontos igual)!", "info", 6000);
-  abrirArena(sessao, {
-    aoTerminar: (estado, eu) => {
-      const venceu = estado.vencedor === eu;
-      const { xp } = conta.registrarResultado({ dueloId: estado.id, venceu, contraBot: true, oponente: estado.jogadores[1 - eu], motivo: estado.motivo, ranked: true });
-      contarRanked(estado.id, venceu);
-      return { xp, ranked: { venceu } };
-    },
-    aoSair: () => {
-      location.hash = "#arena";
-      carregar();
-    },
-    rotuloRevanche: "👑 Buscar outra partida",
-    revanche: () => {
-      fecharArena();
-      location.hash = "#arena";
-      buscar();
-    },
-  });
+  abrirArena(sessao, opcoesDoBotRanked());
   location.hash = "#arena";
 }
 

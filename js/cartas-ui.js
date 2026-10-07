@@ -4,7 +4,7 @@
    Usado pelo catálogo, pelo deck e pela arena.
    ========================================================================== */
 
-import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610070055";
+import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610070229";
 
 // Emblema do careca (logo, verso das cartas e ícone do site)
 export const SVG_CARECA = `
@@ -28,6 +28,7 @@ export const ATRIBUTOS = {
   LUZ: { chave: "luz", kanji: "光", nome: "Luz" },
   ÁGUA: { chave: "agua", kanji: "水", nome: "Água" },
   VENTO: { chave: "vento", kanji: "風", nome: "Vento" },
+  FOGO: { chave: "fogo", kanji: "炎", nome: "Fogo" },
   DIVINO: { chave: "divino", kanji: "神", nome: "Divino" },
   MAGIA: { chave: "magia", kanji: "魔", nome: "Magia" },
   ARMADILHA: { chave: "armadilha", kanji: "罠", nome: "Armadilha" },
@@ -107,8 +108,10 @@ function tamanhoTexto(texto) {
   if (n < 440) return "2.2cqw";
   if (n < 480) return "2.05cqw";
   if (n < 560) return "1.95cqw";
-  // Mago Dragão Sonho do BIG: o maior texto do jogo
-  return "1.75cqw";
+  // Mago Dragão Sonho do BIG
+  if (n < 650) return "1.75cqw";
+  // O Emanuel Careca de ICE - Carenix: o maior texto do jogo
+  return "1.62cqw";
 }
 
 // Nome muito comprido: em vez de encolher demais numa linha só, quebra em duas

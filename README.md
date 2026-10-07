@@ -326,10 +326,15 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT103 | Dark Véio Chapado | Magia Normal | – | Paga 1000 PV e Invoca 1 Mago de TREVAS da mão ou do Cemitério |
 | ZOE-PT104 | Alquimista Compositor | Magia Normal | – | Descarta 1 e busca até 2 Dragões com 3000+ de ATK e 2500- de DEF |
 | ZOE-PT105 | Silva Calvo | Magia Normal | – | Invoca 1 Monstro Normal Dragão do Cemitério (1 por turno) |
+| ZOE-PT106 | O Emanuel Careca de ICE - Carenix **(limitada a 1)** | Efeito · DIVINO · Besta Divina · Nv 10 · 4000/4000 | – | A "fênix": sai sozinha do Cemitério quando O Emanuel Careca de ICE vai do campo para o Cemitério; não é afetada por outros efeitos; paga 1000 PV e manda 1 monstro para o Cemitério; na Fase Final volta para o Cemitério e chama o Modo Carecal |
+| ZOE-PT107 | O Emanuel Careca de ICE - Modo Carecal **(limitada a 1)** | Efeito · DIVINO · Besta Divina · Nv 10 · ?/? | – | A "esfera": 3 tributos seus ou do oponente (aí entra no campo dele e volta no fim do próximo turno); não ataca e ninguém a escolhe como alvo; de Tributo, chama O Emanuel Careca de ICE com 4000/4000 |
+| ZOE-PT108 | Dragão Sulista Olhos Nada Azuis Alternativo **(Loja: 100 🪙, limitada a 1)** | Efeito · LUZ · Dragão · Nv 8 · 3000/2500 | – | Entra da mão revelando o Dragão Sulista; no campo e no Cemitério se chama Dragão Sulista; 1 vez por turno destrói 1 monstro do oponente (e não ataca) |
+| ZOE-PT109 | Dragão Adm Ditador Tirano **(Loja: 50 🪙, limitada a 1)** | Efeito · FOGO · Dragão · Nv 8 · 2900/2500 | – | Ataca de novo se o oponente ainda tiver monstro; nega e destrói Armadilha que o escolhe como alvo; só volta do Cemitério com 1 Dragão de tributo |
+| ZOE-PT110 | Nova Zoom | Efeito · LUZ · Fada · Nv 4 · 1400/800 | – | Destruído em batalha: pode chamar 1 Fada de LUZ com até 1500 de ATK do deck |
 
-**Atributos:** TERRA, TREVAS, LUZ, ÁGUA (水), VENTO e DIVINO. Desde 04/10/2026 não existem mais GELO (os Manoel do Gelo viraram ÁGUA; o "gelo" do Pote do Gelo é ÁGUA ou "Gelo" no nome) nem INTERNET como atributo: os monstros "W" são TERRA e do **Tipo Internet** (o antigo Ciberso), e é esse Tipo que ganha o bônus do WI-FI Grátis. O Nível "na hora" (`nivelAtual` em `js/motor.js`, por causa da Geada da Peste) é o que vale para os tributos e para os efeitos que olham o Nível na mão e no campo.
+**Atributos:** TERRA, TREVAS, LUZ, ÁGUA (水), VENTO, FOGO (炎) e DIVINO. Desde 04/10/2026 não existem mais GELO (os Manoel do Gelo viraram ÁGUA; o "gelo" do Pote do Gelo é ÁGUA ou "Gelo" no nome) nem INTERNET como atributo: os monstros "W" são TERRA e do **Tipo Internet** (o antigo Ciberso), e é esse Tipo que ganha o bônus do WI-FI Grátis. O Nível "na hora" (`nivelAtual` em `js/motor.js`, por causa da Geada da Peste) é o que vale para os tributos e para os efeitos que olham o Nível na mão e no campo.
 
-**Cartas da Loja:** as quatro cartas "Lendária da Zoeira" (ZOE-PT071 a 074) não estão no deck padrão: são compradas com Careca Coins na 🛒 Loja (veja em [Funcionalidades](#funcionalidades)). **Lendária da Zoeira é só para essas exclusivas**, que ninguém tem no começo; as outras cartas fortes vão até Ultra Rara, e os três deuses (Obelisco, Slif o Dragão Careca do Céu e O Emanuel Careca de ICE) são **Secreta**, liberados para todo mundo no editor. Detalhes que valem no jogo:
+**Cartas da Loja:** as cartas "Lendária da Zoeira" (ZOE-PT071 a 074, 108 e 109) não estão no deck padrão: são compradas com Careca Coins na 🛒 Loja (veja em [Funcionalidades](#funcionalidades)). **Lendária da Zoeira é só para essas exclusivas**, que ninguém tem no começo; as outras cartas fortes vão até Ultra Rara, e os três deuses (Obelisco, Slif o Dragão Careca do Céu e O Emanuel Careca de ICE) são **Secreta**, liberados para todo mundo no editor. Detalhes que valem no jogo:
 - **Entrada lendária:** quando uma delas entra em campo, a arena faz uma entrada especial: a carta desce do céu com raios arco-íris, faíscas, clarão, tremor e fanfarra, com o selo "★ LENDÁRIA DA ZOEIRA ★" e uma frase só dela (`ENTRADAS_LENDARIAS` em `js/arena.js`). Em campo, ela fica com uma aura arco-íris pulsando.
 - O **Chaos Kelvor** e o **Miro, o Sulista Calvo** pedem confirmação antes de ativar o efeito (os dois limpam a mesa, inclusive as suas cartas).
 - O **Mago Dragão Sonho do BIG** só pode ser Invocado por Invocação-Fusão (`"somenteFusao": true` em `data/cartas.json`): nenhum outro efeito o coloca no campo, nem depois de ele ter entrado pela Suruba.
@@ -405,7 +410,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
 ├── supabase/banco.sql    # Banco de dados: tabelas, funções e permissões (cole no SQL Editor do Supabase)
-├── data/cartas.json      # As 105 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
+├── data/cartas.json      # As 110 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
 ├── data/noticias.json    # As notícias (a mais nova aparece primeiro)
 ├── img/noticias/         # Cartazes das notícias
 ├── img/cartas/           # Artes recortadas (WebP 640×640)

@@ -485,7 +485,8 @@ create or replace function zoeira.girar(p_chave text, p_numero integer)
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
   -- cartas da Loja que a roleta pode dar (quando a Loja ganhar carta nova, acrescente aqui)
-  v_loja text[] := array['chaos-kelvor-prodigio', 'black-luster-daiki', 'mago-dragao-sonho-do-big', 'miro-sulista-calvo'];
+  v_loja text[] := array['chaos-kelvor-prodigio', 'black-luster-daiki', 'mago-dragao-sonho-do-big', 'miro-sulista-calvo',
+                     'dragao-sulista-alternativo', 'dragao-adm-ditador-tirano'];
   -- cosméticos que a roleta pode dar (os mesmos de js/cosmeticos.js)
   v_cosmeticos text[] := array['moldura-viking', 'moldura-cosmica', 'moldura-dragoes', 'campo-arcano', 'verso-arcano'];
   v_cosmetico text;

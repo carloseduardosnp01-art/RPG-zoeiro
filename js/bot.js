@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao, ehW, semAtaqueDireto,
-} from "./motor.js?v=202610070055";
+} from "./motor.js?v=202610070229";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 const zonaLivre = (p) => p.monstros.findIndex((m) => !m); // primeira zona de monstro livre (-1 se não tem)
@@ -128,6 +128,14 @@ function* jogadasPrincipais(estado, j) {
     if (ef === "obelisco" && deles.length >= 2) {
       const baratos = [...op.alvos.candidatos].sort((a, b) => forca(estado, j, a) - forca(estado, j, b)).slice(0, 2);
       if (somaForca(estado, j, deles) > somaForca(estado, j, baratos) + 1000) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: baratos };
+    }
+    // Modo Carecal: vira O Emanuel Careca de ICE com 4000/4000
+    if (ef === "emanuel-esfera") yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [op.alvos.candidatos[0]] };
+    // Carenix (paga 1000) e Dragão Sulista Alternativo: tiram o monstro mais forte do oponente
+    if ((ef === "carenix" && p.pl > 3000) || ef === "sulista-alt") {
+      const deles2 = op.alvos.candidatos.filter((x) => localizar(estado, x).j !== j);
+      const alvo = deles2.sort((a, b) => forca(estado, j, b) - forca(estado, j, a))[0];
+      if (alvo && forca(estado, j, alvo) >= 1800) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [alvo] };
     }
     // Os Irmãos: bane os 2 monstros mais fracos do Cemitério (+300 de ATK cada)
     if (ef === "os-irmaos") {
@@ -529,6 +537,7 @@ const VALOR_NA_MAO = {
   "w-hacker": 4, vagabundos: 6, "w-miqueas": 6, "w-midas": 5, "w-rede": 5, "os-irmaos": 6,
   "soul-chapado": 5, "cigarrin-gostoso": 4, cigarrin: 3, recrutador: 4,
   camisinha: 4, pierry: 5, "ex-dragao": 5, "veio-chapado": 6, compositor: 5, "silva-calvo": 5,
+  carenix: 5, "emanuel-esfera": 6, "sulista-alt": 7, tirano: 6, "nova-zoom": 4,
   sugadao: 7, "hoje-nao": 6, "bora-bill": 4, thangan: 5, hacker: 7, "w-laminas": 5,
   berinjela: 4, revolucao: 6, rafaza: 5, negao: 6, "flip-parasita": 5, litro: 3, daiki: 7,
   controle: 7, menino: 4, "mestre-caos": 6, upstart: 3, jinreca: 6, "mil-facas": 6, irmaollow: 5,
@@ -570,6 +579,8 @@ function escolherAlvos(estado, j, pend) {
     return atkAtual(estado, deles[0]) >= 1500 ? [meus[0], deles[0]] : [];
   }
   if (pend.efeito === "midas-invocar") return [];
+  // Nova Zoom: a Fada mais forte
+  if (pend.efeito === "nova-zoom") return [[...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0]];
   // Alquimista Compositor: os 2 primeiros Dragões (os mais fortes)
   if (pend.efeito === "compositor") return [...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0)).slice(0, pend.max);
   // Soul Chapado: traz o mais forte (Grande Mestre antes da Feiticeira)

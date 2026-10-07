@@ -350,6 +350,7 @@ function noCampo(estado, iid) {
 export function atkAtual(estado, iid) {
   const c = carta(estado, iid);
   if (!c || c.categoria !== "monstro") return 0;
+  if (imuneAEfeitos(estado, iid)) return c.atk; // Carenix: nada mexe no ATK dele
   let atk = c.atk + bonusDosDeuses(estado, iid);
   if (c.efeito === "feiticeira") {
     const mestres = estado.jogadores
@@ -418,6 +419,7 @@ const ehCartaGelo = (c) => c.atributo === "ÁGUA" || c.nome.toLowerCase().includ
 export function defAtual(estado, iid) {
   const c = carta(estado, iid);
   const loc = localizar(estado, iid);
+  if (imuneAEfeitos(estado, iid)) return c.def;
   let def = c.def + bonusDosDeuses(estado, iid);
   if (loc && loc.zona === "monstros" && tipoAtual(estado, iid) === "Besta Alada") def += 200 * zoologicosAtivos(estado);
   if (loc && loc.zona === "monstros" && loc.obj.face && tipoAtual(estado, iid) === "Internet") def -= 400 * camposAtivos(estado, "wifi"); // WI-FI Grátis
@@ -471,7 +473,7 @@ const zonaLivre = (lista) => lista.findIndex((m) => !m);
 export const donoDe = (iid) => ("ac".includes(iid[0]) ? 0 : 1);
 
 // Nome usado pelos efeitos que comparam nomes: todo monstro "Animal" se chama "Animal" (campo e Cemitério)
-const nomeEfetivo = (c) => (ehAnimal(c) ? "Animal" : c.nome);
+const nomeEfetivo = (c) => (ehAnimal(c) ? "Animal" : c.nomeTratado || c.nome);
 
 // Berinjela do Imenso: cartas nos dois Cemitérios com o mesmo nome do monstro
 const mesmoNomeNosCemiterios = (estado, c) =>
@@ -493,7 +495,60 @@ export const temAtaqueDuplo = (estado, m) => m.ataqueDuplo === estado.turno || c
 const nomesNoCampo = (c) => [].concat(c.nomeNoCampo || nomeEfetivo(c));
 
 // Obelisco no campo: nenhum efeito pode escolher ele como alvo
-export const intocavel = (estado, iid) => carta(estado, iid)?.efeito === "obelisco" && localizar(estado, iid)?.zona === "monstros";
+export const intocavel = (estado, iid) => ["obelisco", "carenix", "emanuel-esfera"].includes(carta(estado, iid)?.efeito) && localizar(estado, iid)?.zona === "monstros";
+
+// O Emanuel Careca de ICE - Carenix com a face para cima: não é afetado por outros efeitos de card
+function imuneAEfeitos(estado, iid) {
+  if (carta(estado, iid)?.efeito !== "carenix") return false;
+  const loc = localizar(estado, iid);
+  return Boolean(loc && loc.zona === "monstros" && loc.obj.face);
+}
+
+// Invocação-Especial "ignorando as condições de Invocação" (Carenix, Modo Carecal, Nova Zoom): tira a carta
+// da mão, do deck ou do Cemitério de j e põe no campo de j
+function invocarDireto(estado, j, iid, ev, pos = "atk", extra = {}) {
+  const p = estado.jogadores[j];
+  const slot = zonaLivre(p.monstros);
+  if (slot < 0) return false;
+  let achou = false;
+  for (const lista of [p.mao, p.deck, p.cemiterio]) {
+    const i = lista.indexOf(iid);
+    if (i < 0) continue;
+    lista.splice(i, 1);
+    if (lista === p.deck) embaralhar(p.deck, sorteioDoEstado(estado));
+    achou = true;
+    break;
+  }
+  if (!achou) return false;
+  p.monstros[slot] = { iid, pos, face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false, ...extra };
+  ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
+  aposEspecial(estado, j, iid, ev);
+  return true;
+}
+
+// Dragão Adm Ditador Tirano: só volta do Cemitério por Invocação-Especial oferecendo 1 Dragão seu como Tributo.
+// Devolve o Dragão que vai de tributo (o mais fraco), null se não é o Tirano, false se não tem Dragão.
+function tributoDoTirano(estado, j, iid) {
+  if (carta(estado, iid).efeito !== "tirano") return null;
+  const dragoes = estado.jogadores[j].monstros.filter((m) => m && m.face && tipoAtual(estado, m.iid) === "Dragão").map((m) => m.iid);
+  return dragoes.sort((a, b) => atkAtual(estado, a) - atkAtual(estado, b))[0] || false;
+}
+function oferecerTributoDoTirano(estado, j, iid, ev) {
+  const dragao = tributoDoTirano(estado, j, iid);
+  if (!dragao) return;
+  ev.push({ t: "tributo", j, iid: dragao });
+  removerDoCampo(estado, dragao, ev, "tributo");
+}
+
+// Dragão Adm Ditador Tirano no campo: Armadilha que escolhe ele como alvo é negada e destruída
+function tiranoNegou(estado, alvo, armadilha, dono, ev) {
+  const loc = localizar(estado, alvo);
+  if (!loc || loc.zona !== "monstros" || !loc.obj.face || carta(estado, alvo).efeito !== "tirano" || bloqueado(estado, loc.j, alvo)) return false;
+  ev.push({ t: "efeito", j: loc.j, iid: alvo });
+  ev.push({ t: "negada", j: dono, iid: armadilha });
+  destruir(estado, armadilha, ev, "efeito");
+  return true;
+}
 
 // Miro, o Adestrador de Dragões: o oponente não mira nem destrói com efeitos as Magias/Armadilhas de quem controla ele
 function protegidaPorMiro(estado, iid, quem) {
@@ -659,6 +714,7 @@ function executarAcao(estado, j, acao, ev) {
       if (ef === "miro-sulista") return invocarMiroSulista(estado, j, acao, ev);
       if (ef === "miro-metalico") return invocarMiroMetalico(estado, j, acao, ev);
       if (ef === "w-hacker") return invocarHacker(estado, j, acao, ev);
+      if (ef === "sulista-alt") return invocarSulistaAlt(estado, j, acao, ev);
       return invocarPenetra(estado, j, acao, ev);
     }
     case "efeitoMonstro": return efeitoMonstro(estado, j, acao, ev);
@@ -708,8 +764,11 @@ function usarReliquia(estado, j, ev) {
 
 /* ---------- 5. Invocações ---------- */
 
-function invocar(estado, j, { iid, modo = "atk", tributos = [] }, ev) {
+function invocar(estado, j, { iid, modo = "atk", tributos = [], lado = "meu" }, ev) {
   const p = estado.jogadores[j];
+  // O Emanuel Careca de ICE - Modo Carecal: pode usar 3 monstros do oponente e entrar no campo dele
+  const doOponente = lado === "oponente";
+  const campo = doOponente ? estado.jogadores[oponente(j)] : p;
   if (!ehFasePrincipal(estado)) return "Só dá para invocar nas Fases Principais.";
   if (!p.mao.includes(iid)) return "Essa carta não está na sua mão.";
   const c = carta(estado, iid);
@@ -718,20 +777,21 @@ function invocar(estado, j, { iid, modo = "atk", tributos = [] }, ev) {
   if (p.invocouNormal) return "Você já fez sua Invocação-Normal neste turno.";
   if (!podeControlarMais(estado, j, iid)) return `Você só pode controlar 1 "${c.nome}".`;
   if (modo === "baixar" && c.naoBaixa) return `"${c.nome}" não pode ser baixado.`;
+  if (doOponente && (c.efeito !== "emanuel-esfera" || modo === "baixar")) return "Só o Modo Carecal entra no campo do oponente com os monstros dele.";
 
   const n = tributosNaHora(estado, iid);
   const slots = [...new Set(tributos)];
   if (slots.length !== n || tributos.length !== n) {
     return n === 0 ? "Esse monstro não precisa de tributo." : `Esse monstro precisa de ${n} tributo${n > 1 ? "s" : ""}.`;
   }
-  if (slots.some((s) => !p.monstros[s])) return "Tributo inválido.";
+  if (slots.some((s) => !campo.monstros[s])) return "Tributo inválido.";
   if (n === 0 && zonaLivre(p.monstros) < 0) return "Não há zona de monstro livre.";
 
   // Oferece os tributos. Se um tributo sair e chamar outro monstro (Mago Dragão Sonho do BIG), isso
   // espera a Invocação terminar: senão o monstro chamado ocupava a zona de quem está sendo invocado.
   estado.saidasAdiadas = [];
   for (const s of slots) {
-    const iidTributo = p.monstros[s].iid;
+    const iidTributo = campo.monstros[s].iid;
     ev.push({ t: "tributo", j, iid: iidTributo });
     removerDoCampo(estado, iidTributo, ev, "tributo");
     // W — O Hacker usado numa Invocação-Tributo: compre 1 carta e depois descarte 1
@@ -743,15 +803,17 @@ function invocar(estado, j, { iid, modo = "atk", tributos = [] }, ev) {
   const adiadas = estado.saidasAdiadas;
   delete estado.saidasAdiadas;
   p.mao.splice(p.mao.indexOf(iid), 1);
-  const slot = zonaLivre(p.monstros);
+  const slot = zonaLivre(campo.monstros);
   const baixado = modo === "baixar";
-  p.monstros[slot] = {
+  campo.monstros[slot] = {
     iid,
     pos: baixado ? "def" : "atk",
     face: !baixado,
     turnoEntrou: estado.turno,
     mudouPos: estado.turno,
     atacou: false,
+    // no campo do oponente, volta para o dono na Fase Final do próximo turno
+    ...(doOponente ? { emprestado: { de: j, turno: estado.turno, ate: estado.turno + 1 } } : {}),
   };
   p.invocouNormal = true;
 
@@ -761,7 +823,7 @@ function invocar(estado, j, { iid, modo = "atk", tributos = [] }, ev) {
     return null;
   }
   const tipoInvocacao = n > 0 ? "tributo" : "normal";
-  ev.push({ t: "invocacao", j, iid, modo: tipoInvocacao, slot });
+  ev.push({ t: "invocacao", j: doOponente ? oponente(j) : j, iid, modo: tipoInvocacao, slot });
   for (const [k, x] of adiadas) magoDragaoSaiu(estado, k, x, ev);
   aposInvocar(estado, j, iid, tipoInvocacao, ev);
   return null;
@@ -811,6 +873,28 @@ function invocarHacker(estado, j, { iid, pos = "atk" }, ev) {
   p.mao.splice(p.mao.indexOf(iid), 1);
   const slot = zonaLivre(p.monstros);
   p.monstros[slot] = { iid, pos: pos === "def" ? "def" : "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+  ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
+  aposEspecial(estado, j, iid, ev);
+  return null;
+}
+
+// Dragão Sulista Olhos Nada Azuis Alternativo: Invocação-Especial da mão revelando um "Dragão Sulista" na mão
+// (1 vez por turno desse jeito)
+export function podeInvocarSulistaAlt(estado, j, iid) {
+  const p = estado.jogadores[j];
+  return ehFasePrincipal(estado) && p.mao.includes(iid) && carta(estado, iid).efeito === "sulista-alt" && !bloqueado(estado, j, iid) &&
+    !usou(estado, j, "sulista-alt-especial") && zonaLivre(p.monstros) >= 0 && p.mao.some((x) => estado.cartas[x] === "dragao-sulista");
+}
+
+function invocarSulistaAlt(estado, j, { iid, pos = "atk" }, ev) {
+  if (!podeInvocarSulistaAlt(estado, j, iid)) return "Precisa revelar um \"Dragão Sulista Safado Olhos Nada Azuis\" da mão (1 vez por turno) e ter zona livre.";
+  marcarUso(estado, j, "sulista-alt-especial");
+  const p = estado.jogadores[j];
+  ev.push({ t: "efeito", j, iid });
+  p.mao.splice(p.mao.indexOf(iid), 1);
+  const slot = zonaLivre(p.monstros);
+  p.monstros[slot] = { iid, pos: pos === "def" ? "def" : "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+  (estado.liberadas ||= []).push(iid); // entrou direito: depois pode voltar por outros efeitos
   ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
   aposEspecial(estado, j, iid, ev);
   return null;
@@ -902,7 +986,7 @@ function aposEspecial(estado, j, iid, ev) {
 // dele perde 2000 de ATK; se o ATK chegar a 0 por isso, é destruído
 function gatilhoDragaoCareca(estado, iid, ev) {
   const loc = localizar(estado, iid);
-  if (!loc || loc.zona !== "monstros" || !loc.obj.face || loc.obj.pos !== "atk") return;
+  if (!loc || loc.zona !== "monstros" || !loc.obj.face || loc.obj.pos !== "atk" || imuneAEfeitos(estado, iid)) return;
   const k = oponente(loc.j);
   const dragao = estado.jogadores[k].monstros.find((m) => m && m.face && carta(estado, m.iid).efeito === "careca-dragao" && !bloqueado(estado, k, m.iid));
   if (!dragao) return;
@@ -1419,7 +1503,7 @@ export function requisitosMagia(estado, j, iid) {
         : null;
     }
     case "lamento": {
-      const candidatos = p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && !carta(estado, x).naoEspecial && (!carta(estado, x).somenteEspecial || liberado(estado, x)) && podeControlarMais(estado, j, x));
+      const candidatos = podemVoltarDoCemiterio(estado, j);
       if (!candidatos.length || zonaLivre(p.monstros) < 0 || p.pl <= 800) return null;
       return { alvos: { candidatos, min: 1, max: 1, titulo: "Lamento Prematuro (paga 800 PV): escolha o monstro do seu Cemitério que volta" } };
     }
@@ -1656,6 +1740,7 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
     }
     case "lamento": {
       const alvo = alvos[0];
+      oferecerTributoDoTirano(estado, j, alvo, ev);
       p.cemiterio.splice(p.cemiterio.indexOf(alvo), 1);
       const slot = zonaLivre(p.monstros);
       p.monstros[slot] = { iid: alvo, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
@@ -1983,8 +2068,10 @@ const animaisDaRevolucao = (estado, j) =>
   });
 
 // Monstros do Cemitério de j que podem voltar por Invocação-Especial (Lamento Prematuro, Chamado dos Vagabundos)
+// (o Dragão Adm Ditador Tirano só se você tiver um Dragão para oferecer como Tributo)
 const podemVoltarDoCemiterio = (estado, j) =>
-  estado.jogadores[j].cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && !carta(estado, x).naoEspecial && (!carta(estado, x).somenteEspecial || liberado(estado, x)) && podeControlarMais(estado, j, x));
+  estado.jogadores[j].cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && !carta(estado, x).naoEspecial && (!carta(estado, x).somenteEspecial || liberado(estado, x)) &&
+    podeControlarMais(estado, j, x) && tributoDoTirano(estado, j, x) !== false);
 
 export function requisitosArmadilha(estado, j, iid) {
   const loc = localizar(estado, iid);
@@ -2030,6 +2117,7 @@ function ativarArmadilha(estado, j, { iid, alvos = [] }, ev) {
     // o monstro volta em Ataque e fica preso à armadilha (uma sai do campo, a outra vai junto)
     const p = estado.jogadores[j];
     const alvo = alvos[0];
+    oferecerTributoDoTirano(estado, j, alvo, ev);
     const slot = zonaLivre(p.monstros);
     const i = p.cemiterio.indexOf(alvo);
     if (slot < 0 || i < 0) return null;
@@ -2098,6 +2186,7 @@ function verificarArmadilhas(estado, gatilho, dados, ev) {
       if (!loc || loc.zona !== "monstros" || intocavel(estado, dados.iid) || imuneArmadilha(estado, dados.iid)) continue;
       if (atkAtual(estado, dados.iid) < 1500) continue;
       if (!ativou(m)) return true;
+      if (tiranoNegou(estado, dados.iid, m.iid, defensor, ev)) return true;
       banir(estado, dados.iid, ev);
       mandarProCemiterio(estado, m.iid, ev);
       return true;
@@ -2109,6 +2198,7 @@ function verificarArmadilhas(estado, gatilho, dados, ev) {
       if (!loc || loc.zona !== "monstros" || intocavel(estado, dados.iid) || imuneArmadilha(estado, dados.iid)) continue;
       if (atkAtual(estado, dados.iid) < 1000) continue;
       if (!ativou(m)) return true;
+      if (tiranoNegou(estado, dados.iid, m.iid, defensor, ev)) return true;
       destruir(estado, dados.iid, ev, "efeito");
       mandarProCemiterio(estado, m.iid, ev);
       return true;
@@ -2117,6 +2207,7 @@ function verificarArmadilhas(estado, gatilho, dados, ev) {
     if (gatilho === "ataque" && c.efeito === "armadura-gelo") {
       if (!noCampo(estado, dados.iid) || intocavel(estado, dados.iid) || imuneArmadilha(estado, dados.iid)) continue;
       if (!ativou(m)) return true;
+      if (tiranoNegou(estado, dados.iid, m.iid, defensor, ev)) return true;
       banir(estado, dados.iid, ev);
       mandarProCemiterio(estado, m.iid, ev);
       return true;
@@ -2125,6 +2216,7 @@ function verificarArmadilhas(estado, gatilho, dados, ev) {
     if (gatilho === "ataque" && c.efeito === "sai-daqui") {
       if (!noCampo(estado, dados.iid) || intocavel(estado, dados.iid) || imuneArmadilha(estado, dados.iid)) continue;
       if (!ativou(m)) return true;
+      if (tiranoNegou(estado, dados.iid, m.iid, defensor, ev)) return true;
       devolverParaMao(estado, dados.iid, ev);
       mandarProCemiterio(estado, m.iid, ev);
       return true;
@@ -2219,6 +2311,29 @@ function processarGatilhos(estado, ev) {
     }
     if (g.tipo === "recrutador") {
       recrutar(estado, g, ev);
+      continue;
+    }
+    if (g.tipo === "carenix") {
+      // obrigatório e sem resposta: o Carenix sai do Cemitério
+      if (estado.jogadores[dono].cemiterio.includes(g.iid) && zonaLivre(estado.jogadores[dono].monstros) >= 0) {
+        ev.push({ t: "efeito", j: dono, iid: g.iid });
+        invocarDireto(estado, dono, g.iid, ev, "atk");
+      }
+      continue;
+    }
+    if (g.tipo === "nova-zoom") {
+      if (localizar(estado, g.iid)?.zona !== "cemiterio" || zonaLivre(estado.jogadores[dono].monstros) < 0) continue;
+      const opcoes = fadasDoNovaZoom(estado, dono);
+      if (!opcoes.length) continue;
+      if (!meuTurno) {
+        ev.push({ t: "efeito", j: dono, iid: g.iid });
+        invocarDireto(estado, dono, [...opcoes].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0], ev, "atk");
+        continue;
+      }
+      estado.pendente = {
+        tipo: "alvo", efeito: "nova-zoom", jogador: dono, origem: g.iid, candidatos: opcoes, min: 0, max: 1,
+        titulo: "Nova Zoom: você pode Invocar 1 monstro Fada de LUZ com 1500 ou menos de ATK do seu deck",
+      };
       continue;
     }
     if (g.tipo === "davi-cemiterio") {
@@ -2465,6 +2580,38 @@ export function efeitoAtivavel(estado, j, iid) {
         alvos: { candidatos, min: 1, max: 1, titulo: "O Emanuel Careca de ICE (paga 1000 PV): escolha o monstro que vai ser destruído" },
       };
     }
+    case "carenix": {
+      // paga 1000 PV: 1 monstro do campo vai para o Cemitério
+      if (!ehFasePrincipal(estado) || p.pl <= 1000) return null;
+      const candidatos = monstrosEmCampo(estado).filter((x) => x !== iid && alvoDeEfeitoDeMonstro(estado, j, x));
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: pagar 1000 PV e mandar 1 monstro do campo para o Cemitério",
+        alvos: { candidatos, min: 1, max: 1, titulo: "Carenix (paga 1000 PV): escolha o monstro que vai para o Cemitério" },
+      };
+    }
+    case "emanuel-esfera": {
+      // oferece este card como Tributo: O Emanuel Careca de ICE da mão ou do deck entra com 4000/4000
+      if (!ehFasePrincipal(estado)) return null;
+      const vistos = new Set();
+      const candidatos = [...p.mao, ...p.deck].filter((x) => carta(estado, x).efeito === "emanuel-ice" && podeControlarMais(estado, j, x) &&
+        !vistos.has(p.mao.includes(x) ? "mao" : "deck") && vistos.add(p.mao.includes(x) ? "mao" : "deck"));
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: oferecer este card como Tributo e Invocar O Emanuel Careca de ICE (4000/4000)",
+        alvos: { candidatos, min: 1, max: 1, titulo: "Modo Carecal: escolha O Emanuel Careca de ICE (da mão ou do deck) que entra com 4000 de ATK e DEF" },
+      };
+    }
+    case "sulista-alt": {
+      // 1 vez por turno: destrói 1 monstro do oponente; não ataca neste turno
+      if (!ehFasePrincipal(estado) || usou(estado, j, "sulista-alt-efeito")) return null;
+      const candidatos = monstrosEmCampo(estado, oponente(j)).filter((x) => alvoDeEfeitoDeMonstro(estado, j, x));
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: destruir 1 monstro do oponente (ele não ataca neste turno)",
+        alvos: { candidatos, min: 1, max: 1, titulo: "Dragão Sulista Alternativo: escolha o monstro do oponente para destruir" },
+      };
+    }
     case "soul-chapado": {
       // até 2 Magias/Armadilhas da mão e/ou do seu campo para o Cemitério; compra a mesma quantidade
       if (!ehFasePrincipal(estado) || usou(estado, j, "soul-campo") || !p.deck.length) return null;
@@ -2631,6 +2778,24 @@ function efeitoMonstro(estado, j, { iid, alvos = [], pos = "atk" }, ev) {
       destruir(estado, alvos[0], ev, "efeito");
       break;
     }
+    case "carenix": {
+      const p = estado.jogadores[j];
+      p.pl -= 1000;
+      ev.push({ t: "custo", j, valor: 1000, pl: p.pl });
+      enviarProCemiterio(estado, alvos[0], ev);
+      break;
+    }
+    case "emanuel-esfera": {
+      ev.push({ t: "tributo", j, iid });
+      removerDoCampo(estado, iid, ev, "tributo");
+      invocarDireto(estado, j, alvos[0], ev, "atk", { bonusPago: 4000 });
+      break;
+    }
+    case "sulista-alt":
+      marcarUso(estado, j, "sulista-alt-efeito");
+      m.semAtaque = estado.turno;
+      destruir(estado, alvos[0], ev, "efeito");
+      break;
     case "soul-chapado":
       marcarUso(estado, j, "soul-campo");
       for (const alvo of alvos) {
@@ -2814,6 +2979,7 @@ export function alvosDeAtaque(estado, j) {
       if (!m) return null;
       const c = carta(estado, m.iid);
       if (georgeEmCampo && m.face && ehAnimal(c) && nivelAtual(estado, m.iid) <= 6) return null;
+      if (m.face && c.efeito === "emanuel-esfera") return null; // Modo Carecal: não pode ser alvo de ataques
       const outroVento = estado.jogadores[oponente(j)].monstros.some((x) => x && x !== m && x.face && carta(estado, x.iid).atributo === "VENTO");
       if (m.face && c.efeito === "wellington-animal" && outroVento) return null;
       return s;
@@ -2841,7 +3007,7 @@ export function podeAtacar(estado, j, slot) {
 }
 
 // Em Posição de Ataque; o Defense Careca ataca também em Defesa (com a face para cima, usando o ATK)
-const posicaoQueAtaca = (estado, m) => m.face && (m.pos === "atk" || carta(estado, m.iid).efeito === "defense-careca");
+const posicaoQueAtaca = (estado, m) => m.face && !carta(estado, m.iid).naoAtaca && (m.pos === "atk" || carta(estado, m.iid).efeito === "defense-careca");
 
 // Ainda tem ataque sobrando: nenhum ainda, ou o segundo (Mestre das Lâminas / Manoel Careca)
 const podeAtacarDeNovo = (estado, m) => m.semAtaque !== estado.turno && (!m.atacou || (temAtaqueDuplo(estado, m) && !m.atacouDuas));
@@ -2853,6 +3019,7 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
   const o = estado.jogadores[oponente(j)];
   const m = p.monstros[slot];
   if (!m) return "Não há monstro nessa zona.";
+  if (carta(estado, m.iid).naoAtaca) return `"${carta(estado, m.iid).nome}" não pode atacar.`;
   if (!posicaoQueAtaca(estado, m)) return "Só monstros em Posição de Ataque podem atacar.";
   if (m.semAtaque === estado.turno) return "Esse monstro usou o efeito e não pode atacar neste turno.";
   if (!podeAtacarDeNovo(estado, m)) return "Esse monstro já atacou neste turno.";
@@ -2938,6 +3105,12 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
     }
   }
 
+  // Dragão Adm Ditador Tirano: depois do primeiro ataque, se o oponente ainda tiver monstro, pode atacar de novo
+  if (primeiroAtaque && carta(estado, atacante).efeito === "tirano" && noCampo(estado, atacante) && monstrosEmCampo(estado, oponente(j)).length && !bloqueado(estado, j, atacante)) {
+    m.ataqueDuplo = estado.turno;
+    ev.push({ t: "ataqueDuplo", j, iid: atacante });
+  }
+
   // Black Luster Daiki: destruiu em batalha um monstro do oponente -> pode fazer um segundo ataque seguido
   if (primeiroAtaque && carta(estado, atacante).efeito === "black-luster" && noCampo(estado, atacante) && !noCampo(estado, defensor)) {
     m.ataqueDuplo = estado.turno;
@@ -3010,6 +3183,16 @@ function dano(estado, j, valor, ev) {
   if (p.pl === 0) encerrar(estado, oponente(j), "pl", ev);
 }
 
+
+// Nova Zoom: monstros Fada de LUZ com 1500 ou menos de ATK do deck (uma opção por nome)
+const fadasDoNovaZoom = (estado, j) => {
+  const vistos = new Set();
+  return estado.jogadores[j].deck.filter((x) => {
+    const c = carta(estado, x);
+    return c.categoria === "monstro" && c.atributo === "LUZ" && c.tipo === "Fada" && c.atk <= 1500 && !c.somenteEspecial && !c.naoEspecial &&
+      podeControlarMais(estado, j, x) && !vistos.has(c.id) && vistos.add(c.id);
+  });
+};
 
 // Alquimista Compositor: Dragões do deck com 3000 ou mais de ATK e 2500 ou menos de DEF (cada cópia é uma opção)
 const dragoesDoCompositor = (estado, j) =>
@@ -3113,6 +3296,10 @@ function recrutar(estado, g, ev) {
 function destruir(estado, iid, ev, causa) {
   const loc = localizar(estado, iid);
   if (!loc || (loc.zona !== "monstros" && loc.zona !== "magias" && loc.zona !== "campo")) return;
+  if (causa !== "batalha" && loc.zona === "monstros" && imuneAEfeitos(estado, iid)) {
+    ev.push({ t: "indestrutivel", j: loc.j, iid });
+    return;
+  }
   if (causa === "batalha" && loc.zona === "monstros" && (carta(estado, iid).efeito === "irmaollow" || estado.jogadores[loc.j].hojeNao === estado.turno || protegidoPelosIrmaos(estado, loc.j))) {
     ev.push({ t: "indestrutivel", j: loc.j, iid });
     return;
@@ -3130,6 +3317,10 @@ function destruir(estado, iid, ev, causa) {
     if (q.campo && q.campo.face && carta(estado, q.campo.iid).efeito === "w-rede" && !(estado.gatilhos || []).some((g) => g.tipo === "w-rede" && g.j === loc.j)) {
       (estado.gatilhos ||= []).push({ tipo: "w-rede", j: loc.j, iid: q.campo.iid, turno: estado.turno });
     }
+  }
+  // Nova Zoom destruído em batalha: pode chamar 1 Fada de LUZ com até 1500 de ATK do deck (resolve depois da batalha)
+  if (loc.zona === "monstros" && causa === "batalha" && carta(estado, iid).efeito === "nova-zoom" && !bloqueado(estado, loc.j, iid)) {
+    (estado.gatilhos ||= []).push({ tipo: "nova-zoom", j: loc.j, iid, turno: estado.turno });
   }
   // Mystic Daikizinho / Shining Zoom destruído em batalha: chama 1 monstro do deck (resolve depois da batalha)
   if (loc.zona === "monstros" && causa === "batalha" && carta(estado, iid).efeito === "recrutador" && !bloqueado(estado, loc.j, iid)) {
@@ -3206,6 +3397,12 @@ function removerDoCampo(estado, iid, ev, causa) {
     destino = "cemiterio";
     if (loc.zona === "monstros") {
       if (dono === loc.j) p.monstroAoCemiterio = estado.turno; // Bora Bill
+      if (carta(estado, iid).efeito === "emanuel-ice") {
+        const fenix = q.cemiterio.find((x) => carta(estado, x).efeito === "carenix");
+        if (fenix && !(estado.gatilhos || []).some((g) => g.tipo === "carenix" && g.iid === fenix)) {
+          (estado.gatilhos ||= []).push({ tipo: "carenix", j: dono, iid: fenix, turno: estado.turno });
+        }
+      }
       chegouAoCemiterio(estado, dono, iid, ev);
       if (carta(estado, iid).efeito === "george") georgeNoCemiterio(estado, dono, iid, ev);
       if (carta(estado, iid).efeito === "thangan") thanganNoCemiterio(estado, dono, iid, ev);
@@ -3263,6 +3460,7 @@ function magoDragaoSaiu(estado, k, iid, ev) {
 function banir(estado, iid, ev) {
   const loc = localizar(estado, iid);
   if (!loc || (loc.zona !== "monstros" && loc.zona !== "magias" && loc.zona !== "campo")) return;
+  if (imuneAEfeitos(estado, iid)) return;
   removerDoCampo(estado, iid, ev, "banida");
   ev.push({ t: "banida", j: donoDe(iid), iid });
 }
@@ -3297,7 +3495,7 @@ function extraDoDono(estado, iid) {
 // Monstro do campo volta para a mão do dono (equipamentos presos a ele vão para o Cemitério)
 function devolverParaMao(estado, iid, ev) {
   const loc = localizar(estado, iid);
-  if (!loc || loc.zona !== "monstros") return;
+  if (!loc || loc.zona !== "monstros" || imuneAEfeitos(estado, iid)) return;
   const destino = removerDoCampo(estado, iid, ev, "mao");
   if (destino === "mao") ev.push({ t: "paraMao", j: donoDe(iid), iid });
   else if (destino === "extra") ev.push({ t: "aoExtra", j: donoDe(iid), iid });
@@ -3402,7 +3600,7 @@ function passarTurno(estado, ev) {
   // Controle Carecal: os monstros emprestados voltam para quem os controlava
   estado.jogadores.forEach((q, k) => {
     q.monstros.forEach((m, s) => {
-      if (m && m.emprestado) devolverControle(estado, k, s, ev);
+      if (m && m.emprestado && !(m.emprestado.ate > estado.turno)) devolverControle(estado, k, s, ev);
     });
   });
   // Doutor Daiki: a Fusão que ele trouxe volta para o Deck Adicional no fim do turno
@@ -3418,6 +3616,19 @@ function passarTurno(estado, ev) {
         ev.push({ t: "efeito", j: k, iid: m.iid });
         removerDoCampo(estado, m.iid, ev, "regra");
       }
+    });
+  });
+  // O Emanuel Careca de ICE - Carenix: na Fase Final vai para o Cemitério e o Modo Carecal entra
+  // (da mão, do deck ou do Cemitério do dono, ignorando as condições de Invocação)
+  estado.jogadores.forEach((q, k) => {
+    q.monstros.forEach((m) => {
+      if (!m || !m.face || carta(estado, m.iid).efeito !== "carenix" || estado.vencedor !== null) return;
+      ev.push({ t: "efeito", j: k, iid: m.iid });
+      if (removerDoCampo(estado, m.iid, ev, "regra") !== "cemiterio") return;
+      const dono = donoDe(m.iid);
+      const pd = estado.jogadores[dono];
+      const esfera = [...pd.mao, ...pd.deck, ...pd.cemiterio].find((x) => carta(estado, x).efeito === "emanuel-esfera");
+      if (esfera) invocarDireto(estado, dono, esfera, ev, "def");
     });
   });
   // Miro, o Sulista Calvo: na Fase Final de quem controla ele, os 4 cards do topo do deck vão para o Cemitério
@@ -3575,6 +3786,10 @@ function resolverEscolha(estado, j, alvos, ev) {
     for (const alvo of alvos) devolverParaMao(estado, alvo, ev);
     return null;
   }
+  if (pend.efeito === "nova-zoom") {
+    invocarDireto(estado, j, alvos[0], ev, "atk");
+    return null;
+  }
   if (pend.efeito === "compositor") {
     for (const alvo of alvos) buscar(estado, j, alvo, ev);
     return null;
@@ -3612,7 +3827,7 @@ export function escolhaAutomatica(estado, pend) {
   if (pend.efeito === "davi-cemiterio" || pend.efeito === "thales" || pend.efeito === "big" || pend.efeito === "john-invocar") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "zoologico") return pend.candidatos.filter((x) => localizar(estado, x).j !== pend.jogador).slice(0, 1);
   if (pend.efeito === "midas-invocar" || pend.efeito === "emanuel-pagar") return [];
-  if (["w-hacker-descarte", "w-miqueas-invocar", "w-midas", "w-rede", "soul-reviver"].includes(pend.efeito)) return pend.candidatos.slice(0, 1);
+  if (["w-hacker-descarte", "w-miqueas-invocar", "w-midas", "w-rede", "soul-reviver", "nova-zoom"].includes(pend.efeito)) return pend.candidatos.slice(0, 1);
   if (pend.efeito === "revolucao" || pend.efeito === "compositor") return pend.candidatos.slice(0, pend.max);
   if (pend.efeito === "destino") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "fusao") return paresDeFusao(estado, j, pend.fusao)[0] || [];
@@ -3652,6 +3867,14 @@ export function opcoesDaCarta(estado, j, iid) {
       }
       if (podeInvocarPenetra(estado, j, iid)) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial (penetra)", acao: { tipo: "invocarEspecial", iid } });
+      }
+      const deles = monstrosEmCampo(estado, oponente(j)).length;
+      if (c.efeito === "emanuel-esfera" && !p.invocouNormal && deles >= 3) {
+        opcoes.push({ id: "invocar", rotulo: "Invocar no campo do oponente (3 tributos dele; volta para você no fim do próximo turno)",
+          acao: { tipo: "invocar", iid, modo: "atk", lado: "oponente" }, tributos: 3, tributosLado: "oponente" });
+      }
+      if (podeInvocarSulistaAlt(estado, j, iid)) {
+        opcoes.push({ id: "especial", rotulo: "Invocação-Especial (revelar o Dragão Sulista da mão)", acao: { tipo: "invocarEspecial", iid } });
       }
       if (podeInvocarHacker(estado, j, iid)) {
         for (const [pos, nome] of [["atk", "Ataque"], ["def", "Defesa"]]) {

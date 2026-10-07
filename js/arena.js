@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610070055";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610070055";
-import { el, esperar, aviso } from "./util.js?v=202610070055";
-import { tocar } from "./som.js?v=202610070055";
-import { abrirDetalhes } from "./catalogo.js?v=202610070055";
-import * as adm from "./admin.js?v=202610070055";
-import { PREMIOS } from "./premios.js?v=202610070055";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610070055";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610070055";
+} from "./motor.js?v=202610070229";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610070229";
+import { el, esperar, aviso } from "./util.js?v=202610070229";
+import { tocar } from "./som.js?v=202610070229";
+import { abrirDetalhes } from "./catalogo.js?v=202610070229";
+import * as adm from "./admin.js?v=202610070229";
+import { PREMIOS } from "./premios.js?v=202610070229";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610070229";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610070229";
 
 const raiz = document.querySelector("#arena");
 
@@ -46,6 +46,8 @@ const ENTRADAS_LENDARIAS = {
   "black-luster-daiki": "RECEBEU ALTA DO HOSPÍCIO!",
   "mago-dragao-sonho-do-big": "O SONHO DO BIG VIROU REALIDADE!",
   "miro-sulista-calvo": "O SULISTA CALVO DESCEU DO CÉU!",
+  "dragao-sulista-alternativo": "O SULISTA ALTERNATIVO ABRIU AS ASAS!",
+  "dragao-adm-ditador-tirano": "O TIRANO CHEGOU PARA DITAR AS REGRAS!",
 };
 
 // Frase da entrada dos deuses (atributo DIVINO), cada um na cor da sua moldura
@@ -53,6 +55,8 @@ const ENTRADAS_DIVINAS = {
   "obelisco-o-imenso": "O DEUS IMENSO DESPERTOU!",
   "careca-o-dragao-careca": "SLIF, O DRAGÃO CARECA DO CÉU, RASGOU AS NUVENS!",
   "o-emanuel-careca-de-ice": "O SOL CARECA NASCEU!",
+  "o-emanuel-careca-de-ice-carenix": "A FÊNIX CARECA RENASCEU DAS CINZAS!",
+  "o-emanuel-careca-de-ice-modo-carecal": "O SOL CARECA SE FECHOU NA ESFERA!",
 };
 
 const FRASES = {
@@ -75,6 +79,11 @@ const FRASES = {
   compositor: "A MELODIA DOS DRAGÕES!",
   "silva-calvo": "O GRITO DO SILVA CALVO!",
   "ex-dragao": "EXPLODIU JUNTO!",
+  carenix: "A FÊNIX CARECA RENASCEU!",
+  "emanuel-esfera": "MODO CARECAL ATIVADO!",
+  "sulista-alt": "RAIO DESTRUIDOR ALTERNATIVO!",
+  tirano: "O TIRANO NÃO ACEITA ARMADILHA!",
+  "nova-zoom": "UMA NOVA ESTRELA DESCEU!",
   "cigarrin-gostoso": "UM TRAGUINHO E DUAS CARTAS!",
   cigarrin: "VAI UM CIGARRIN?",
   recrutador: "REFORÇO CHEGANDO!",
@@ -1094,9 +1103,11 @@ async function executarOpcao(op) {
   if (op.confirmar && !confirm(op.confirmar)) return;
 
   if (op.tributos) {
-    const meus = estado.jogadores[eu].monstros.filter(Boolean).map((m) => m.iid);
+    // Modo Carecal: os tributos podem ser do oponente
+    const lado = op.tributosLado === "oponente" ? oponente(eu) : eu;
+    const meus = estado.jogadores[lado].monstros.filter(Boolean).map((m) => m.iid);
     const r = await escolherCartas({
-      titulo: `Escolha ${op.tributos} tributo${op.tributos > 1 ? "s" : ""}`,
+      titulo: `Escolha ${op.tributos} tributo${op.tributos > 1 ? "s" : ""}${lado !== eu ? " do oponente" : ""}`,
       sub: "Os monstros escolhidos vão para o Cemitério.",
       candidatos: meus, min: op.tributos, max: op.tributos,
     });

@@ -4,7 +4,7 @@
    As notícias ficam em data/noticias.json (a mais nova aparece primeiro).
    ========================================================================== */
 
-import { el } from "./util.js?v=202610062301";
+import { el } from "./util.js?v=202610070042";
 
 const DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 

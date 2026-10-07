@@ -13,13 +13,13 @@
    antiga é levado para o banco na hora, com a mesma senha.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610062301";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610062301";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610062301";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610062301";
-import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610062301";
-import { precoNaLoja } from "./motor.js?v=202610062301";
-import { COSMETICOS, ehCosmetico, precoCosmetico, visualDe } from "./cosmeticos.js?v=202610062301";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610070042";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610070042";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610070042";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610070042";
+import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610070042";
+import { precoNaLoja } from "./motor.js?v=202610070042";
+import { COSMETICOS, ehCosmetico, precoCosmetico, visualDe } from "./cosmeticos.js?v=202610070042";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -385,6 +385,14 @@ export function mesclarPerfis(a, b) {
   const deckDe = (b.deckAtualizado || 0) > (a.deckAtualizado || 0) || (!a.deck && b.deck) ? b : a;
   perfil.deck = deckDe.deck;
   perfil.deckAtualizado = deckDe.deckAtualizado;
+  // os 3 decks salvos andam junto com o deck em uso (vale a cópia mais recente)
+  if (deckDe.decks || deckDe.deckSlot !== undefined) {
+    perfil.decks = deckDe.decks;
+    perfil.deckSlot = deckDe.deckSlot;
+  } else {
+    delete perfil.decks;
+    delete perfil.deckSlot;
+  }
   // Duelos que só uma das cópias conhece (jogados em aparelhos diferentes, ou gravados ao
   // mesmo tempo): somam, em vez de valer só o maior número
   const soA = duelosSoDe(a, b);

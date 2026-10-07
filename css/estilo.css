@@ -973,6 +973,54 @@ a:hover {
 }
 
 /* Editor do deck */
+/* Os 3 decks salvos */
+.deck-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .6rem;
+  margin-bottom: .8rem;
+}
+
+.deck-slot {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  min-width: 0;
+  padding: .55rem .8rem;
+  color: var(--texto);
+  text-align: left;
+  background: rgba(0, 0, 0, .3);
+  border: 1px solid var(--borda);
+  border-radius: .7rem;
+}
+
+.deck-slot:hover,
+.deck-slot:focus-visible {
+  border-color: var(--borda-forte);
+}
+
+.deck-slot[aria-selected="true"] {
+  background: linear-gradient(180deg, rgba(246, 215, 124, .18), rgba(156, 116, 36, .12));
+  border-color: var(--ouro);
+  box-shadow: 0 0 0 1px rgba(246, 215, 124, .35);
+}
+
+.deck-slot__nome {
+  overflow: hidden;
+  color: var(--ouro-claro);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deck-slot__info {
+  color: var(--texto-suave);
+  font-size: .8rem;
+}
+
+.deck-slot[data-ativo="true"] .deck-slot__info {
+  color: #7ee2ab;
+}
+
 .barra-deck {
   position: sticky;
   top: calc(var(--altura-nav) + .5rem);

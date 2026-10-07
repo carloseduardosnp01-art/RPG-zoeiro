@@ -1791,7 +1791,7 @@
     "categoria": "magia",
     "subtipo": "normal",
     "efeito": "camisinha",
-    "texto": "O sabor da camisinha de sabor atrai 1 Monstro Normal de Nível 5 ou mais do seu Deck para a sua mão.",
+    "texto": "O cheiro de camisinha de sabor atrai 1 Monstro Normal de Nível 5 ou mais do seu Deck para a sua mão.",
     "comoFunciona": "Magia Normal. Escolha 1 Monstro Normal (sem efeito) de Nível 5 ou mais do seu deck e coloque na mão (Grande Mestre, O Herói do Lamento, Dragão Sulista, Bi-Careca Dragon...). O deck é embaralhado depois.",
     "frase": "Cigarro de melão: o sabor que ninguém pediu e todo mundo comentou.",
     "raridade": "Rara",

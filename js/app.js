@@ -4,24 +4,24 @@
    pelo endereço (#inicio, #catalogo, #deck, #regras, #salao, #arena).
    ========================================================================== */
 
-import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610070301";
-import { iniciarCatalogo } from "./catalogo.js?v=202610070301";
-import { iniciarEditorDeck } from "./editor-deck.js?v=202610070301";
-import { deckAtual } from "./deck.js?v=202610070301";
-import { iniciarSalao, ativarSalao } from "./salao.js?v=202610070301";
-import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610070301";
-import { criarSessaoBot, dueloBotGuardado } from "./sessao.js?v=202610070301";
-import * as conta from "./conta.js?v=202610070301";
-import { alternarSom, somLigado } from "./som.js?v=202610070301";
-import { aviso } from "./util.js?v=202610070301";
-import { iniciarNoticias } from "./noticias.js?v=202610070301";
-import { iniciarLoja } from "./loja.js?v=202610070301";
-import { iniciarAviso } from "./aviso.js?v=202610070301";
-import { iniciarRoleta } from "./roleta.js?v=202610070301";
-import { iniciarRanked, retomarBotRanked } from "./ranked.js?v=202610070301";
+import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610071323";
+import { iniciarCatalogo } from "./catalogo.js?v=202610071323";
+import { iniciarEditorDeck } from "./editor-deck.js?v=202610071323";
+import { deckAtual } from "./deck.js?v=202610071323";
+import { iniciarSalao, ativarSalao } from "./salao.js?v=202610071323";
+import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610071323";
+import { criarSessaoBot, dueloBotGuardado } from "./sessao.js?v=202610071323";
+import * as conta from "./conta.js?v=202610071323";
+import { alternarSom, somLigado } from "./som.js?v=202610071323";
+import { aviso } from "./util.js?v=202610071323";
+import { iniciarNoticias } from "./noticias.js?v=202610071323";
+import { iniciarLoja } from "./loja.js?v=202610071323";
+import { iniciarAviso } from "./aviso.js?v=202610071323";
+import { iniciarRoleta } from "./roleta.js?v=202610071323";
+import { iniciarRanked, retomarBotRanked } from "./ranked.js?v=202610071323";
 
 // Número da versão (atualizado por ferramentas/nova-versao.py a cada envio)
-const VERSAO = "202610070301";
+const VERSAO = "202610071323";
 
 const TELAS = ["inicio", "noticias", "catalogo", "deck", "regras", "salao", "arena"];
 

@@ -605,7 +605,7 @@ end $$;
    Contra gente de verdade, a vitória só conta quando o perdedor confirma a derrota (ou depois
    de 5 minutos sem resposta dele, quando ele some no meio do duelo); se os dois disserem que
    venceram, ninguém ganha. Contra o Bot, um duelo largado no meio vira derrota quando o
-   jogador começa outro, e vitória com menos de 1 minuto de duelo não vale. */
+   jogador começa outro. */
 
 create table if not exists zoeira.ranked_temporadas (
   numero       integer primary key,
@@ -830,10 +830,6 @@ begin
          reportada_em = coalesce(reportada_em, now())
    where id = p_id;
   if p.tipo = 'bot' then
-    if p_venceu and p.criada_em > now() - interval '1 minute' then
-      update zoeira.ranked_partidas set contadas = array_append(contadas, v_chave) where id = p_id;
-      return jsonb_build_object('erro', 'rapido');
-    end if;
     v_contou := zoeira.contar_ranked(p_id, v_chave, p_venceu);
   elsif cardinality(p.jogadores) = 2 then
     v_outro := (select x from unnest(p.jogadores) x where x <> v_chave limit 1);

@@ -5,13 +5,13 @@
    Até 3 decks salvos: escolha qual editar e qual vai para os duelos.
    ========================================================================== */
 
-import { montarDeck, DECK_MIN, DECK_MAX, EXTRA_MAX, ehFusao, limiteDaCarta, excessoDeLimite, precoNaLoja } from "./motor.js?v=202610070301";
-import { criarCarta } from "./cartas-ui.js?v=202610070301";
-import { salvarDeck, paraMapa, paraLista, totalDoMapa, ehDeckPadrao, meusDecks, usarDeck, renomearDeck } from "./deck.js?v=202610070301";
-import { abrirDetalhes } from "./catalogo.js?v=202610070301";
-import * as conta from "./conta.js?v=202610070301";
-import { el, aviso } from "./util.js?v=202610070301";
-import { tocar } from "./som.js?v=202610070301";
+import { montarDeck, DECK_MIN, DECK_MAX, EXTRA_MAX, ehFusao, limiteDaCarta, excessoDeLimite, precoNaLoja } from "./motor.js?v=202610071323";
+import { criarCarta } from "./cartas-ui.js?v=202610071323";
+import { salvarDeck, paraMapa, paraLista, totalDoMapa, ehDeckPadrao, meusDecks, usarDeck, renomearDeck } from "./deck.js?v=202610071323";
+import { abrirDetalhes } from "./catalogo.js?v=202610071323";
+import * as conta from "./conta.js?v=202610071323";
+import { el, aviso } from "./util.js?v=202610071323";
+import { tocar } from "./som.js?v=202610071323";
 
 const ORDEM_CATEGORIA = { monstro: 0, magia: 1, armadilha: 2 };
 

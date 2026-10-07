@@ -17,10 +17,10 @@
    duas jogadas ao mesmo tempo.
    ========================================================================== */
 
-import { novoDuelo, aplicar, quemAge, carta, ErroJogada, membroAtivo } from "./motor.js?v=202610070301";
-import { jogadaDoBot } from "./bot.js?v=202610070301";
-import { PREFIXO, publicar, assinar, pedirRetido, aoStatus, intervaloDoSinal } from "./rede.js?v=202610070301";
-import { esperar, gerarId } from "./util.js?v=202610070301";
+import { novoDuelo, aplicar, quemAge, carta, ErroJogada, membroAtivo } from "./motor.js?v=202610071323";
+import { jogadaDoBot } from "./bot.js?v=202610071323";
+import { PREFIXO, publicar, assinar, pedirRetido, aoStatus, intervaloDoSinal } from "./rede.js?v=202610071323";
+import { esperar, gerarId } from "./util.js?v=202610071323";
 
 export const SEM_SINAL_AVISO = 20;  // segundos sem sinal do oponente para avisar
 export const SEM_SINAL_WO = 60;     // segundos sem sinal para poder pedir W.O.
@@ -95,9 +95,9 @@ export function dueloBotGuardado(chave) {
   }
 }
 
-// deck: lista de ids do deck do jogador (o bot sempre usa o deck padrão)
+// deck: lista de ids do deck do jogador; deckBot: deck do bot (sem ele, o deck padrão)
 // estadoGuardado: continua um duelo que estava em andamento (depois de recarregar a página)
-export function criarSessaoBot(perfil, deck, estadoGuardado = null) {
+export function criarSessaoBot(perfil, deck, estadoGuardado = null, deckBot = null) {
   const eu = {
     chave: perfil?.chave || "voce",
     nick: perfil?.nick || "Você",
@@ -108,7 +108,7 @@ export function criarSessaoBot(perfil, deck, estadoGuardado = null) {
     visual: perfil?.visual || null,
     deck,
   };
-  const bot = { chave: "bot-careca", nick: "Bot Careca", tag: "BOT", avatar: "careca-cast-surpresa", nivel: 99, bot: true };
+  const bot = { chave: "bot-careca", nick: "Bot Careca", tag: "BOT", avatar: "careca-cast-surpresa", nivel: 99, bot: true, ...(deckBot ? { deck: deckBot } : {}) };
   const { estado, eventos } = estadoGuardado
     ? { estado: estadoGuardado, eventos: [] }
     : novoDuelo({

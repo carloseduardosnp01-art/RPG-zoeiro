@@ -7,17 +7,26 @@
    (supabase/banco.sql, funções ranked_*): o navegador só pede.
    ========================================================================== */
 
-import * as conta from "./conta.js?v=202610070301";
-import * as adm from "./admin.js?v=202610070301";
-import { entrarNaFila, sairDaFila, estadoDaFila, contarRanked, avisarChat } from "./salao.js?v=202610070301";
-import { criarSessaoBot } from "./sessao.js?v=202610070301";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610070301";
-import { deckAtual } from "./deck.js?v=202610070301";
-import { cartaPorId, problemaDoDeck } from "./motor.js?v=202610070301";
-import { el, aviso } from "./util.js?v=202610070301";
-import { tocar } from "./som.js?v=202610070301";
+import * as conta from "./conta.js?v=202610071323";
+import * as adm from "./admin.js?v=202610071323";
+import { entrarNaFila, sairDaFila, estadoDaFila, contarRanked, avisarChat } from "./salao.js?v=202610071323";
+import { criarSessaoBot } from "./sessao.js?v=202610071323";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610071323";
+import { deckAtual } from "./deck.js?v=202610071323";
+import { cartaPorId, problemaDoDeck } from "./motor.js?v=202610071323";
+import { el, aviso } from "./util.js?v=202610071323";
+import { tocar } from "./som.js?v=202610071323";
 
 export const ESPERA_BOT = 60; // segundos na fila antes do duelo contra o Bot Careca
+
+// Deck do Bot Careca no Reino dos Carecas (40 cartas; no treino ele continua com o deck padrão)
+const DECK_BOT_REINO = Object.entries({
+  wellington: 3, "chaos-kelvor-prodigio": 1, "mystic-daikizinho": 3, thangan: 1, "careca-cast-surpresa": 3,
+  "careca-do-pt": 2, "adm-do-pt": 2, "karecoh-alado": 1, midasgel: 1, "obelisco-o-imenso": 1, carecalla: 3,
+  vapo: 2, "carecas-da-luz": 1, "soco-do-big": 3, "armadilha-do-big": 3, "forca-careca": 3,
+  "chamado-dos-vagabundos": 1, "bust-do-big": 1, "litro-pela-manha": 1, "gigante-de-pedra-careca": 1,
+  jinreca: 1, "daiki-mistico": 1, "lamento-prematuro": 1,
+}).flatMap(([id, n]) => Array(n).fill(id));
 export const PREMIOS_TOP3 = [100, 60, 30];
 const MEDALHAS = ["🥇", "🥈", "🥉"];
 
@@ -174,7 +183,7 @@ async function jogarContraBot() {
     desenhar();
     return;
   }
-  const sessao = criarSessaoBot({ ...conta.cartaoPublico(u), reliquia: conta.reliquiaEquipada(u) }, deckAtual());
+  const sessao = criarSessaoBot({ ...conta.cartaoPublico(u), reliquia: conta.reliquiaEquipada(u) }, deckAtual(), null, DECK_BOT_REINO);
   sessao.estado.ranked = t.numero;
   let ok = null;
   try {

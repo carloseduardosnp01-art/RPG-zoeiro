@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao, ehW, semAtaqueDireto,
-} from "./motor.js?v=202610070301";
+} from "./motor.js?v=202610071323";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 const zonaLivre = (p) => p.monstros.findIndex((m) => !m); // primeira zona de monstro livre (-1 se não tem)
@@ -89,7 +89,7 @@ function* jogadasPrincipais(estado, j) {
 
   // 1a2. Daiki entra banindo o LUZ e o TREVAS mais fracos do Cemitério
   for (const { iid, c } of mao) {
-    if (c.efeito !== "daiki") continue;
+    if (!["daiki", "black-luster", "chaos-kelvor"].includes(c.efeito)) continue; // Daiki, Black Luster e Chaos Kelvor
     const op = opcoes(iid).find((x) => x.id === "especial" && x.alvos);
     if (!op) continue;
     const fraco = (atributo) => op.alvos.candidatos.filter((x) => carta(estado, x).atributo === atributo).sort((a, b) => carta(estado, a).atk - carta(estado, b).atk)[0];

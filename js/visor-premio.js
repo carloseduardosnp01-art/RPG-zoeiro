@@ -4,9 +4,9 @@
    de quem é, de qual torneio, quando e por qual ADM foi entregue.
    ========================================================================== */
 
-import { el } from "./util.js?v=202610070301";
-import { PREMIOS, ehReliquia } from "./premios.js?v=202610070301";
-import { nomeDoAdmin } from "./admin.js?v=202610070301";
+import { el } from "./util.js?v=202610071323";
+import { PREMIOS, ehReliquia } from "./premios.js?v=202610071323";
+import { nomeDoAdmin } from "./admin.js?v=202610071323";
 
 let encerrarAberto = null;
 

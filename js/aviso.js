@@ -7,9 +7,9 @@
    fica no perfil) ou "Não concordo" (sai da conta).
    ========================================================================== */
 
-import * as conta from "./conta.js?v=202610070301";
-import { sairDaConta } from "./salao.js?v=202610070301";
-import { aviso } from "./util.js?v=202610070301";
+import * as conta from "./conta.js?v=202610071323";
+import { sairDaConta } from "./salao.js?v=202610071323";
+import { aviso } from "./util.js?v=202610071323";
 
 let modal = null;
 

@@ -7,15 +7,15 @@
    (supabase/banco.sql, funções ranked_*): o navegador só pede.
    ========================================================================== */
 
-import * as conta from "./conta.js?v=202610062242";
-import * as adm from "./admin.js?v=202610062242";
-import { entrarNaFila, sairDaFila, estadoDaFila, contarRanked, avisarChat } from "./salao.js?v=202610062242";
-import { criarSessaoBot } from "./sessao.js?v=202610062242";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610062242";
-import { deckAtual } from "./deck.js?v=202610062242";
-import { cartaPorId, problemaDoDeck } from "./motor.js?v=202610062242";
-import { el, aviso } from "./util.js?v=202610062242";
-import { tocar } from "./som.js?v=202610062242";
+import * as conta from "./conta.js?v=202610062256";
+import * as adm from "./admin.js?v=202610062256";
+import { entrarNaFila, sairDaFila, estadoDaFila, contarRanked, avisarChat } from "./salao.js?v=202610062256";
+import { criarSessaoBot } from "./sessao.js?v=202610062256";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610062256";
+import { deckAtual } from "./deck.js?v=202610062256";
+import { cartaPorId, problemaDoDeck } from "./motor.js?v=202610062256";
+import { el, aviso } from "./util.js?v=202610062256";
+import { tocar } from "./som.js?v=202610062256";
 
 export const ESPERA_BOT = 60; // segundos na fila antes do duelo contra o Bot Careca
 export const PREMIOS_TOP3 = [100, 60, 30];

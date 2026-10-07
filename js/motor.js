@@ -727,7 +727,9 @@ function invocar(estado, j, { iid, modo = "atk", tributos = [] }, ev) {
   if (slots.some((s) => !p.monstros[s])) return "Tributo inválido.";
   if (n === 0 && zonaLivre(p.monstros) < 0) return "Não há zona de monstro livre.";
 
-  // Oferece os tributos
+  // Oferece os tributos. Se um tributo sair e chamar outro monstro (Mago Dragão Sonho do BIG), isso
+  // espera a Invocação terminar: senão o monstro chamado ocupava a zona de quem está sendo invocado.
+  estado.saidasAdiadas = [];
   for (const s of slots) {
     const iidTributo = p.monstros[s].iid;
     ev.push({ t: "tributo", j, iid: iidTributo });
@@ -738,6 +740,8 @@ function invocar(estado, j, { iid, modo = "atk", tributos = [] }, ev) {
     }
   }
 
+  const adiadas = estado.saidasAdiadas;
+  delete estado.saidasAdiadas;
   p.mao.splice(p.mao.indexOf(iid), 1);
   const slot = zonaLivre(p.monstros);
   const baixado = modo === "baixar";
@@ -753,10 +757,12 @@ function invocar(estado, j, { iid, modo = "atk", tributos = [] }, ev) {
 
   if (baixado) {
     ev.push({ t: "baixada", j, iid, zona: "monstros", slot });
+    for (const [k, x] of adiadas) magoDragaoSaiu(estado, k, x, ev);
     return null;
   }
   const tipoInvocacao = n > 0 ? "tributo" : "normal";
   ev.push({ t: "invocacao", j, iid, modo: tipoInvocacao, slot });
+  for (const [k, x] of adiadas) magoDragaoSaiu(estado, k, x, ev);
   aposInvocar(estado, j, iid, tipoInvocacao, ev);
   return null;
 }
@@ -1445,6 +1451,48 @@ export function requisitosMagia(estado, j, iid) {
     case "w-rede":
     case "cigarrin":
       return { alvos: null };
+    case "camisinha": {
+      // 1 Monstro Normal de Nível 5 ou mais do deck para a mão
+      const vistos = new Set();
+      const candidatos = p.deck.filter((x) => {
+        const m = carta(estado, x);
+        return m.categoria === "monstro" && m.subtipo === "normal" && m.nivel >= 5 && !vistos.has(m.id) && vistos.add(m.id);
+      });
+      return candidatos.length
+        ? { alvos: { candidatos, min: 1, max: 1, titulo: "Tem gosto de camisinha de sabor: escolha o Monstro Normal de Nível 5 ou mais do deck que vai para a sua mão" } }
+        : null;
+    }
+    case "veio-chapado": {
+      // paga 1000 PV: 1 Mago de TREVAS da mão ou do Cemitério entra por Invocação-Especial
+      if (p.pl <= 1000 || zonaLivre(p.monstros) < 0) return null;
+      const candidatos = [...p.mao, ...p.cemiterio].filter((x) => {
+        const m = carta(estado, x);
+        return m.categoria === "monstro" && m.atributo === "TREVAS" && m.tipo === "Mago" && !m.naoEspecial && !ehFusao(m) &&
+          (!m.somenteEspecial || liberado(estado, x)) && podeControlarMais(estado, j, x);
+      });
+      return candidatos.length
+        ? { alvos: { candidatos, min: 1, max: 1, titulo: "Dark Véio Chapado (paga 1000 PV): escolha o Mago de TREVAS da mão ou do Cemitério que entra" } }
+        : null;
+    }
+    case "compositor": {
+      // descarta 1 carta; depois busca até 2 Dragões com 3000+ de ATK e 2500- de DEF
+      if (!dragoesDoCompositor(estado, j).length) return null;
+      const descartes = p.mao.filter((x) => x !== iid);
+      return descartes.length
+        ? { alvos: { candidatos: descartes, min: 1, max: 1, titulo: "Alquimista Compositor: escolha a carta da mão para descartar" } }
+        : null;
+    }
+    case "silva-calvo": {
+      // 1 Monstro Normal Dragão do seu Cemitério volta (1 Silva Calvo por turno)
+      if (usou(estado, j, "silva-calvo") || zonaLivre(p.monstros) < 0) return null;
+      const candidatos = p.cemiterio.filter((x) => {
+        const m = carta(estado, x);
+        return m.categoria === "monstro" && m.subtipo === "normal" && m.tipo === "Dragão" && podeControlarMais(estado, j, x);
+      });
+      return candidatos.length
+        ? { alvos: { candidatos, min: 1, max: 1, titulo: "Silva Calvo: escolha o Monstro Normal Dragão do seu Cemitério que volta" } }
+        : null;
+    }
     case "cigarrin-gostoso": {
       // 1 Monstro Normal (sem efeito) com a face para cima que você controla
       const candidatos = p.monstros.filter((m) => m && m.face && carta(estado, m.iid).subtipo === "normal").map((m) => m.iid);
@@ -1573,7 +1621,12 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
     p.pl = Math.max(0, p.pl - 800);
     ev.push({ t: "custo", j, valor: 800, pl: p.pl });
   }
-  if (c.efeito === "litro" || c.efeito === "bora-bill") marcarUso(estado, j, c.efeito);
+  if (c.efeito === "veio-chapado") {
+    p.pl = Math.max(0, p.pl - 1000);
+    ev.push({ t: "custo", j, valor: 1000, pl: p.pl });
+  }
+  if (c.efeito === "compositor") descartar(estado, j, alvos[0], ev);
+  if (c.efeito === "litro" || c.efeito === "bora-bill" || c.efeito === "silva-calvo") marcarUso(estado, j, c.efeito);
   marcarAtivacao(estado, j);
   if (negadaPorHacker(estado, j, iid, ev)) return null;
   if (daMao && negadoPorMagoDragao(estado, j, iid, ev)) return null;
@@ -1670,6 +1723,36 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
       break; // fica na Zona de Campo; o efeito é contínuo
     case "cigarrin":
       break; // Magia Contínua: fica no campo
+    case "camisinha":
+      buscar(estado, j, alvos[0], ev);
+      mandarProCemiterio(estado, iid, ev);
+      break;
+    case "veio-chapado":
+    case "silva-calvo": {
+      const alvo = alvos[0];
+      const daMaoAlvo = p.mao.includes(alvo);
+      const origem = daMaoAlvo ? p.mao : p.cemiterio;
+      const i = origem.indexOf(alvo);
+      const slot = zonaLivre(p.monstros);
+      mandarProCemiterio(estado, iid, ev);
+      if (i < 0 || slot < 0) break;
+      origem.splice(i, 1);
+      p.monstros[slot] = { iid: alvo, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+      ev.push({ t: "invocacao", j, iid: alvo, modo: "especial", slot });
+      aposEspecial(estado, j, alvo, ev);
+      break;
+    }
+    case "compositor": {
+      mandarProCemiterio(estado, iid, ev);
+      const candidatos = dragoesDoCompositor(estado, j);
+      if (candidatos.length) {
+        estado.pendente = {
+          tipo: "alvo", efeito: "compositor", jogador: j, origem: iid, candidatos, min: 1, max: Math.min(2, candidatos.length),
+          titulo: "Alquimista Compositor: escolha até 2 Dragões com 3000 ou mais de ATK e 2500 ou menos de DEF do deck para a sua mão",
+        };
+      }
+      break;
+    }
     case "cigarrin-gostoso":
       enviarProCemiterio(estado, alvos[0], ev);
       comprar(estado, j, 2, ev);
@@ -1995,6 +2078,7 @@ function invocarRevolucao(estado, j, origem, alvos, ev) {
 function verificarArmadilhas(estado, gatilho, dados, ev) {
   if (jinrecaEmCampo(estado)) return false;
   const defensor = oponente(dados.j);
+  if (armadilhasTravadas(estado, defensor)) return false; // Pierry careca dragon
   const p = estado.jogadores[defensor];
   // A armadilha vira para cima; o oponente ainda pode negar com o "W — Hackeando Sistema"
   const ativou = (m) => {
@@ -2083,7 +2167,7 @@ function negadaPorHacker(estado, quemAtivou, iid, ev) {
   if (jinrecaEmCampo(estado)) return false;
   const o = oponente(quemAtivou);
   const p = estado.jogadores[o];
-  if (!p.mao.length) return false;
+  if (!p.mao.length || armadilhasTravadas(estado, o)) return false;
   const m = p.magias.find((x) => x && !x.face && x.turnoBaixada < estado.turno && carta(estado, x.iid).efeito === "hacker");
   if (!m) return false;
   m.face = true;
@@ -2812,8 +2896,14 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
   if (defensor && !noCampo(estado, defensor)) return null; // o alvo sumiu: o ataque para
 
   const atk = atkAtual(estado, atacante);
+  // Ex careca dragon atacando: nenhum jogador sofre dano de batalha desse ataque
+  const exAtacando = carta(estado, atacante).efeito === "ex-dragao" && !bloqueado(estado, j, atacante);
+  const danoDoAtaque = (q, valor, eventos) => {
+    if (exAtacando && valor > 0) eventos.push({ t: "protegido", j: q, valor, por: "Ex careca dragon" });
+    else danoBatalha(estado, q, valor, eventos);
+  };
   if (!defensor) {
-    danoBatalha(estado, oponente(j), atk, ev);
+    danoDoAtaque(oponente(j), atk, ev);
     return null;
   }
 
@@ -2829,10 +2919,10 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
     const atkD = atkAtual(estado, defensor);
     if (atk > atkD) {
       destruir(estado, defensor, ev, "batalha");
-      danoBatalha(estado, oponente(j), atk - atkD, ev);
+      danoDoAtaque(oponente(j), atk - atkD, ev);
     } else if (atk < atkD) {
       destruir(estado, atacante, ev, "batalha");
-      danoBatalha(estado, j, atkD - atk, ev);
+      danoDoAtaque(j, atkD - atk, ev);
     } else if (atk > 0) {
       destruir(estado, atacante, ev, "batalha");
       destruir(estado, defensor, ev, "batalha");
@@ -2842,9 +2932,9 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
     if (atk > defD) {
       destruir(estado, defensor, ev, "batalha");
       // perfurante: o que passar da DEF vira dano
-      if (perfurante(carta(estado, atacante))) danoBatalha(estado, oponente(j), atk - defD, ev);
+      if (perfurante(carta(estado, atacante))) danoDoAtaque(oponente(j), atk - defD, ev);
     } else if (atk < defD) {
-      danoBatalha(estado, j, defD - atk, ev);
+      danoDoAtaque(j, defD - atk, ev);
     }
   }
 
@@ -2861,6 +2951,15 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
       ev.push({ t: "efeito", j: localizar(estado, mestre)?.j ?? donoDe(mestre), iid: mestre });
       banirDoCemiterio(estado, outro, ev);
     }
+  }
+
+  // Ex careca dragon destruído em batalha (e no Cemitério): destrói o monstro que o destruiu
+  for (const [ex, outro] of [[atacante, defensor], [defensor, atacante]]) {
+    if (!outro || estado.vencedor !== null || carta(estado, ex).efeito !== "ex-dragao" || !caiu(ex) || !noCampo(estado, outro)) continue;
+    const dono = donoDe(ex);
+    if (bloqueado(estado, dono, ex)) continue;
+    ev.push({ t: "efeito", j: dono, iid: ex, alvos: [outro] });
+    destruir(estado, outro, ev, "efeito");
   }
 
   // Irmãollow atacado virado para baixo: depois do cálculo de dano, quem atacou sofre 1000
@@ -2911,6 +3010,19 @@ function dano(estado, j, valor, ev) {
   if (p.pl === 0) encerrar(estado, oponente(j), "pl", ev);
 }
 
+
+// Alquimista Compositor: Dragões do deck com 3000 ou mais de ATK e 2500 ou menos de DEF (cada cópia é uma opção)
+const dragoesDoCompositor = (estado, j) =>
+  estado.jogadores[j].deck.filter((x) => {
+    const m = carta(estado, x);
+    return m.categoria === "monstro" && m.tipo === "Dragão" && m.atk >= 3000 && m.def <= 2500;
+  });
+
+// Pierry careca dragon com a face para cima no campo do oponente de "dono": na Fase de Batalha,
+// as Armadilhas de "dono" não podem ser ativadas
+const armadilhasTravadas = (estado, dono) =>
+  estado.fase === "batalha" &&
+  estado.jogadores[oponente(dono)].monstros.some((m) => m && m.face && carta(estado, m.iid).efeito === "pierry" && !bloqueado(estado, oponente(dono), m.iid));
 
 // Vai um cigarrin? com a face para cima (de qualquer lado)
 const cigarrinNoCampo = (estado) => estado.jogadores.some((p) => p.magias.some((m) => m && m.face && carta(estado, m.iid).efeito === "cigarrin"));
@@ -3127,6 +3239,10 @@ function removerDoCampo(estado, iid, ev, causa) {
 // Mago Dragão deixou o campo: Invoca do Deck Adicional um monstro que menciona "Grande Mestre" ou
 // "Dragão Sulista", ignorando as condições de Invocação (esse efeito não pode ser negado)
 function magoDragaoSaiu(estado, k, iid, ev) {
+  if (estado.saidasAdiadas) {
+    estado.saidasAdiadas.push([k, iid]); // no meio de uma Invocação-Tributo: resolve depois
+    return;
+  }
   if (estado.vencedor !== null) return;
   const p = estado.jogadores[k];
   const slot = zonaLivre(p.monstros);
@@ -3459,6 +3575,10 @@ function resolverEscolha(estado, j, alvos, ev) {
     for (const alvo of alvos) devolverParaMao(estado, alvo, ev);
     return null;
   }
+  if (pend.efeito === "compositor") {
+    for (const alvo of alvos) buscar(estado, j, alvo, ev);
+    return null;
+  }
   if (pend.efeito === "soul-reviver") {
     invocarDoCemiterio(estado, j, alvos[0], ev);
     return null;
@@ -3493,7 +3613,7 @@ export function escolhaAutomatica(estado, pend) {
   if (pend.efeito === "zoologico") return pend.candidatos.filter((x) => localizar(estado, x).j !== pend.jogador).slice(0, 1);
   if (pend.efeito === "midas-invocar" || pend.efeito === "emanuel-pagar") return [];
   if (["w-hacker-descarte", "w-miqueas-invocar", "w-midas", "w-rede", "soul-reviver"].includes(pend.efeito)) return pend.candidatos.slice(0, 1);
-  if (pend.efeito === "revolucao") return pend.candidatos.slice(0, pend.max);
+  if (pend.efeito === "revolucao" || pend.efeito === "compositor") return pend.candidatos.slice(0, pend.max);
   if (pend.efeito === "destino") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "fusao") return paresDeFusao(estado, j, pend.fusao)[0] || [];
   if (pend.efeito === "davi") return [];

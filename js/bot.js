@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao, ehW, semAtaqueDireto,
-} from "./motor.js?v=202610061350";
+} from "./motor.js?v=202610062242";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 const zonaLivre = (p) => p.monstros.findIndex((m) => !m); // primeira zona de monstro livre (-1 se não tem)
@@ -245,6 +245,22 @@ function* jogadasPrincipais(estado, j) {
     const ids = (x) => estado.cartas[x];
     const alvo = op.alvos.candidatos.find((x) => ids(x) === "grande-mestre") || op.alvos.candidatos.find((x) => ids(x) === "feiticeira-careca");
     if (alvo) yield { tipo: "efeitoMao", iid, modo: "cemiterio", alvos: [alvo] };
+  }
+
+  // 1f7b. Buscas e Invocações das magias de Dragão / Mago: pega sempre o mais forte
+  const maisForteAtk = (lista) => [...lista].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0];
+  for (const { iid, c } of mao) {
+    const op = ["camisinha", "silva-calvo", "veio-chapado", "compositor"].includes(c.efeito) && opcoes(iid).find((x) => x.id === "ativar");
+    if (!op) continue;
+    if (c.efeito === "camisinha" || c.efeito === "silva-calvo") yield { tipo: "ativar", iid, alvos: [maisForteAtk(op.alvos.candidatos)] };
+    if (c.efeito === "veio-chapado" && p.pl > 3000) {
+      const melhor = maisForteAtk(op.alvos.candidatos);
+      if (carta(estado, melhor).atk >= 2000) yield { tipo: "ativar", iid, alvos: [melhor] };
+    }
+    if (c.efeito === "compositor") {
+      // descarta a carta que menos faz falta
+      yield { tipo: "ativar", iid, alvos: [[...op.alvos.candidatos].sort((a, b) => valorNaMao(estado, j, a) - valorNaMao(estado, j, b))[0]] };
+    }
   }
 
   // 1f8. Cigarrin Gostoso: troca um Monstro Normal fraco por 2 cartas
@@ -512,6 +528,7 @@ const VALOR_NA_MAO = {
   "armadura-gelo": 7, obelisco: 6, fusao: 5, "careca-dragao": 6, "emanuel-ice": 6,
   "w-hacker": 4, vagabundos: 6, "w-miqueas": 6, "w-midas": 5, "w-rede": 5, "os-irmaos": 6,
   "soul-chapado": 5, "cigarrin-gostoso": 4, cigarrin: 3, recrutador: 4,
+  camisinha: 4, pierry: 5, "ex-dragao": 5, "veio-chapado": 6, compositor: 5, "silva-calvo": 5,
   sugadao: 7, "hoje-nao": 6, "bora-bill": 4, thangan: 5, hacker: 7, "w-laminas": 5,
   berinjela: 4, revolucao: 6, rafaza: 5, negao: 6, "flip-parasita": 5, litro: 3, daiki: 7,
   controle: 7, menino: 4, "mestre-caos": 6, upstart: 3, jinreca: 6, "mil-facas": 6, irmaollow: 5,
@@ -553,6 +570,8 @@ function escolherAlvos(estado, j, pend) {
     return atkAtual(estado, deles[0]) >= 1500 ? [meus[0], deles[0]] : [];
   }
   if (pend.efeito === "midas-invocar") return [];
+  // Alquimista Compositor: os 2 primeiros Dragões (os mais fortes)
+  if (pend.efeito === "compositor") return [...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0)).slice(0, pend.max);
   // Soul Chapado: traz o mais forte (Grande Mestre antes da Feiticeira)
   if (pend.efeito === "soul-reviver") return [[...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0]];
   // W — O Hacker: descarta a carta que menos faz falta

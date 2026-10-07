@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610061350";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610061350";
-import { el, esperar, aviso } from "./util.js?v=202610061350";
-import { tocar } from "./som.js?v=202610061350";
-import { abrirDetalhes } from "./catalogo.js?v=202610061350";
-import * as adm from "./admin.js?v=202610061350";
-import { PREMIOS } from "./premios.js?v=202610061350";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610061350";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610061350";
+} from "./motor.js?v=202610062242";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610062242";
+import { el, esperar, aviso } from "./util.js?v=202610062242";
+import { tocar } from "./som.js?v=202610062242";
+import { abrirDetalhes } from "./catalogo.js?v=202610062242";
+import * as adm from "./admin.js?v=202610062242";
+import { PREMIOS } from "./premios.js?v=202610062242";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610062242";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610062242";
 
 const raiz = document.querySelector("#arena");
 
@@ -70,6 +70,11 @@ const FRASES = {
   "careca-dragao": "SLIF RUGIU: -2000 DE ATK!",
   "w-hacker": "ACESSO LIBERADO!",
   "soul-chapado": "ALMA CHAPADA!",
+  camisinha: "TEM GOSTO DE CAMISINHA DE SABOR!",
+  "veio-chapado": "O VÉIO TÁ CHAPADO!",
+  compositor: "A MELODIA DOS DRAGÕES!",
+  "silva-calvo": "O GRITO DO SILVA CALVO!",
+  "ex-dragao": "EXPLODIU JUNTO!",
   "cigarrin-gostoso": "UM TRAGUINHO E DUAS CARTAS!",
   cigarrin: "VAI UM CIGARRIN?",
   recrutador: "REFORÇO CHEGANDO!",

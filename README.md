@@ -319,6 +319,13 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT096 | Vai um cigarrin? **(limitada a 1)** | Magia Contínua | – | Quem tem menos PV não sofre dano; 1 vez por turno o duelista da vez (de qualquer lado) paga 1000 PV e compra 1, destrói a carta ou dá 1000 PV ao oponente |
 | ZOE-PT097 | Mystic Daikizinho | Efeito · TREVAS · Planta · Nv 4 · 1400/1100 | – | Destruído em batalha (e no Cemitério): chama 1 TREVAS sorteado com até 1500 de ATK do deck, em Ataque |
 | ZOE-PT098 | Shining Zoom | Efeito · LUZ · Fada · Nv 4 · 1400/800 | – | Destruído em batalha (e no Cemitério): chama 1 LUZ sorteado com até 1500 de ATK do deck, em Ataque |
+| ZOE-PT099 | Tem gosto de camisinha de sabor | Magia Normal | – | Busca 1 Monstro Normal de Nível 5 ou mais do deck |
+| ZOE-PT100 | Bi-Careca Dragon | Monstro Normal · TREVAS · Dragão · Nv 8 · 2850/2350 | – | Dragão grande sem efeito |
+| ZOE-PT101 | Pierry careca dragon | Efeito · LUZ · Dragão · Nv 4 · 1600/600 | – | O oponente não ativa Armadilhas na Fase de Batalha |
+| ZOE-PT102 | Ex careca dragon | Efeito · TERRA · Dragão · Nv 3 · 1000/0 | – | Destruído em batalha: leva junto quem o destruiu; nos ataques dele ninguém sofre dano de batalha |
+| ZOE-PT103 | Dark Véio Chapado | Magia Normal | – | Paga 1000 PV e Invoca 1 Mago de TREVAS da mão ou do Cemitério |
+| ZOE-PT104 | Alquimista Compositor | Magia Normal | – | Descarta 1 e busca até 2 Dragões com 3000+ de ATK e 2500- de DEF |
+| ZOE-PT105 | Silva Calvo | Magia Normal | – | Invoca 1 Monstro Normal Dragão do Cemitério (1 por turno) |
 
 **Atributos:** TERRA, TREVAS, LUZ, ÁGUA (水), VENTO e DIVINO. Desde 04/10/2026 não existem mais GELO (os Manoel do Gelo viraram ÁGUA; o "gelo" do Pote do Gelo é ÁGUA ou "Gelo" no nome) nem INTERNET como atributo: os monstros "W" são TERRA e do **Tipo Internet** (o antigo Ciberso), e é esse Tipo que ganha o bônus do WI-FI Grátis. O Nível "na hora" (`nivelAtual` em `js/motor.js`, por causa da Geada da Peste) é o que vale para os tributos e para os efeitos que olham o Nível na mão e no campo.
 
@@ -398,7 +405,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── som.js            # Efeitos sonoros (Web Audio)
 │   └── util.js           # Funções pequenas
 ├── supabase/banco.sql    # Banco de dados: tabelas, funções e permissões (cole no SQL Editor do Supabase)
-├── data/cartas.json      # As 98 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
+├── data/cartas.json      # As 105 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
 ├── data/noticias.json    # As notícias (a mais nova aparece primeiro)
 ├── img/noticias/         # Cartazes das notícias
 ├── img/cartas/           # Artes recortadas (WebP 640×640)

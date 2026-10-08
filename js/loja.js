@@ -9,12 +9,12 @@
    data-abrir-loja="cosmeticos" (ou o id de um cosmético) abre na aba Cosméticos.
    ========================================================================== */
 
-import * as conta from "./conta.js?v=202610080128";
-import { criarCarta, criarVerso } from "./cartas-ui.js?v=202610080128";
-import { abrirDetalhes } from "./catalogo.js?v=202610080128";
-import { COSMETICOS, TIPOS, PRECO_COSMETICO, ehCosmetico, comMoldura, visualDe } from "./cosmeticos.js?v=202610080128";
-import { el, aviso } from "./util.js?v=202610080128";
-import { tocar } from "./som.js?v=202610080128";
+import * as conta from "./conta.js?v=202610080135";
+import { criarCarta, criarVerso } from "./cartas-ui.js?v=202610080135";
+import { abrirDetalhes } from "./catalogo.js?v=202610080135";
+import { COSMETICOS, TIPOS, PRECO_COSMETICO, ehCosmetico, comMoldura, visualDe } from "./cosmeticos.js?v=202610080135";
+import { el, aviso } from "./util.js?v=202610080135";
+import { tocar } from "./som.js?v=202610080135";
 
 let cartas = [];
 let modal = null;

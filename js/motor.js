@@ -351,7 +351,7 @@ export function atkAtual(estado, iid) {
   const c = carta(estado, iid);
   if (!c || c.categoria !== "monstro") return 0;
   if (imuneAEfeitos(estado, iid)) return c.atk; // Carenix: nada mexe no ATK dele
-  const fixo = localizar(estado, iid)?.obj?.atkFixo; // Miro, o Dragão de Olhos Profundos: o ATK virou o de um Dragão
+  const fixo = localizar(estado, iid)?.obj?.atkFixo; // Miro, O Dragão da Garganta profunda: o ATK virou o de um Dragão
   let atk = (fixo ?? c.atk) + bonusDosDeuses(estado, iid);
   if (c.efeito === "feiticeira") {
     const mestres = estado.jogadores
@@ -998,7 +998,7 @@ function aposEspecial(estado, j, iid, ev) {
   gatilhoZoologico(estado, j, iid);
 }
 
-// Miro, o Dragão de Olhos Profundos Invocado (Normal ou Especial): o ATK vira o de 1 Dragão do Cemitério
+// Miro, O Dragão da Garganta profunda Invocado (Normal ou Especial): o ATK vira o de 1 Dragão do Cemitério
 function gatilhoAtkOlhosProfundos(estado, j, iid) {
   const loc = localizar(estado, iid);
   if (carta(estado, iid).efeito !== "olhos-profundos" || !loc || loc.zona !== "monstros" || bloqueado(estado, j, iid)) return;
@@ -2375,7 +2375,7 @@ function processarGatilhos(estado, ev) {
       continue;
     }
     if (g.tipo === "olhos-profundos") {
-      // um "Olhos Nada Azuis" foi destruído: pode Invocar o Miro, o Dragão de Olhos Profundos da mão
+      // um "Olhos Nada Azuis" foi destruído: pode Invocar o Miro, O Dragão da Garganta profunda da mão
       const p = estado.jogadores[dono];
       if (!p.mao.includes(g.iid) || zonaLivre(p.monstros) < 0 || !dragoesNoCemiterio(estado, dono).length || bloqueado(estado, dono, g.iid)) continue;
       if (!meuTurno) {
@@ -2514,7 +2514,7 @@ function gatilhoOlhosProfundos(estado, k) {
   }
 }
 
-// Miro, o Dragão de Olhos Profundos entra da mão e dá 600 de dano por Dragão de nome diferente no Cemitério
+// Miro, O Dragão da Garganta profunda entra da mão e dá 600 de dano por Dragão de nome diferente no Cemitério
 function invocarOlhosProfundos(estado, j, iid, ev) {
   const p = estado.jogadores[j];
   const slot = zonaLivre(p.monstros);
@@ -3488,11 +3488,11 @@ function destruir(estado, iid, ev, causa) {
     ev.push({ t: "efeito", j: loc.j, iid });
   }
   if (loc.zona === "monstros" && carta(estado, iid).efeito === "manoel-gelo") chamarOutroManoel(estado, loc.j, iid, ev);
-  // "Olhos Nada Azuis" com a face para cima destruído em batalha ou por efeito do oponente: Olhos Profundos da mão
+  // "Olhos Nada Azuis" com a face para cima destruído em batalha ou por efeito do oponente: Garganta profunda da mão
   if (loc.zona === "monstros" && loc.obj.face && ehOlhosNadaAzuis(carta(estado, iid)) && (causa === "batalha" || (causa === "efeito" && fonteDoEfeito !== loc.j))) {
     gatilhoOlhosProfundos(estado, loc.j);
   }
-  // Miro, o Dragão de Olhos Profundos destruído no campo por efeito de card: destrói todos os monstros do oponente
+  // Miro, O Dragão da Garganta profunda destruído no campo por efeito de card: destrói todos os monstros do oponente
   if (loc.zona === "monstros" && causa !== "batalha" && carta(estado, iid).efeito === "olhos-profundos" && !bloqueado(estado, loc.j, iid) && estado.vencedor === null) {
     const dono = loc.j;
     if (!(localizar(estado, iid)?.zona === "cemiterio" && negadoPorMagoDragao(estado, dono, iid, ev))) {

@@ -2060,7 +2060,7 @@
   {
     "id": "miro-dragao-de-olhos-profundos",
     "codigo": "ZOE-PT114",
-    "nome": "Miro, o Dragão de Olhos Profundos",
+    "nome": "Miro, O Dragão da Garganta profunda",
     "categoria": "monstro",
     "subtipo": "efeito",
     "atributo": "LUZ",
@@ -2073,7 +2073,7 @@
     "loja": 100,
     "texto": "Quando um ou mais monstros \"Olhos Nada Azuis\" com a face para cima que você controla forem destruídos em batalha ou por um efeito de card do oponente e você tiver um monstro do Tipo Dragão no seu Cemitério: você pode Invocar este card por Invocação-Especial da sua mão e, se isso acontecer, cause 600 de dano ao seu oponente para cada monstro do Tipo Dragão com um nome diferente no seu Cemitério. Se este card for Invocado por Invocação-Normal ou Especial: escolha 1 monstro do Tipo Dragão no seu Cemitério; o ATK deste card se torna igual ao desse monstro. Se este card no campo for destruído por um efeito de card: destrua todos os monstros que seu oponente controla.",
     "comoFunciona": "Carta da Loja (100 Careca Coins), limitada a 1. Os \"Olhos Nada Azuis\" são o Dragão Sulista Safado Olhos Nada Azuis e o Dragão Sulista Olhos Nada Azuis Alternativo. Se um deles, com a face para cima no seu campo, for destruído em batalha ou por efeito do oponente e você tiver Dragão no Cemitério, com este card na mão você pode Invocá-lo (no seu turno o jogo pergunta; no do oponente ele entra sozinho), e o oponente leva 600 de dano por Dragão de nome diferente no seu Cemitério. Ao entrar (Invocação-Normal com 2 tributos ou Invocação-Especial), você escolhe 1 Dragão do seu Cemitério e o ATK dele vira o ATK desse Dragão (sem Dragão no Cemitério, fica 0). Se for destruído por um efeito de card (seu ou do oponente), todos os monstros do oponente são destruídos.",
-    "frase": "Olhos tão profundos que dá para ver o fundo do Cemitério.",
+    "frase": "Uma garganta tão profunda que dá para ver o fundo do Cemitério.",
     "raridade": "Lendária da Zoeira",
     "copias": 0,
     "imagem": "img/cartas/miro-dragao-de-olhos-profundos.webp"

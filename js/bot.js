@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao, ehW, semAtaqueDireto,
-} from "./motor.js?v=202610080128";
+} from "./motor.js?v=202610080135";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 const zonaLivre = (p) => p.monstros.findIndex((m) => !m); // primeira zona de monstro livre (-1 se não tem)
@@ -458,7 +458,7 @@ function melhorInvocacao(estado, j, mao) {
     let modo = "atk";
     if (c.efeito === "careca-dragao") valor = 1000 * (p.mao.length - 1); // 1000 por carta na mão (sem ele)
     if (c.efeito === "emanuel-ice") valor = (p.pl >= 4000 ? p.pl - 100 : 0) + (deles.length ? 1000 : 0);
-    // Miro, o Dragão de Olhos Profundos: fica com o ATK do Dragão mais forte do Cemitério
+    // Miro, O Dragão da Garganta profunda: fica com o ATK do Dragão mais forte do Cemitério
     if (c.efeito === "olhos-profundos") valor = Math.max(0, ...p.cemiterio.filter((x) => carta(estado, x).tipo === "Dragão").map((x) => carta(estado, x).atk || 0));
     if (c.efeito === "tributo-destruir-monstro" && deles.length) {
       valor += Math.max(...deles.map((x) => forca(estado, j, x)));
@@ -604,7 +604,7 @@ function escolherAlvos(estado, j, pend) {
     return atkAtual(estado, deles[0]) >= 1500 ? [meus[0], deles[0]] : [];
   }
   if (pend.efeito === "midas-invocar") return [];
-  // Miro, o Dragão de Olhos Profundos: entra sempre e copia o ATK do Dragão mais forte do Cemitério
+  // Miro, O Dragão da Garganta profunda: entra sempre e copia o ATK do Dragão mais forte do Cemitério
   if (pend.efeito === "olhos-profundos") return [pend.origem];
   if (pend.efeito === "olhos-profundos-atk") return [[...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0]];
   // Nova Zoom: a Fada mais forte

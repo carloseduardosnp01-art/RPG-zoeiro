@@ -335,7 +335,7 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT111 | Mão de Catupiri Burral **(limitada a 1)** | Magia | – | Manda 1 monstro do seu deck para o Cemitério |
 | ZOE-PT112 | Mão de Catupiri Destruidora | Magia | – | Cada jogador manda 2 cartas da mão para o Cemitério (você escolhe as suas; as do oponente são sorteadas) e compra 2 |
 | ZOE-PT113 | Miro Stone of calvo | Efeito · LUZ · Dragão · Nv 1 · 300/250 | – | Foi para o Cemitério (da mão, do deck ou do campo): 1 Dragão Sulista Safado Olhos Nada Azuis do deck para a mão (resolve depois do efeito que mandou ela) |
-| ZOE-PT114 | Miro, o Dragão de Olhos Profundos **(Loja: 100 🪙, limitada a 1)** | Efeito · LUZ · Dragão · Nv 10 · 0/0 | – | "Olhos Nada Azuis" seu destruído em batalha ou por efeito do oponente, com Dragão no Cemitério: entra da mão e dá 600 de dano por Dragão de nome diferente no Cemitério; ao entrar, o ATK vira o de 1 Dragão do Cemitério; destruído por efeito de card: destrói todos os monstros do oponente |
+| ZOE-PT114 | Miro, O Dragão da Garganta profunda **(Loja: 100 🪙, limitada a 1)** | Efeito · LUZ · Dragão · Nv 10 · 0/0 | – | "Olhos Nada Azuis" seu destruído em batalha ou por efeito do oponente, com Dragão no Cemitério: entra da mão e dá 600 de dano por Dragão de nome diferente no Cemitério; ao entrar, o ATK vira o de 1 Dragão do Cemitério; destruído por efeito de card: destrói todos os monstros do oponente |
 | ZOE-PT115 | O dragão alienado de olhos vermelhos | Monstro Normal · TREVAS · Dragão · Nv 7 · 2400/2000 | – | Dragão de olhos vermelhos, desligado do mundo |
 | ZOE-PT116 | Rei do Gado | Monstro Normal · TREVAS · Demônio · Nv 6 · 2500/1200 | – | Dono do pasto do Cemitério |
 

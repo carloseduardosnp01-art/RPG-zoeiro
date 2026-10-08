@@ -351,7 +351,8 @@ export function atkAtual(estado, iid) {
   const c = carta(estado, iid);
   if (!c || c.categoria !== "monstro") return 0;
   if (imuneAEfeitos(estado, iid)) return c.atk; // Carenix: nada mexe no ATK dele
-  let atk = c.atk + bonusDosDeuses(estado, iid);
+  const fixo = localizar(estado, iid)?.obj?.atkFixo; // Miro, o Dragão de Olhos Profundos: o ATK virou o de um Dragão
+  let atk = (fixo ?? c.atk) + bonusDosDeuses(estado, iid);
   if (c.efeito === "feiticeira") {
     const mestres = estado.jogadores
       .flatMap((p) => p.cemiterio)
@@ -676,7 +677,21 @@ function registrarHistorico(estado, eventos) {
   if (estado.historico.length > 80) estado.historico.splice(0, estado.historico.length - 80);
 }
 
+// Jogador que controla o efeito resolvendo agora (para "destruído por um efeito de card do oponente"):
+// quem fez a ação; nas Armadilhas automáticas, o defensor; nos gatilhos, o dono do gatilho
+let fonteDoEfeito = null;
+function comFonte(k, fn) {
+  const antes = fonteDoEfeito;
+  fonteDoEfeito = k;
+  try {
+    return fn();
+  } finally {
+    fonteDoEfeito = antes;
+  }
+}
+
 function executar(estado, j, acao, ev) {
+  fonteDoEfeito = j;
   const erro = executarAcao(estado, j, acao, ev);
   if (!erro) processarGatilhos(estado, ev);
   return erro;
@@ -977,9 +992,17 @@ function aposEspecial(estado, j, iid, ev) {
   if (estado.vencedor !== null) return;
   gatilhoDragaoCareca(estado, iid, ev);
   gatilhosW(estado, j, iid);
+  gatilhoAtkOlhosProfundos(estado, j, iid);
   if (carta(estado, iid).efeito === "thales") gatilhoThales(estado, j, iid);
   if (carta(estado, iid).efeito === "big-animal") marcarBigMP2(estado, j, iid);
   gatilhoZoologico(estado, j, iid);
+}
+
+// Miro, o Dragão de Olhos Profundos Invocado (Normal ou Especial): o ATK vira o de 1 Dragão do Cemitério
+function gatilhoAtkOlhosProfundos(estado, j, iid) {
+  const loc = localizar(estado, iid);
+  if (carta(estado, iid).efeito !== "olhos-profundos" || !loc || loc.zona !== "monstros" || bloqueado(estado, j, iid)) return;
+  (estado.gatilhos ||= []).push({ tipo: "olhos-profundos-atk", j, iid, turno: estado.turno });
 }
 
 // Slif o Dragão Careca do Céu: monstro Invocado (Normal ou Especial) em Posição de Ataque no campo do oponente
@@ -993,7 +1016,7 @@ function gatilhoDragaoCareca(estado, iid, ev) {
   const antes = atkAtual(estado, iid);
   loc.obj.menosAtk = (loc.obj.menosAtk || 0) + 2000;
   ev.push({ t: "efeito", j: k, iid: dragao.iid, alvos: [iid] });
-  if (antes > 0 && atkAtual(estado, iid) <= 0) destruir(estado, iid, ev, "efeito");
+  if (antes > 0 && atkAtual(estado, iid) <= 0) comFonte(k, () => destruir(estado, iid, ev, "efeito"));
 }
 
 // Big Animal: ao ser Invocado, na Fase Principal 2 deste turno pode recuperar do Cemitério
@@ -1259,6 +1282,7 @@ function aposInvocar(estado, j, iid, modo, ev) {
   // Slif o Dragão Careca do Céu do oponente: quem entrou em Ataque perde 2000 de ATK (depois do Defense Careca ir para Defesa)
   if (modo === "normal" || modo === "tributo") gatilhoDragaoCareca(estado, iid, ev);
   if (["normal", "tributo", "flip"].includes(modo)) gatilhosW(estado, j, iid);
+  if (modo === "normal" || modo === "tributo") gatilhoAtkOlhosProfundos(estado, j, iid);
 
   if ((modo === "normal" || modo === "tributo") && c.efeito === "davi" && !usou(estado, j, "davi-devolver")) {
     const loc = localizar(estado, iid);
@@ -1585,6 +1609,21 @@ export function requisitosMagia(estado, j, iid) {
         ? { alvos: { candidatos, min: 1, max: 1, titulo: "Cigarrin Gostoso: escolha 1 Monstro Normal (sem efeito) com a face para cima que você controla para mandar para o Cemitério" } }
         : null;
     }
+    case "catupiri-burral": {
+      // 1 monstro do deck para o Cemitério
+      const vistos = new Set();
+      const candidatos = p.deck.filter((x) => carta(estado, x).categoria === "monstro" && !vistos.has(estado.cartas[x]) && vistos.add(estado.cartas[x]));
+      return candidatos.length
+        ? { alvos: { candidatos, min: 1, max: 1, titulo: "Mão de Catupiri Burral: escolha o monstro do deck que vai para o Cemitério" } }
+        : null;
+    }
+    case "catupiri-destruidora": {
+      // cada um manda 2 da mão para o Cemitério e compra 2 (você escolhe as suas)
+      const descartes = p.mao.filter((x) => x !== iid);
+      return descartes.length >= 2 && p.deck.length >= 2
+        ? { alvos: { candidatos: descartes, min: 2, max: 2, titulo: "Mão de Catupiri Destruidora: escolha as 2 cartas da sua mão que vão para o Cemitério" } }
+        : null;
+    }
     case "calvo-in": {
       const candidatos = p.mao.filter((x) => x !== iid && carta(estado, x).categoria === "monstro" && nivelAtual(estado, x) === 8);
       return candidatos.length && p.deck.length >= 2
@@ -1803,6 +1842,26 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
       comprar(estado, j, 2, ev);
       mandarProCemiterio(estado, iid, ev);
       break;
+    case "catupiri-burral": {
+      const alvo = alvos[0];
+      p.deck.splice(p.deck.indexOf(alvo), 1);
+      estado.jogadores[donoDe(alvo)].cemiterio.push(alvo);
+      ev.push({ t: "aoCemiterio", j, iid: alvo });
+      chegouAoCemiterio(estado, donoDe(alvo), alvo, ev);
+      mandarProCemiterio(estado, iid, ev);
+      break;
+    }
+    case "catupiri-destruidora": {
+      // as 2 suas (escolhidas), 2 sorteadas da mão do oponente; depois cada um compra 2
+      const o = oponente(j);
+      for (const alvo of alvos) descartar(estado, j, alvo, ev);
+      const sorteio = sorteioDoEstado(estado);
+      const deles = [...estado.jogadores[o].mao];
+      for (let n = 0; n < 2 && deles.length; n++) descartar(estado, o, deles.splice(Math.floor(sorteio() * deles.length), 1)[0], ev);
+      mandarProCemiterio(estado, iid, ev);
+      if (comprar(estado, j, 2, ev)) comprar(estado, o, 2, ev);
+      break;
+    }
     case "wifi":
     case "geada":
     case "w-rede":
@@ -2165,6 +2224,10 @@ function invocarRevolucao(estado, j, origem, alvos, ev) {
 
 // Procura uma armadilha virada do defensor que responda ao gatilho. Ativa no máximo uma por gatilho.
 function verificarArmadilhas(estado, gatilho, dados, ev) {
+  return comFonte(oponente(dados.j), () => armadilhasDoDefensor(estado, gatilho, dados, ev));
+}
+
+function armadilhasDoDefensor(estado, gatilho, dados, ev) {
   if (jinrecaEmCampo(estado)) return false;
   const defensor = oponente(dados.j);
   if (armadilhasTravadas(estado, defensor)) return false; // Pierry careca dragon
@@ -2287,6 +2350,8 @@ function gatilhoThales(estado, j, iid) {
 
 function chegouAoCemiterio(estado, j, iid, ev) {
   const c = carta(estado, iid);
+  // Miro Stone of calvo (da mão, do deck ou do campo): busca o Dragão Sulista depois que o efeito atual terminar
+  if (c.efeito === "miro-stone") (estado.gatilhos ||= []).push({ tipo: "miro-stone", j, iid, turno: estado.turno, semPrazo: true });
   if (c.efeito === "davi" && !usou(estado, j, "davi-cemiterio")) {
     marcarUso(estado, j, "davi-cemiterio");
     (estado.gatilhos ||= []).push({ tipo: "davi-cemiterio", j, iid, turno: estado.turno });
@@ -2297,12 +2362,49 @@ const cartasIrmaos = (estado, j) => estado.jogadores[j].deck.filter((x) => carta
 
 function processarGatilhos(estado, ev) {
   let limite = 10;
+  const fonteAntes = fonteDoEfeito;
   while (estado.vencedor === null && !estado.pendente && (estado.gatilhos || []).length && limite-- > 0) {
     const g = estado.gatilhos.shift();
-    if (g.turno !== estado.turno) continue; // o turno acabou: perdeu a chance
+    if (g.turno !== estado.turno && !g.semPrazo) continue; // o turno acabou: perdeu a chance
     const c = carta(estado, g.iid);
     const dono = g.j;
     const meuTurno = estado.vez === dono;
+    fonteDoEfeito = dono;
+    if (g.tipo === "miro-stone") {
+      miroStone(estado, dono, g.iid, ev);
+      continue;
+    }
+    if (g.tipo === "olhos-profundos") {
+      // um "Olhos Nada Azuis" foi destruído: pode Invocar o Miro, o Dragão de Olhos Profundos da mão
+      const p = estado.jogadores[dono];
+      if (!p.mao.includes(g.iid) || zonaLivre(p.monstros) < 0 || !dragoesNoCemiterio(estado, dono).length || bloqueado(estado, dono, g.iid)) continue;
+      if (!meuTurno) {
+        invocarOlhosProfundos(estado, dono, g.iid, ev);
+        continue;
+      }
+      estado.pendente = {
+        tipo: "alvo", efeito: "olhos-profundos", jogador: dono, origem: g.iid, candidatos: [g.iid], min: 0, max: 1,
+        titulo: `Um "Olhos Nada Azuis" seu foi destruído! Escolha o ${c.nome} para Invocá-lo da mão (o oponente leva 600 de dano por Dragão de nome diferente no seu Cemitério), ou confirme sem escolher para deixá-lo na mão`,
+      };
+      continue;
+    }
+    if (g.tipo === "olhos-profundos-atk") {
+      // entrou: o ATK dele vira o ATK de 1 Dragão do Cemitério
+      const loc = localizar(estado, g.iid);
+      const opcoes = dragoesNoCemiterio(estado, dono);
+      if (!loc || loc.zona !== "monstros" || loc.j !== dono || !opcoes.length || bloqueado(estado, dono, g.iid)) continue;
+      if (!meuTurno) {
+        const alvo = [...opcoes].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0];
+        ev.push({ t: "efeito", j: dono, iid: g.iid, alvos: [alvo] });
+        copiarAtkDoDragao(estado, g.iid, alvo);
+        continue;
+      }
+      estado.pendente = {
+        tipo: "alvo", efeito: "olhos-profundos-atk", jogador: dono, origem: g.iid, candidatos: opcoes, min: 1, max: 1,
+        titulo: `${c.nome}: escolha 1 Dragão do seu Cemitério; o ATK dele passa a ser o ATK desse Dragão`,
+      };
+      continue;
+    }
     let candidatos = [];
     let max = 1;
     let titulo = "";
@@ -2383,6 +2485,53 @@ function processarGatilhos(estado, ev) {
       buscar(estado, dono, candidatos[Math.floor(sorteio() * candidatos.length)], ev);
     }
   }
+  fonteDoEfeito = fonteAntes;
+}
+
+// Miro Stone of calvo no Cemitério: 1 "Dragão Sulista Safado Olhos Nada Azuis" do deck para a mão (obrigatório)
+function miroStone(estado, j, iid, ev) {
+  const sulista = estado.jogadores[j].deck.find((x) => estado.cartas[x] === "dragao-sulista");
+  if (!sulista || bloqueado(estado, j, iid)) return;
+  if (localizar(estado, iid)?.zona === "cemiterio" && negadoPorMagoDragao(estado, j, iid, ev)) return;
+  ev.push({ t: "efeito", j, iid });
+  buscar(estado, j, sulista, ev);
+}
+
+// "Olhos Nada Azuis": Dragão Sulista Safado Olhos Nada Azuis e Dragão Sulista Olhos Nada Azuis Alternativo
+const ehOlhosNadaAzuis = (c) => c.categoria === "monstro" && c.nome.includes("Olhos Nada Azuis");
+
+// Monstros do Tipo Dragão no Cemitério de j (cada cópia é uma opção)
+const dragoesNoCemiterio = (estado, j) =>
+  estado.jogadores[j].cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && carta(estado, x).tipo === "Dragão");
+
+// Um "Olhos Nada Azuis" de k foi destruído em batalha ou por efeito do oponente: o Miro, o Dragão de Olhos
+// Profundos da mão de k pode entrar (o gatilho resolve depois do que destruiu)
+function gatilhoOlhosProfundos(estado, k) {
+  for (const x of estado.jogadores[k].mao) {
+    if (carta(estado, x).efeito !== "olhos-profundos") continue;
+    if ((estado.gatilhos || []).some((g) => g.tipo === "olhos-profundos" && g.iid === x)) continue;
+    (estado.gatilhos ||= []).push({ tipo: "olhos-profundos", j: k, iid: x, turno: estado.turno });
+  }
+}
+
+// Miro, o Dragão de Olhos Profundos entra da mão e dá 600 de dano por Dragão de nome diferente no Cemitério
+function invocarOlhosProfundos(estado, j, iid, ev) {
+  const p = estado.jogadores[j];
+  const slot = zonaLivre(p.monstros);
+  if (!p.mao.includes(iid) || slot < 0) return;
+  ev.push({ t: "efeito", j, iid });
+  if (negadoPorMagoDragao(estado, j, iid, ev)) return;
+  p.mao.splice(p.mao.indexOf(iid), 1);
+  p.monstros[slot] = { iid, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+  ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
+  const nomes = new Set(dragoesNoCemiterio(estado, j).map((x) => carta(estado, x).nomeTratado || carta(estado, x).nome));
+  dano(estado, oponente(j), 600 * nomes.size, ev);
+  if (estado.vencedor === null) aposEspecial(estado, j, iid, ev);
+}
+
+function copiarAtkDoDragao(estado, iid, dragao) {
+  const loc = localizar(estado, iid);
+  if (loc && loc.zona === "monstros") loc.obj.atkFixo = carta(estado, dragao).atk;
 }
 
 
@@ -3339,6 +3488,20 @@ function destruir(estado, iid, ev, causa) {
     ev.push({ t: "efeito", j: loc.j, iid });
   }
   if (loc.zona === "monstros" && carta(estado, iid).efeito === "manoel-gelo") chamarOutroManoel(estado, loc.j, iid, ev);
+  // "Olhos Nada Azuis" com a face para cima destruído em batalha ou por efeito do oponente: Olhos Profundos da mão
+  if (loc.zona === "monstros" && loc.obj.face && ehOlhosNadaAzuis(carta(estado, iid)) && (causa === "batalha" || (causa === "efeito" && fonteDoEfeito !== loc.j))) {
+    gatilhoOlhosProfundos(estado, loc.j);
+  }
+  // Miro, o Dragão de Olhos Profundos destruído no campo por efeito de card: destrói todos os monstros do oponente
+  if (loc.zona === "monstros" && causa !== "batalha" && carta(estado, iid).efeito === "olhos-profundos" && !bloqueado(estado, loc.j, iid) && estado.vencedor === null) {
+    const dono = loc.j;
+    if (!(localizar(estado, iid)?.zona === "cemiterio" && negadoPorMagoDragao(estado, dono, iid, ev))) {
+      ev.push({ t: "efeito", j: dono, iid });
+      comFonte(dono, () => {
+        for (const x of monstrosEmCampo(estado, oponente(dono))) destruir(estado, x, ev, "efeito");
+      });
+    }
+  }
   if (loc.zona === "monstros" && causa === "batalha" && carta(estado, iid).efeito === "emanoel") {
     const opcoes = estado.jogadores[loc.j].deck.filter((x) => carta(estado, x).nome.includes("Animal"));
     if (opcoes.length) {
@@ -3594,7 +3757,7 @@ function passarTurno(estado, ev) {
     for (const m of [...q.magias]) {
       if (m && m.face && m.equipadoEm && carta(estado, m.iid).efeito === "gole") {
         ev.push({ t: "efeito", j: estado.jogadores.indexOf(q), iid: m.iid });
-        destruir(estado, m.equipadoEm, ev, "efeito");
+        comFonte(estado.jogadores.indexOf(q), () => destruir(estado, m.equipadoEm, ev, "efeito"));
       }
     }
   }
@@ -3687,6 +3850,7 @@ function tempoEsgotado(estado, j, ev) {
   ev.push({ t: "tempo", j });
   let limite = 6;
   while (estado.vencedor === null && quemAge(estado) === j && limite-- > 0) {
+    fonteDoEfeito = j;
     if (estado.pendente) resolverEscolha(estado, j, escolhaAutomatica(estado, estado.pendente), ev);
     else encerrarTurno(estado, ev);
     processarGatilhos(estado, ev);
@@ -3792,6 +3956,14 @@ function resolverEscolha(estado, j, alvos, ev) {
     invocarDireto(estado, j, alvos[0], ev, "atk");
     return null;
   }
+  if (pend.efeito === "olhos-profundos") {
+    invocarOlhosProfundos(estado, j, alvos[0], ev);
+    return null;
+  }
+  if (pend.efeito === "olhos-profundos-atk") {
+    copiarAtkDoDragao(estado, pend.origem, alvos[0]);
+    return null;
+  }
   if (pend.efeito === "compositor") {
     for (const alvo of alvos) buscar(estado, j, alvo, ev);
     return null;
@@ -3829,7 +4001,8 @@ export function escolhaAutomatica(estado, pend) {
   if (pend.efeito === "davi-cemiterio" || pend.efeito === "thales" || pend.efeito === "big" || pend.efeito === "john-invocar") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "zoologico") return pend.candidatos.filter((x) => localizar(estado, x).j !== pend.jogador).slice(0, 1);
   if (pend.efeito === "midas-invocar" || pend.efeito === "emanuel-pagar") return [];
-  if (["w-hacker-descarte", "w-miqueas-invocar", "w-midas", "w-rede", "soul-reviver", "nova-zoom"].includes(pend.efeito)) return pend.candidatos.slice(0, 1);
+  if (["w-hacker-descarte", "w-miqueas-invocar", "w-midas", "w-rede", "soul-reviver", "nova-zoom", "olhos-profundos"].includes(pend.efeito)) return pend.candidatos.slice(0, 1);
+  if (pend.efeito === "olhos-profundos-atk") return [[...pend.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0]];
   if (pend.efeito === "revolucao" || pend.efeito === "compositor") return pend.candidatos.slice(0, pend.max);
   if (pend.efeito === "destino") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "fusao") return paresDeFusao(estado, j, pend.fusao)[0] || [];

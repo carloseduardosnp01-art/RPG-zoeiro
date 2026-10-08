@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao, ehW, semAtaqueDireto,
-} from "./motor.js?v=202610071340";
+} from "./motor.js?v=202610080128";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 const zonaLivre = (p) => p.monstros.findIndex((m) => !m); // primeira zona de monstro livre (-1 se não tem)
@@ -271,6 +271,28 @@ function* jogadasPrincipais(estado, j) {
     }
   }
 
+  // 1f7c. Mão de Catupiri Burral: manda a Miro Stone (que busca o Dragão Sulista) ou, com como trazer de volta, o monstro mais forte
+  const temSulistaNoDeck = p.deck.some((x) => estado.cartas[x] === "dragao-sulista");
+  for (const { iid, c } of mao) {
+    if (c.efeito !== "catupiri-burral") continue;
+    const op = opcoes(iid).find((x) => x.id === "ativar");
+    if (!op) continue;
+    const pedra = op.alvos.candidatos.find((x) => carta(estado, x).efeito === "miro-stone");
+    const revive = [...p.mao, ...meus].some((x) => ["lamento", "silva-calvo", "miro-metalico"].includes(carta(estado, x).efeito));
+    if (pedra && temSulistaNoDeck) yield { tipo: "ativar", iid, alvos: [pedra] };
+    else if (revive) yield { tipo: "ativar", iid, alvos: [maisForteAtk(op.alvos.candidatos)] };
+  }
+
+  // 1f7d. Mão de Catupiri Destruidora: troca as 2 piores cartas da mão por 2 novas (a Miro Stone vai primeiro)
+  for (const { iid, c } of mao) {
+    if (c.efeito !== "catupiri-destruidora" || p.deck.length <= 8) continue;
+    const op = opcoes(iid).find((x) => x.id === "ativar");
+    if (!op) continue;
+    const peso = (x) => (carta(estado, x).efeito === "miro-stone" && temSulistaNoDeck ? -5 : valorNaMao(estado, j, x));
+    const piores = [...op.alvos.candidatos].sort((a, b) => peso(a) - peso(b)).slice(0, 2);
+    if (piores.every((x) => peso(x) <= 4)) yield { tipo: "ativar", iid, alvos: piores };
+  }
+
   // 1f8. Cigarrin Gostoso: troca um Monstro Normal fraco por 2 cartas
   for (const { iid, c } of mao) {
     if (c.efeito !== "cigarrin-gostoso" || p.deck.length <= 5) continue;
@@ -436,6 +458,8 @@ function melhorInvocacao(estado, j, mao) {
     let modo = "atk";
     if (c.efeito === "careca-dragao") valor = 1000 * (p.mao.length - 1); // 1000 por carta na mão (sem ele)
     if (c.efeito === "emanuel-ice") valor = (p.pl >= 4000 ? p.pl - 100 : 0) + (deles.length ? 1000 : 0);
+    // Miro, o Dragão de Olhos Profundos: fica com o ATK do Dragão mais forte do Cemitério
+    if (c.efeito === "olhos-profundos") valor = Math.max(0, ...p.cemiterio.filter((x) => carta(estado, x).tipo === "Dragão").map((x) => carta(estado, x).atk || 0));
     if (c.efeito === "tributo-destruir-monstro" && deles.length) {
       valor += Math.max(...deles.map((x) => forca(estado, j, x)));
     }
@@ -538,6 +562,7 @@ const VALOR_NA_MAO = {
   "soul-chapado": 5, "cigarrin-gostoso": 4, cigarrin: 3, recrutador: 4,
   camisinha: 4, pierry: 5, "ex-dragao": 5, "veio-chapado": 6, compositor: 5, "silva-calvo": 5,
   carenix: 5, "emanuel-esfera": 6, "sulista-alt": 7, tirano: 6, "nova-zoom": 4,
+  "catupiri-burral": 4, "catupiri-destruidora": 3, "miro-stone": 2, "olhos-profundos": 6,
   sugadao: 7, "hoje-nao": 6, "bora-bill": 4, thangan: 5, hacker: 7, "w-laminas": 5,
   berinjela: 4, revolucao: 6, rafaza: 5, negao: 6, "flip-parasita": 5, litro: 3, daiki: 7,
   controle: 7, menino: 4, "mestre-caos": 6, upstart: 3, jinreca: 6, "mil-facas": 6, irmaollow: 5,
@@ -579,6 +604,9 @@ function escolherAlvos(estado, j, pend) {
     return atkAtual(estado, deles[0]) >= 1500 ? [meus[0], deles[0]] : [];
   }
   if (pend.efeito === "midas-invocar") return [];
+  // Miro, o Dragão de Olhos Profundos: entra sempre e copia o ATK do Dragão mais forte do Cemitério
+  if (pend.efeito === "olhos-profundos") return [pend.origem];
+  if (pend.efeito === "olhos-profundos-atk") return [[...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0]];
   // Nova Zoom: a Fada mais forte
   if (pend.efeito === "nova-zoom") return [[...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0]];
   // Alquimista Compositor: os 2 primeiros Dragões (os mais fortes)

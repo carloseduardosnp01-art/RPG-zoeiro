@@ -9,9 +9,9 @@
    uso" é copiado para o campo "deck" do perfil, que é o que vale nos duelos.
    ========================================================================== */
 
-import { montarDeck, problemaDoDeck, precoNaLoja, cartaPorId, ehFusao } from "./motor.js?v=202610071340";
-import * as conta from "./conta.js?v=202610071340";
-import { guardar } from "./util.js?v=202610071340";
+import { montarDeck, problemaDoDeck, precoNaLoja, cartaPorId, ehFusao } from "./motor.js?v=202610080128";
+import * as conta from "./conta.js?v=202610080128";
+import { guardar } from "./util.js?v=202610080128";
 
 const CHAVE = "zoeira-deck";
 const CHAVE_DECKS = "zoeira-decks";

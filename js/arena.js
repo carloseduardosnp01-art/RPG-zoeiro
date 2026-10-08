@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610071340";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610071340";
-import { el, esperar, aviso } from "./util.js?v=202610071340";
-import { tocar } from "./som.js?v=202610071340";
-import { abrirDetalhes } from "./catalogo.js?v=202610071340";
-import * as adm from "./admin.js?v=202610071340";
-import { PREMIOS } from "./premios.js?v=202610071340";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610071340";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610071340";
+} from "./motor.js?v=202610080128";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610080128";
+import { el, esperar, aviso } from "./util.js?v=202610080128";
+import { tocar } from "./som.js?v=202610080128";
+import { abrirDetalhes } from "./catalogo.js?v=202610080128";
+import * as adm from "./admin.js?v=202610080128";
+import { PREMIOS } from "./premios.js?v=202610080128";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610080128";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610080128";
 
 const raiz = document.querySelector("#arena");
 
@@ -48,6 +48,7 @@ const ENTRADAS_LENDARIAS = {
   "miro-sulista-calvo": "O SULISTA CALVO DESCEU DO CÉU!",
   "dragao-sulista-alternativo": "O SULISTA ALTERNATIVO ABRIU AS ASAS!",
   "dragao-adm-ditador-tirano": "O TIRANO CHEGOU PARA DITAR AS REGRAS!",
+  "miro-dragao-de-olhos-profundos": "OS OLHOS PROFUNDOS SE ABRIRAM!",
 };
 
 // Frase da entrada dos deuses (atributo DIVINO), cada um na cor da sua moldura
@@ -84,6 +85,10 @@ const FRASES = {
   "sulista-alt": "RAIO DESTRUIDOR ALTERNATIVO!",
   tirano: "O TIRANO NÃO ACEITA ARMADILHA!",
   "nova-zoom": "UMA NOVA ESTRELA DESCEU!",
+  "catupiri-burral": "ENTERRADO NO CATUPIRI!",
+  "catupiri-destruidora": "CATUPIRI PRA TODO LADO!",
+  "miro-stone": "A PEDRA CHAMOU O DRAGÃO!",
+  "olhos-profundos": "OLHAR PROFUNDO!",
   "cigarrin-gostoso": "UM TRAGUINHO E DUAS CARTAS!",
   cigarrin: "VAI UM CIGARRIN?",
   recrutador: "REFORÇO CHEGANDO!",

@@ -4,7 +4,7 @@
    entrada do Mixodas, "O Fumante" (pasta audio/).
    ========================================================================== */
 
-import { guardar } from "./util.js?v=202610091336";
+import { guardar } from "./util.js?v=202610092015";
 
 let contexto = null;
 let ligado = guardar.ler("zoeira-som", true);

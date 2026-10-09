@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610091336";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610091336";
-import { el, esperar, aviso } from "./util.js?v=202610091336";
-import { tocar, tocarAudios, pararAudios } from "./som.js?v=202610091336";
-import { abrirDetalhes } from "./catalogo.js?v=202610091336";
-import * as adm from "./admin.js?v=202610091336";
-import { PREMIOS } from "./premios.js?v=202610091336";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610091336";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610091336";
+} from "./motor.js?v=202610092015";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610092015";
+import { el, esperar, aviso } from "./util.js?v=202610092015";
+import { tocar, tocarAudios, pararAudios } from "./som.js?v=202610092015";
+import { abrirDetalhes } from "./catalogo.js?v=202610092015";
+import * as adm from "./admin.js?v=202610092015";
+import { PREMIOS } from "./premios.js?v=202610092015";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610092015";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610092015";
 
 const raiz = document.querySelector("#arena");
 
@@ -789,7 +789,9 @@ function desenharMao(estado) {
     b.dataset.iid = iid;
     b.setAttribute("aria-label", `${c.nome} (na mão)`);
     if (!maoAnterior.includes(iid)) b.classList.add("mao__carta--nova");
-    if (opcoesMinhas(estado, iid).length) b.dataset.acao = "true";
+    const ops = opcoesMinhas(estado, iid);
+    if (ops.length) b.dataset.acao = "true";
+    if (ops.some((o) => o.id === "mixodas")) b.dataset.mixodas = "true"; // as 5 partes na mão: a cabeça pulsa em vermelho
     b.append(criarCarta(c));
     ligarPrevia(b, iid);
     b.addEventListener("click", () => clicarCarta(iid, b, true));
@@ -1591,12 +1593,13 @@ function entradaDivina(estado, ev) {
   return esperar(duracao).then(() => fundo.remove());
 }
 
-// Mixodas, "O Fumante": as 5 partes saem da mão, voam para o campo em cruz, se fundem e o Fumante se forma,
-// com o nome gigante em vermelho brilhando e tremendo na tela. Toca os 2 áudios da invocação (um depois do
-// outro: o primeiro acompanha a cena, o segundo continua na tela de vitória). Clicar pula a cena.
+// Mixodas, "O Fumante": as 5 partes saem da mão uma a uma (com o nome de cada uma na tela), voam para o campo
+// em cruz, se fundem e o Fumante se forma, com o nome gigante em vermelho brilhando e tremendo na tela. Toca os
+// 2 áudios da invocação, um depois do outro (o segundo começa no meio da cena e segue na tela de vitória).
+// Clicar pula a cena.
 const PARTES_DO_FUMANTE = ["cabeca", "braco-esq", "braco-dir", "perna-esq", "perna-dir"];
 function entradaMixodas(estado, ev) {
-  const duracao = 8200; // o tamanho do primeiro áudio
+  const duracao = 17000;
   tocarAudios(["audio/mixodas-1.mp3", "audio/mixodas-2.mp3"]);
   const fundo = el("div", "mixodas");
   fundo.setAttribute("role", "img");
@@ -1623,6 +1626,7 @@ function entradaMixodas(estado, ev) {
     parte.append(arte, cartaEl);
     palco.append(parte);
   });
+  const legenda = el("div", "mixodas__legenda");
   const nome = el("div", "mixodas__nome", "MIXODAS");
   nome.dataset.texto = "MIXODAS";
   const titulo = el("div", "mixodas__titulo");
@@ -1633,6 +1637,7 @@ function entradaMixodas(estado, ev) {
     fumaca,
     palco,
     el("div", "mixodas__quem", `${nomeJogador(sessao.estado, ev.j)} juntou as 5 partes!`),
+    legenda,
     titulo,
     el("div", "mixodas__grito", "VITÓRIA ABSOLUTA!"),
   );
@@ -1645,15 +1650,29 @@ function entradaMixodas(estado, ev) {
     void fundo.offsetWidth;
     fundo.classList.add("mixodas--tremer");
   };
-  for (let n = 0; n < 5; n++) depois(1150 + n * 550, tremor); // cada parte que pousa
-  depois(3800, () => fundo.classList.add("mixodas--fusao"));
-  depois(4400, () => {
+  // cada parte pousa (1 por segundo, a cabeça por último) e o nome dela aparece embaixo
+  const ordem = [1, 2, 3, 4, 0];
+  ordem.forEach((i, n) => depois(2300 + n * 1100, () => {
+    tremor();
+    legenda.textContent = carta(estado, ev.pecas[i]).nome;
+    legenda.classList.remove("mixodas__legenda--viva");
+    void legenda.offsetWidth;
+    legenda.classList.add("mixodas__legenda--viva");
+  }));
+  depois(7700, () => {
+    legenda.textContent = "AS 5 PARTES SE JUNTARAM...";
+    fundo.classList.add("mixodas--fusao");
+  });
+  for (const ms of [8100, 8500, 8900]) depois(ms, tremor); // o selo carregando
+  depois(9600, () => {
     flashBranco();
     tremor();
+    legenda.classList.remove("mixodas__legenda--viva");
     fundo.classList.add("mixodas--formado");
   });
-  depois(6300, () => fundo.classList.add("mixodas--grito"));
-  depois(duracao - 500, () => fundo.classList.add("mixodas--saindo"));
+  for (const ms of [11200, 12800, 14400]) depois(ms, tremor); // o Fumante pulsando
+  depois(12400, () => fundo.classList.add("mixodas--grito"));
+  depois(duracao - 700, () => fundo.classList.add("mixodas--saindo"));
   return new Promise((resolver) => {
     const terminar = () => {
       relogios.forEach(clearTimeout);

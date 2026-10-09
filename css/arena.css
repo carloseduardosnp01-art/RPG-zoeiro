@@ -1393,10 +1393,10 @@ button.fase:not(:disabled):hover {
   cursor: pointer;
   background:
     radial-gradient(ellipse at 50% 45%, rgba(120, 8, 0, .9), rgba(22, 0, 0, .97) 60%, #000 100%);
-  animation: mixodas-entra .5s ease both;
+  animation: mixodas-entra .9s ease both;
 }
 
-.mixodas--saindo { animation: mixodas-sai .5s ease forwards; }
+.mixodas--saindo { animation: mixodas-sai .7s ease forwards; }
 .mixodas--tremer .mixodas__palco { animation: mixodas-tremor .45s ease; }
 .mixodas--formado.mixodas--tremer .mixodas__palco { animation: mixodas-tremor .7s ease, mixodas-pulso 1.1s ease-in-out .7s infinite; }
 
@@ -1432,7 +1432,7 @@ button.fase:not(:disabled):hover {
   opacity: 0;
   transform: scale(.4);
   animation: mixodas-girar 9s linear infinite;
-  transition: opacity .8s ease, transform 1.2s cubic-bezier(.2, .9, .3, 1.2);
+  transition: opacity 1.4s ease, transform 2s cubic-bezier(.2, .9, .3, 1.2);
 }
 
 .mixodas__selo::before {
@@ -1471,7 +1471,7 @@ button.fase:not(:disabled):hover {
   position: relative;
   width: min(84vmin, 640px);
   aspect-ratio: 1;
-  transition: transform 1.2s cubic-bezier(.2, .9, .3, 1.2), filter 1s ease;
+  transition: transform 1.8s cubic-bezier(.2, .9, .3, 1.2), filter 1.4s ease;
 }
 
 .mixodas__parte {
@@ -1482,7 +1482,7 @@ button.fase:not(:disabled):hover {
   top: var(--y);
   width: 22%;
   translate: -50% -50%;
-  animation: mixodas-voo .6s cubic-bezier(.2, .9, .3, 1.15) calc(.6s + var(--ordem) * .55s) both;
+  animation: mixodas-voo 1.1s cubic-bezier(.2, .9, .3, 1.15) calc(1.2s + var(--ordem) * 1.1s) both;
 }
 
 .mixodas__parte[data-parte="cabeca"] { --x: 50%; --y: 30%; --de: 0vh; --gira: 0deg; z-index: 3; }
@@ -1501,7 +1501,7 @@ button.fase:not(:disabled):hover {
 .mixodas__carta {
   position: relative;
   filter: drop-shadow(0 0 2.2vmin rgba(255, 50, 30, .85));
-  transition: opacity .6s ease, transform .6s ease, filter .6s ease;
+  transition: opacity 1.6s ease, transform 1.6s ease, filter 1.2s ease;
 }
 
 /* a arte da parte, que aparece quando as cartas se fundem (bordas apagadas para virar um corpo só) */
@@ -1517,7 +1517,7 @@ button.fase:not(:disabled):hover {
   scale: .7;
   -webkit-mask-image: radial-gradient(circle, #000 50%, transparent 71%);
   mask-image: radial-gradient(circle, #000 50%, transparent 71%);
-  transition: opacity .7s ease, scale .9s cubic-bezier(.2, .9, .3, 1.2);
+  transition: opacity 1.6s ease .3s, scale 1.8s cubic-bezier(.2, .9, .3, 1.2) .3s;
 }
 
 .mixodas__parte[data-parte="cabeca"] .mixodas__arte { width: 210%; }
@@ -1629,6 +1629,37 @@ button.fase:not(:disabled):hover {
   animation: mixodas-entra .6s ease .3s both;
 }
 
+/* o nome de cada parte que pousa */
+.mixodas__legenda {
+  position: absolute;
+  bottom: max(4vh, 1rem);
+  left: 1rem;
+  right: 1rem;
+  color: #ffe1c8;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(1rem, 4vw, 2rem);
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  text-shadow: 0 0 16px rgba(255, 50, 20, .95), 0 3px 0 #000;
+  opacity: 0;
+}
+
+.mixodas__legenda--viva { animation: mixodas-legenda 1s ease both; }
+.mixodas--fusao .mixodas__legenda--viva { animation: mixodas-legenda-fica 1.9s ease both; }
+
+@keyframes mixodas-legenda {
+  0% { opacity: 0; transform: translateY(.6em) scale(.9); }
+  20%, 75% { opacity: 1; transform: none; }
+  100% { opacity: 0; }
+}
+
+@keyframes mixodas-legenda-fica {
+  0% { opacity: 0; letter-spacing: .5em; }
+  40%, 100% { opacity: 1; letter-spacing: .12em; }
+}
+
 .mixodas__grito {
   position: absolute;
   bottom: max(5vh, 1.2rem);
@@ -1653,7 +1684,19 @@ button.fase:not(:disabled):hover {
   .mixodas__selo,
   .mixodas__selo::before,
   .mixodas__fumaca span,
-  .mixodas--tremer .mixodas__palco { animation: none !important; }
+  .mixodas--tremer .mixodas__palco,
+  .mao__carta[data-mixodas="true"] { animation: none !important; }
+}
+
+/* com as 5 partes na mão, a cabeça do Mixodas pulsa em vermelho (é nela o botão) */
+.mao__carta[data-mixodas="true"] {
+  border-radius: 6px;
+  animation: mixodas-mao 1s ease-in-out infinite alternate;
+}
+
+@keyframes mixodas-mao {
+  from { box-shadow: 0 0 6px 2px rgba(255, 40, 20, .7); }
+  to { box-shadow: 0 0 18px 7px rgba(255, 70, 30, 1); }
 }
 
 /* Efeitos especiais da zoeira */

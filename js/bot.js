@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao, ehW, semAtaqueDireto,
-} from "./motor.js?v=202610091336";
+} from "./motor.js?v=202610092015";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 const zonaLivre = (p) => p.monstros.findIndex((m) => !m); // primeira zona de monstro livre (-1 se não tem)
@@ -17,6 +17,11 @@ const zonaLivre = (p) => p.monstros.findIndex((m) => !m); // primeira zona de mo
 export function jogadaDoBot(estado, j) {
   if (quemAge(estado) !== j) return null;
   if (estado.pendente) return { tipo: "escolher", alvos: escolherAlvos(estado, j, estado.pendente) };
+
+  // Mixodas, "O Fumante": com as 5 partes na mão, forma ele e vence
+  const cabeca = estado.jogadores[j].mao.find((x) => carta(estado, x).efeito === "mixodas");
+  const formar = cabeca && opcoesDaCarta(estado, j, cabeca).find((x) => x.id === "mixodas");
+  if (formar) return formar.acao;
 
   if (ehFasePrincipal(estado)) {
     for (const acao of jogadasPrincipais(estado, j)) {

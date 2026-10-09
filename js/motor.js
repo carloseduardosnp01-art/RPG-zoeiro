@@ -693,27 +693,27 @@ function comFonte(k, fn) {
 function executar(estado, j, acao, ev) {
   fonteDoEfeito = j;
   const erro = executarAcao(estado, j, acao, ev);
-  if (!erro) {
-    processarGatilhos(estado, ev);
-    verificarMixodas(estado, ev);
-  }
+  if (!erro) processarGatilhos(estado, ev);
   return erro;
 }
 
 // Mixodas, "O Fumante" e as 4 partes dele (nesta ordem: cabeça, braço esquerdo, braço direito, perna esquerda, perna direita)
 export const PARTES_MIXODAS = ["mixodas-o-fumante", "braco-esquerdo-de-o-fumante", "braco-direito-de-o-fumante", "perna-esquerda-de-o-fumante", "perna-direita-de-o-fumante"];
 
-// Quem tiver as 5 partes do Mixodas na mão vence o duelo na hora (se os dois tiverem, quem joga o turno)
-function verificarMixodas(estado, ev) {
-  if (estado.vencedor !== null) return;
-  for (const k of [estado.vez, oponente(estado.vez)]) {
-    const mao = estado.jogadores[k].mao;
-    const pecas = PARTES_MIXODAS.map((id) => mao.find((x) => estado.cartas[x] === id));
-    if (pecas.some((x) => !x)) continue;
-    ev.push({ t: "mixodas", j: k, pecas });
-    encerrar(estado, k, "mixodas", ev);
-    return;
-  }
+// As 5 partes do Mixodas estão na mão do jogador j
+export const temMixodasCompleto = (estado, j) =>
+  PARTES_MIXODAS.every((id) => estado.jogadores[j].mao.some((x) => estado.cartas[x] === id));
+
+// Botão na cabeça do Mixodas (na mão, no seu turno, com as 5 partes na mão): o Fumante se forma e você vence
+function invocarMixodas(estado, j, { iid }, ev) {
+  const mao = estado.jogadores[j].mao;
+  if (estado.cartas[iid] !== PARTES_MIXODAS[0] || !mao.includes(iid)) return "Escolha o Mixodas, \"O Fumante\" da sua mão.";
+  if (estado.vez !== j) return "O Mixodas só se forma no seu turno.";
+  if (!temMixodasCompleto(estado, j)) return "Você precisa ter as 5 partes do Mixodas na mão.";
+  const pecas = PARTES_MIXODAS.map((id, i) => (i === 0 ? iid : mao.find((x) => estado.cartas[x] === id)));
+  ev.push({ t: "mixodas", j, pecas });
+  encerrar(estado, j, "mixodas", ev);
+  return null;
 }
 
 function executarAcao(estado, j, acao, ev) {
@@ -762,6 +762,7 @@ function executarAcao(estado, j, acao, ev) {
     case "fase": return mudarFase(estado, j, acao, ev);
     case "escolher": return resolverEscolha(estado, j, acao.alvos || [], ev);
     case "reliquia": return usarReliquia(estado, j, ev);
+    case "mixodas": return invocarMixodas(estado, j, acao, ev);
     default: return "Ação desconhecida.";
   }
 }
@@ -4047,6 +4048,11 @@ export function opcoesDaCarta(estado, j, iid) {
   const p = estado.jogadores[j];
   const principal = ehFasePrincipal(estado);
   opcoes.push(...opcoesCigarrin(estado, j, iid));
+
+  // Mixodas, "O Fumante": com as 5 partes na mão, o botão na cabeça dele vence o duelo (em qualquer fase do seu turno)
+  if (loc.zona === "mao" && estado.cartas[iid] === PARTES_MIXODAS[0] && temMixodasCompleto(estado, j)) {
+    opcoes.push({ id: "mixodas", rotulo: "🚬 Formar o Mixodas, \"O Fumante\" (você vence o duelo!)", acao: { tipo: "mixodas", iid } });
+  }
 
   if (loc.zona === "mao" && principal) {
     if (c.categoria === "monstro") {

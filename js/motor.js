@@ -693,8 +693,27 @@ function comFonte(k, fn) {
 function executar(estado, j, acao, ev) {
   fonteDoEfeito = j;
   const erro = executarAcao(estado, j, acao, ev);
-  if (!erro) processarGatilhos(estado, ev);
+  if (!erro) {
+    processarGatilhos(estado, ev);
+    verificarMixodas(estado, ev);
+  }
   return erro;
+}
+
+// Mixodas, "O Fumante" e as 4 partes dele (nesta ordem: cabeça, braço esquerdo, braço direito, perna esquerda, perna direita)
+export const PARTES_MIXODAS = ["mixodas-o-fumante", "braco-esquerdo-de-o-fumante", "braco-direito-de-o-fumante", "perna-esquerda-de-o-fumante", "perna-direita-de-o-fumante"];
+
+// Quem tiver as 5 partes do Mixodas na mão vence o duelo na hora (se os dois tiverem, quem joga o turno)
+function verificarMixodas(estado, ev) {
+  if (estado.vencedor !== null) return;
+  for (const k of [estado.vez, oponente(estado.vez)]) {
+    const mao = estado.jogadores[k].mao;
+    const pecas = PARTES_MIXODAS.map((id) => mao.find((x) => estado.cartas[x] === id));
+    if (pecas.some((x) => !x)) continue;
+    ev.push({ t: "mixodas", j: k, pecas });
+    encerrar(estado, k, "mixodas", ev);
+    return;
+  }
 }
 
 function executarAcao(estado, j, acao, ev) {

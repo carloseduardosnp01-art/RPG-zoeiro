@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610080135";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610080135";
-import { el, esperar, aviso } from "./util.js?v=202610080135";
-import { tocar } from "./som.js?v=202610080135";
-import { abrirDetalhes } from "./catalogo.js?v=202610080135";
-import * as adm from "./admin.js?v=202610080135";
-import { PREMIOS } from "./premios.js?v=202610080135";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610080135";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610080135";
+} from "./motor.js?v=202610091336";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610091336";
+import { el, esperar, aviso } from "./util.js?v=202610091336";
+import { tocar, tocarAudios, pararAudios } from "./som.js?v=202610091336";
+import { abrirDetalhes } from "./catalogo.js?v=202610091336";
+import * as adm from "./admin.js?v=202610091336";
+import { PREMIOS } from "./premios.js?v=202610091336";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610091336";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610091336";
 
 const raiz = document.querySelector("#arena");
 
@@ -223,7 +223,8 @@ export function fecharArena() {
   clearInterval(relogio);
   fecharMenu();
   if (escolhaAberta) escolhaAberta.fechar();
-  document.querySelectorAll(".resultado, .corte, .banner-turno").forEach((x) => x.remove());
+  document.querySelectorAll(".resultado, .corte, .banner-turno, .mixodas").forEach((x) => x.remove());
+  pararAudios();
   raiz.replaceChildren();
   raiz.hidden = true;
   vazia.hidden = false;
@@ -998,6 +999,7 @@ function descreverEvento(estado, ev) {
     case "expirou": return { texto: `${nome(ev.iid)} apagou a luz: acabaram os turnos.` };
     case "tempo": return { texto: ev.j === eu ? "⏰ Seu tempo acabou." : `⏰ O tempo de ${quem(ev.j)} acabou.` };
     case "desistencia": return { texto: `🏳️ ${quem(ev.j)} desistiu.` };
+    case "mixodas": return { texto: `🚬 ${quem(ev.j)} juntou as 5 partes de ${nome(ev.pecas[0])}!`, classe: "log--fim" };
     case "fim": return { texto: `🏆 ${quem(ev.vencedor)} venceu o duelo!`, classe: "log--fim" };
     default: return null;
   }
@@ -1501,8 +1503,11 @@ async function tocarEventos(eventos, estadoNovo) {
       case "compra":
         if (!ev.inicial && ev.j === sessao.eu) tocar("carta");
         break;
+      case "mixodas":
+        await entradaMixodas(estadoNovo, ev);
+        break;
       case "fim":
-        tocar(ev.vencedor === sessao.eu ? "vitoria" : "derrota");
+        if (ev.motivo !== "mixodas") tocar(ev.vencedor === sessao.eu ? "vitoria" : "derrota"); // o Mixodas tem os áudios dele
         break;
     }
   }
@@ -1584,6 +1589,80 @@ function entradaDivina(estado, ev) {
     tremerTela();
   }, 300);
   return esperar(duracao).then(() => fundo.remove());
+}
+
+// Mixodas, "O Fumante": as 5 partes saem da mão, voam para o campo em cruz, se fundem e o Fumante se forma,
+// com o nome gigante em vermelho brilhando e tremendo na tela. Toca os 2 áudios da invocação (um depois do
+// outro: o primeiro acompanha a cena, o segundo continua na tela de vitória). Clicar pula a cena.
+const PARTES_DO_FUMANTE = ["cabeca", "braco-esq", "braco-dir", "perna-esq", "perna-dir"];
+function entradaMixodas(estado, ev) {
+  const duracao = 8200; // o tamanho do primeiro áudio
+  tocarAudios(["audio/mixodas-1.mp3", "audio/mixodas-2.mp3"]);
+  const fundo = el("div", "mixodas");
+  fundo.setAttribute("role", "img");
+  fundo.setAttribute("aria-label", `${nomeJogador(sessao.estado, ev.j)} juntou as 5 partes de Mixodas, O Fumante, e venceu o duelo`);
+  const fumaca = el("div", "mixodas__fumaca");
+  for (let i = 0; i < 18; i++) {
+    const f = el("span");
+    f.style.setProperty("--x", `${Math.round(Math.random() * 100)}%`);
+    f.style.setProperty("--atraso", `${(Math.random() * 4).toFixed(2)}s`);
+    f.style.setProperty("--tam", `${Math.round(18 + Math.random() * 22)}vmin`);
+    fumaca.append(f);
+  }
+  const palco = el("div", "mixodas__palco");
+  ev.pecas.forEach((iid, i) => {
+    const c = carta(estado, iid);
+    const parte = el("div", "mixodas__parte");
+    parte.dataset.parte = PARTES_DO_FUMANTE[i];
+    parte.style.setProperty("--ordem", String(i === 0 ? 4 : i - 1)); // os membros primeiro, a cabeça por último
+    const arte = el("img", "mixodas__arte");
+    arte.src = c.imagem;
+    arte.alt = "";
+    const cartaEl = el("div", "mixodas__carta");
+    cartaEl.append(criarCarta(c, { lazy: false }));
+    parte.append(arte, cartaEl);
+    palco.append(parte);
+  });
+  const nome = el("div", "mixodas__nome", "MIXODAS");
+  nome.dataset.texto = "MIXODAS";
+  const titulo = el("div", "mixodas__titulo");
+  titulo.append(nome, el("div", "mixodas__sub", "“O FUMANTE”"));
+  fundo.append(
+    el("div", "mixodas__raios"),
+    el("div", "mixodas__selo"),
+    fumaca,
+    palco,
+    el("div", "mixodas__quem", `${nomeJogador(sessao.estado, ev.j)} juntou as 5 partes!`),
+    titulo,
+    el("div", "mixodas__grito", "VITÓRIA ABSOLUTA!"),
+  );
+  document.body.append(fundo);
+
+  const relogios = [];
+  const depois = (ms, fn) => relogios.push(setTimeout(fn, ms));
+  const tremor = () => {
+    fundo.classList.remove("mixodas--tremer");
+    void fundo.offsetWidth;
+    fundo.classList.add("mixodas--tremer");
+  };
+  for (let n = 0; n < 5; n++) depois(1150 + n * 550, tremor); // cada parte que pousa
+  depois(3800, () => fundo.classList.add("mixodas--fusao"));
+  depois(4400, () => {
+    flashBranco();
+    tremor();
+    fundo.classList.add("mixodas--formado");
+  });
+  depois(6300, () => fundo.classList.add("mixodas--grito"));
+  depois(duracao - 500, () => fundo.classList.add("mixodas--saindo"));
+  return new Promise((resolver) => {
+    const terminar = () => {
+      relogios.forEach(clearTimeout);
+      fundo.remove();
+      resolver();
+    };
+    depois(duracao, terminar);
+    fundo.addEventListener("click", terminar);
+  });
 }
 
 function corteReliquia(ev) {
@@ -1725,6 +1804,7 @@ const FRASES_FIM = {
   deck: ["O oponente ficou sem cartas no deck.", "Seu deck acabou. Nem o Invocador salvou."],
   desistencia: ["O oponente arregou e desistiu.", "Você desistiu. Acontece nas melhores carecas."],
   wo: ["O oponente sumiu. Vitória por W.O.!", "Você foi dado como ausente (W.O.)."],
+  mixodas: ["Você juntou as 5 partes: Mixodas, \"O Fumante\" se formou!", "O oponente juntou as 5 partes do Mixodas. Não tinha o que fazer."],
 };
 
 let resultadoMostrado = null;

@@ -1382,6 +1382,280 @@ button.fase:not(:disabled):hover {
   50% { box-shadow: 0 0 8px 2px rgba(111, 224, 255, .85), 0 0 18px 5px rgba(255, 110, 200, .5); }
 }
 
+/* ---------- Mixodas, "O Fumante": as 5 partes se juntam e o Fumante se forma ---------- */
+.mixodas {
+  position: fixed;
+  inset: 0;
+  z-index: 1420;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: pointer;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(120, 8, 0, .9), rgba(22, 0, 0, .97) 60%, #000 100%);
+  animation: mixodas-entra .5s ease both;
+}
+
+.mixodas--saindo { animation: mixodas-sai .5s ease forwards; }
+.mixodas--tremer .mixodas__palco { animation: mixodas-tremor .45s ease; }
+.mixodas--formado.mixodas--tremer .mixodas__palco { animation: mixodas-tremor .7s ease, mixodas-pulso 1.1s ease-in-out .7s infinite; }
+
+@keyframes mixodas-entra { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mixodas-sai { to { opacity: 0; transform: scale(1.08); } }
+@keyframes mixodas-tremor {
+  10%, 90% { transform: translate(-3px, 2px); }
+  20%, 80% { transform: translate(6px, -3px); }
+  30%, 50%, 70% { transform: translate(-9px, 4px); }
+  40%, 60% { transform: translate(9px, -4px); }
+}
+
+/* raios vermelhos girando e o selo mágico atrás do Fumante */
+.mixodas__raios {
+  position: absolute;
+  inset: -60%;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 60, 30, .22) 0 5deg, transparent 5deg 15deg);
+  opacity: 0;
+  animation: mixodas-girar 14s linear infinite;
+  transition: opacity 1s ease;
+}
+
+.mixodas__selo {
+  position: absolute;
+  width: min(96vmin, 760px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: .5vmin solid rgba(255, 70, 40, .75);
+  box-shadow: 0 0 4vmin rgba(255, 40, 20, .7), inset 0 0 4vmin rgba(255, 40, 20, .55);
+  background:
+    repeating-conic-gradient(from 0deg, rgba(255, 190, 80, .28) 0 2deg, transparent 2deg 30deg),
+    radial-gradient(circle, transparent 54%, rgba(255, 80, 40, .35) 55%, transparent 56%, transparent 70%, rgba(255, 190, 80, .4) 71%, transparent 72%);
+  opacity: 0;
+  transform: scale(.4);
+  animation: mixodas-girar 9s linear infinite;
+  transition: opacity .8s ease, transform 1.2s cubic-bezier(.2, .9, .3, 1.2);
+}
+
+.mixodas__selo::before {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  border: .35vmin dashed rgba(255, 210, 120, .7);
+  animation: mixodas-girar 5s linear infinite reverse;
+}
+
+@keyframes mixodas-girar { to { rotate: 360deg; } }
+
+/* fumaça do cigarrin subindo */
+.mixodas__fumaca { position: absolute; inset: 0; pointer-events: none; }
+.mixodas__fumaca span {
+  position: absolute;
+  left: var(--x);
+  bottom: -30vmin;
+  width: var(--tam);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(210, 200, 200, .26), rgba(160, 150, 150, .1) 45%, transparent 70%);
+  filter: blur(1.5vmin);
+  animation: mixodas-fumaca 5.5s ease-in var(--atraso) infinite;
+}
+
+@keyframes mixodas-fumaca {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(.6); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-30%, -120vh) scale(1.8); }
+}
+
+/* o palco quadrado onde o corpo se monta (as partes ficam em cruz, como no selo) */
+.mixodas__palco {
+  position: relative;
+  width: min(84vmin, 640px);
+  aspect-ratio: 1;
+  transition: transform 1.2s cubic-bezier(.2, .9, .3, 1.2), filter 1s ease;
+}
+
+.mixodas__parte {
+  --x: 50%;
+  --y: 50%;
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 22%;
+  translate: -50% -50%;
+  animation: mixodas-voo .6s cubic-bezier(.2, .9, .3, 1.15) calc(.6s + var(--ordem) * .55s) both;
+}
+
+.mixodas__parte[data-parte="cabeca"] { --x: 50%; --y: 30%; --de: 0vh; --gira: 0deg; z-index: 3; }
+.mixodas__parte[data-parte="braco-dir"] { --x: 21%; --y: 39%; --de: -60vw; --gira: -40deg; z-index: 2; }
+.mixodas__parte[data-parte="braco-esq"] { --x: 79%; --y: 39%; --de: 60vw; --gira: 40deg; z-index: 2; }
+.mixodas__parte[data-parte="perna-dir"] { --x: 36%; --y: 75%; --de: -40vw; --gira: -25deg; z-index: 1; }
+.mixodas__parte[data-parte="perna-esq"] { --x: 64%; --y: 75%; --de: 40vw; --gira: 25deg; z-index: 1; }
+
+/* cada parte sai da mão (de baixo da tela) girando e pousa no lugar dela */
+@keyframes mixodas-voo {
+  0% { opacity: 0; transform: translate(var(--de), 80vh) rotate(calc(var(--gira) * 3)) scale(.5); }
+  70% { opacity: 1; transform: translate(0, 0) rotate(calc(var(--gira) * -.08)) scale(1.12); }
+  100% { opacity: 1; transform: none; }
+}
+
+.mixodas__carta {
+  position: relative;
+  filter: drop-shadow(0 0 2.2vmin rgba(255, 50, 30, .85));
+  transition: opacity .6s ease, transform .6s ease, filter .6s ease;
+}
+
+/* a arte da parte, que aparece quando as cartas se fundem (bordas apagadas para virar um corpo só) */
+.mixodas__arte {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  aspect-ratio: 1;
+  max-width: none;
+  translate: -50% -50%;
+  object-fit: cover;
+  opacity: 0;
+  scale: .7;
+  -webkit-mask-image: radial-gradient(circle, #000 50%, transparent 71%);
+  mask-image: radial-gradient(circle, #000 50%, transparent 71%);
+  transition: opacity .7s ease, scale .9s cubic-bezier(.2, .9, .3, 1.2);
+}
+
+.mixodas__parte[data-parte="cabeca"] .mixodas__arte { width: 210%; }
+.mixodas__parte[data-parte^="braco"] .mixodas__arte { width: 185%; }
+.mixodas__parte[data-parte^="perna"] .mixodas__arte { width: 165%; }
+
+.mixodas--fusao .mixodas__carta { opacity: 0; transform: scale(1.25); filter: drop-shadow(0 0 5vmin rgba(255, 220, 120, 1)) brightness(2); }
+.mixodas--fusao .mixodas__arte { opacity: 1; scale: 1; }
+.mixodas--fusao .mixodas__selo { opacity: 1; transform: scale(1); }
+
+.mixodas--formado .mixodas__raios { opacity: 1; }
+.mixodas--formado .mixodas__palco {
+  transform: scale(1.1) translateY(4%);
+  filter: drop-shadow(0 0 3vmin rgba(255, 40, 20, .9)) saturate(1.25);
+}
+
+@keyframes mixodas-pulso {
+  0%, 100% { filter: drop-shadow(0 0 3vmin rgba(255, 40, 20, .9)) saturate(1.25); }
+  50% { filter: drop-shadow(0 0 6vmin rgba(255, 90, 40, 1)) saturate(1.5) brightness(1.12); }
+}
+
+/* o nome gigante, vermelho, brilhando e tremendo */
+.mixodas__titulo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  translate: 0 -50%;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.mixodas--formado .mixodas__titulo { animation: mixodas-nome-entra .55s cubic-bezier(.2, .9, .3, 1.3) both; }
+
+@keyframes mixodas-nome-entra {
+  0% { opacity: 0; transform: scale(4); filter: blur(8px); }
+  60% { opacity: 1; transform: scale(.92); filter: blur(0); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.mixodas__nome {
+  position: relative;
+  display: inline-block;
+  color: #ff2a12;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(3.2rem, 17vw, 11rem);
+  font-weight: 900;
+  line-height: .95;
+  letter-spacing: .04em;
+  -webkit-text-stroke: .02em #2a0000;
+  text-shadow:
+    0 0 .06em #fff,
+    0 0 .18em #ff3b1f,
+    0 0 .45em #ff1a00,
+    0 0 .9em rgba(255, 0, 0, .8),
+    0 .06em 0 #4a0000;
+  animation: mixodas-brilho .9s ease-in-out infinite alternate, mixodas-treme .12s linear infinite;
+}
+
+/* "eco" vermelho atrás do nome, tremendo descompassado */
+.mixodas__nome::after {
+  content: attr(data-texto);
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  -webkit-text-stroke: .015em rgba(255, 120, 60, .7);
+  text-shadow: none;
+  opacity: .6;
+  animation: mixodas-treme .09s linear infinite reverse;
+  transform: scale(1.04);
+}
+
+.mixodas__sub {
+  margin-top: .2em;
+  color: #ffd27a;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(1.4rem, 6vw, 3.4rem);
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-shadow: 0 0 .3em rgba(255, 120, 40, .95), 0 .08em 0 #000;
+  animation: mixodas-treme .15s linear infinite;
+}
+
+@keyframes mixodas-brilho {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.35) drop-shadow(0 0 .25em rgba(255, 60, 20, .9)); }
+}
+
+@keyframes mixodas-treme {
+  0% { transform: translate(0, 0) rotate(0); }
+  25% { transform: translate(-.02em, .015em) rotate(-.4deg); }
+  50% { transform: translate(.025em, -.01em) rotate(.3deg); }
+  75% { transform: translate(-.01em, -.02em) rotate(-.2deg); }
+  100% { transform: translate(.015em, .02em) rotate(.4deg); }
+}
+
+.mixodas__quem {
+  position: absolute;
+  top: max(3vh, 1rem);
+  left: 1rem;
+  right: 1rem;
+  color: #ffd9c9;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  text-shadow: 0 0 10px rgba(255, 60, 30, .9), 0 2px 0 #000;
+  animation: mixodas-entra .6s ease .3s both;
+}
+
+.mixodas__grito {
+  position: absolute;
+  bottom: max(5vh, 1.2rem);
+  left: 1rem;
+  right: 1rem;
+  color: #ffe08a;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(1.5rem, 6.5vw, 3.6rem);
+  font-weight: 900;
+  text-align: center;
+  text-shadow: 0 0 22px rgba(255, 170, 40, .95), 0 4px 0 #000;
+  opacity: 0;
+}
+
+.mixodas--grito .mixodas__grito { animation: mixodas-nome-entra .5s cubic-bezier(.2, .9, .3, 1.3) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mixodas__nome,
+  .mixodas__nome::after,
+  .mixodas__sub,
+  .mixodas__raios,
+  .mixodas__selo,
+  .mixodas__selo::before,
+  .mixodas__fumaca span,
+  .mixodas--tremer .mixodas__palco { animation: none !important; }
+}
+
 /* Efeitos especiais da zoeira */
 .flash-branco {
   position: fixed;

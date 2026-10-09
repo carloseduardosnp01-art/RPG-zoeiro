@@ -338,10 +338,16 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT114 | Miro, O Dragão da Garganta profunda **(Loja: 100 🪙, limitada a 1)** | Efeito · LUZ · Dragão · Nv 10 · 0/0 | – | "Olhos Nada Azuis" seu destruído em batalha ou por efeito do oponente, com Dragão no Cemitério: entra da mão e dá 600 de dano por Dragão de nome diferente no Cemitério; ao entrar, o ATK vira o de 1 Dragão do Cemitério; destruído por efeito de card: destrói todos os monstros do oponente |
 | ZOE-PT115 | O dragão alienado de olhos vermelhos | Monstro Normal · TREVAS · Dragão · Nv 7 · 2400/2000 | – | Dragão de olhos vermelhos, desligado do mundo |
 | ZOE-PT116 | Rei do Gado | Monstro Normal · TREVAS · Demônio · Nv 6 · 2500/1200 | – | Dono do pasto do Cemitério |
+| ZOE-PT117 | Mixodas, "O Fumante" **(limitada a 1)** | Efeito · TREVAS · Mago · Nv 3 · 1000/1000 | – | Com ele e as 4 partes na mão, você vence o duelo na hora (com a entrada épica do Fumante) |
+| ZOE-PT118 | Braço esquerdo de o Fumante com um monster **(limitada a 1)** | Monstro Normal · TREVAS · Mago · Nv 1 · 200/300 | – | Parte do Mixodas |
+| ZOE-PT119 | Braço direito de o Fumante com um cigarrin **(limitada a 1)** | Monstro Normal · TREVAS · Mago · Nv 1 · 200/300 | – | Parte do Mixodas |
+| ZOE-PT120 | Perna esquerda de o fumante **(limitada a 1)** | Monstro Normal · TREVAS · Mago · Nv 1 · 200/300 | – | Parte do Mixodas |
+| ZOE-PT121 | Perna direita de o fumante **(limitada a 1)** | Monstro Normal · TREVAS · Mago · Nv 1 · 200/300 | – | Parte do Mixodas |
 
 **Atributos:** TERRA, TREVAS, LUZ, ÁGUA (水), VENTO, FOGO (炎) e DIVINO. Desde 04/10/2026 não existem mais GELO (os Manoel do Gelo viraram ÁGUA; o "gelo" do Pote do Gelo é ÁGUA ou "Gelo" no nome) nem INTERNET como atributo: os monstros "W" são TERRA e do **Tipo Internet** (o antigo Ciberso), e é esse Tipo que ganha o bônus do WI-FI Grátis. O Nível "na hora" (`nivelAtual` em `js/motor.js`, por causa da Geada da Peste) é o que vale para os tributos e para os efeitos que olham o Nível na mão e no campo.
 
-**Cartas da Loja:** as cartas "Lendária da Zoeira" (ZOE-PT071 a 074, 108, 109 e 114) não estão no deck padrão: são compradas com Careca Coins na 🛒 Loja (veja em [Funcionalidades](#funcionalidades)). **Lendária da Zoeira é só para essas exclusivas**, que ninguém tem no começo; as outras cartas fortes vão até Ultra Rara, e os três deuses (Obelisco, Slif o Dragão Careca do Céu e O Emanuel Careca de ICE) são **Secreta**, liberados para todo mundo no editor. Detalhes que valem no jogo:
+**Cartas da Loja:** as cartas "Lendária da Zoeira" (ZOE-PT071 a 074, 108, 109 e 114) não estão no deck padrão: são compradas com Careca Coins na 🛒 Loja (veja em [Funcionalidades](#funcionalidades)). **Lendária da Zoeira é só para essas exclusivas**, que ninguém tem no começo; as outras cartas fortes vão até Ultra Rara, e os três deuses (Obelisco, Slif o Dragão Careca do Céu e O Emanuel Careca de ICE) e o Mixodas, "O Fumante" são **Secreta**, liberados para todo mundo no editor. Detalhes que valem no jogo:
+- **Mixodas, "O Fumante":** quem tiver na mão o Mixodas e as 4 partes (os dois braços e as duas pernas) vence na hora, em qualquer momento (`verificarMixodas` em `js/motor.js`, depois de cada ação; se os dois completarem juntos, vence quem joga o turno). A arena mostra a entrada épica dele (`entradaMixodas` em `js/arena.js`): as 5 cartas saem da mão e pousam em cruz no campo, se fundem num corpo só com selo e raios vermelhos e fumaça de cigarrin, e o nome "MIXODAS" aparece gigante em vermelho, brilhando e tremendo. Tocam os 2 áudios da invocação (`audio/mixodas-1.mp3` durante a cena e `audio/mixodas-2.mp3` logo depois, na tela de vitória). Clicar pula a cena. O Bot nunca joga nem descarta as partes.
 - **Entrada lendária:** quando uma delas entra em campo, a arena faz uma entrada especial: a carta desce do céu com raios arco-íris, faíscas, clarão, tremor e fanfarra, com o selo "★ LENDÁRIA DA ZOEIRA ★" e uma frase só dela (`ENTRADAS_LENDARIAS` em `js/arena.js`). Em campo, ela fica com uma aura arco-íris pulsando.
 - O **Chaos Kelvor** e o **Miro, o Sulista Calvo** pedem confirmação antes de ativar o efeito (os dois limpam a mesa, inclusive as suas cartas).
 - O **Mago Dragão Sonho do BIG** só pode ser Invocado por Invocação-Fusão (`"somenteFusao": true` em `data/cartas.json`): nenhum outro efeito o coloca no campo, nem depois de ele ter entrado pela Suruba.
@@ -414,14 +420,15 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── deck.js           # Deck do jogador: guardar, validar, usar nos duelos
 │   ├── editor-deck.js    # Tela "Meu deck"
 │   ├── cartas-ui.js      # HTML das cartas (frente e verso)
-│   ├── som.js            # Efeitos sonoros (Web Audio)
+│   ├── som.js            # Efeitos sonoros (Web Audio) e os áudios gravados
 │   └── util.js           # Funções pequenas
 ├── supabase/banco.sql    # Banco de dados: tabelas, funções e permissões (cole no SQL Editor do Supabase)
-├── data/cartas.json      # As 116 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
+├── data/cartas.json      # As 121 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
 ├── data/noticias.json    # As notícias (a mais nova aparece primeiro)
 ├── img/noticias/         # Cartazes das notícias
 ├── img/cartas/           # Artes recortadas (WebP 640×640)
 ├── img/cosmeticos/       # Molduras, peças da skin de campo (uma por zona), fundo, prévia e costas
+├── audio/                # Áudios gravados (a entrada do Mixodas, "O Fumante")
 └── fontes/               # Cinzel e Crimson Pro (SIL Open Font License)
 ```
 

@@ -1,9 +1,10 @@
 /* ==========================================================================
    Duelo da Zoeira · js/som.js
-   Efeitos sonoros sintetizados com Web Audio (nenhum arquivo de áudio).
+   Efeitos sonoros sintetizados com Web Audio, mais os áudios gravados da
+   entrada do Mixodas, "O Fumante" (pasta audio/).
    ========================================================================== */
 
-import { guardar } from "./util.js?v=202610080135";
+import { guardar } from "./util.js?v=202610091336";
 
 let contexto = null;
 let ligado = guardar.ler("zoeira-som", true);
@@ -104,6 +105,29 @@ export function tocar(nome) {
   } catch { /* áudio indisponível */ }
 }
 
+// Áudios gravados tocando um depois do outro (a entrada do Mixodas). pararAudios() corta tudo.
+let audiosTocando = [];
+export function tocarAudios(lista) {
+  pararAudios();
+  if (!ligado || !lista.length) return;
+  const audios = lista.map((src) => {
+    const a = new Audio(src);
+    a.preload = "auto";
+    return a;
+  });
+  audiosTocando = audios;
+  audios.forEach((a, i) => {
+    const proximo = audios[i + 1];
+    if (proximo) a.addEventListener("ended", () => audiosTocando === audios && proximo.play().catch(() => {}));
+  });
+  audios[0].play().catch(() => {});
+}
+
+export function pararAudios() {
+  for (const a of audiosTocando) a.pause();
+  audiosTocando = [];
+}
+
 export function somLigado() {
   return ligado;
 }
@@ -111,6 +135,7 @@ export function somLigado() {
 export function alternarSom() {
   ligado = !ligado;
   guardar.gravar("zoeira-som", ligado);
+  if (!ligado) pararAudios();
   if (ligado) tocar("clique");
   return ligado;
 }

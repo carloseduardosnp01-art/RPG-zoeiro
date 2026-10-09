@@ -13,13 +13,13 @@
    antiga é levado para o banco na hora, com a mesma senha.
    ========================================================================== */
 
-import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610080135";
-import { verificarPresente, verificarPremio } from "./admin.js?v=202610080135";
-import { ehReliquia, premioRemovido } from "./premios.js?v=202610080135";
-import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610080135";
-import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610080135";
-import { precoNaLoja } from "./motor.js?v=202610080135";
-import { COSMETICOS, ehCosmetico, precoCosmetico, visualDe } from "./cosmeticos.js?v=202610080135";
+import { PREFIXO, publicar, lerRetido } from "./rede.js?v=202610091336";
+import { verificarPresente, verificarPremio } from "./admin.js?v=202610091336";
+import { ehReliquia, premioRemovido } from "./premios.js?v=202610091336";
+import { chaveDoNick, guardar, nivelDoXp } from "./util.js?v=202610091336";
+import { bancoLigado, chamar, derivarSenha, ErroBanco } from "./banco.js?v=202610091336";
+import { precoNaLoja } from "./motor.js?v=202610091336";
+import { COSMETICOS, ehCosmetico, precoCosmetico, visualDe } from "./cosmeticos.js?v=202610091336";
 
 const CHAVE_SESSAO = "zoeira-sessao";
 const CHAVE_CONTAS = "zoeira-contas";
@@ -746,7 +746,7 @@ export function equiparCosmetico(tipo, id) {
 
 // Soma o resultado de um duelo (uma vez por duelo). Devolve { xp, coins } ganhos.
 // contraBot: vale só 30% do XP e não conta vitória/derrota (o ranking de vitórias é só online)
-// oponente: { nick, tag } para o histórico de duelos; motivo: "pl", "deck", "desistencia", "wo"
+// oponente: { nick, tag } para o histórico de duelos; motivo: "pl", "deck", "desistencia", "wo", "mixodas"
 // ranked: duelo do Reino dos Carecas (as Careca Coins dele vêm do servidor, não daqui)
 export function registrarResultado({ dueloId, venceu, contraBot = false, oponente = null, motivo = null, tipo = null, ranked = false }) {
   if (!usuario) return { xp: 0, coins: 0 };

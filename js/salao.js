@@ -12,20 +12,20 @@
      duelo/<id>/...    o duelo em si (ver sessao.js)
    ========================================================================== */
 
-import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede, presencaGerenciada } from "./rede.js?v=202610080135";
-import * as conta from "./conta.js?v=202610080135";
-import { bancoLigado, chamar } from "./banco.js?v=202610080135";
-import * as adm from "./admin.js?v=202610080135";
-import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610080135";
-import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610080135";
-import { abrirPremio } from "./visor-premio.js?v=202610080135";
-import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610080135";
-import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610080135";
-import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610080135";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610080135";
-import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610080135";
-import { tocar } from "./som.js?v=202610080135";
-import { comMoldura, visualDe } from "./cosmeticos.js?v=202610080135";
+import { PREFIXO, conectar, publicar, assinar, lerRetido, aoStatus, modoRede, presencaGerenciada } from "./rede.js?v=202610091336";
+import * as conta from "./conta.js?v=202610091336";
+import { bancoLigado, chamar } from "./banco.js?v=202610091336";
+import * as adm from "./admin.js?v=202610091336";
+import { iniciarTorneio, atualizarTorneio, torneioAtual } from "./torneio-ui.js?v=202610091336";
+import { PREMIOS, ehReliquia, ehTrofeu } from "./premios.js?v=202610091336";
+import { abrirPremio } from "./visor-premio.js?v=202610091336";
+import { novoDuelo, novoDueloTag, ehTag, versaoDasCartas, problemaDoDeck } from "./motor.js?v=202610091336";
+import { deckAtual, ehDeckPadrao } from "./deck.js?v=202610091336";
+import { criarSessaoOnline, criarSessaoTag, topicosDuelo } from "./sessao.js?v=202610091336";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610091336";
+import { el, gerarId, hora, aviso, guardar, nivelDoXp, progressoNivel, chaveDoNick } from "./util.js?v=202610091336";
+import { tocar } from "./som.js?v=202610091336";
+import { comMoldura, visualDe } from "./cosmeticos.js?v=202610091336";
 
 const SID = gerarId(12); // identifica esta aba
 
@@ -1148,7 +1148,7 @@ function botaoPerfil(cartao, texto, classe = "link-perfil") {
   return b;
 }
 
-const TEXTO_MOTIVO = { desistencia: " (desistência)", wo: " (W.O.)", deck: " (deck acabou)" };
+const TEXTO_MOTIVO = { desistencia: " (desistência)", wo: " (W.O.)", deck: " (deck acabou)", mixodas: " (Mixodas)" };
 
 // Careca Coin: ícone e selo com o saldo
 function iconeCoin(classe = "coin") {
@@ -1879,6 +1879,7 @@ function terminarDuelo(estado, eu) {
       deck: `🏆 ${v} venceu ${d}: o deck de ${d} acabou!`,
       desistencia: `🏆 ${v} fez ${d} desistir na Arena!`,
       wo: `🏆 ${v} venceu ${d} por W.O.!`,
+      mixodas: `🚬 ${v} juntou as 5 partes do Mixodas, "O Fumante" e venceu ${d}!`,
     };
     const texto = ranked ? `👑 ${v} venceu ${d} no Reino dos Carecas!` : frases[estado.motivo] || `🏆 ${v} venceu ${d} na Arena!`;
     enviarGlobal({ id: gerarId(), tipo: "sistema", texto, t: Date.now() });

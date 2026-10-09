@@ -13,7 +13,7 @@
    testar o online com duas abas sem internet. ?rede=mqtt força o MQTT.
    ========================================================================== */
 
-import { bancoLigado, chamar, configTempoReal } from "./banco.js?v=202610080135";
+import { bancoLigado, chamar, configTempoReal } from "./banco.js?v=202610091336";
 
 export const PREFIXO = "rpgdazoeira/v1";
 

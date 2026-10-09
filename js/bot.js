@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao, ehW, semAtaqueDireto,
-} from "./motor.js?v=202610080135";
+} from "./motor.js?v=202610091336";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 const zonaLivre = (p) => p.monstros.findIndex((m) => !m); // primeira zona de monstro livre (-1 se não tem)
@@ -449,6 +449,7 @@ function melhorInvocacao(estado, j, mao) {
   for (const { iid, c } of mao) {
     if (c.categoria !== "monstro") continue;
     if (c.efeito === "w-laminas" && p.monstros.some((m) => m && carta(estado, m.iid).efeito === "w-laminas")) continue;
+    if (c.parteMixodas) continue; // as partes do Mixodas ficam na mão (é lá que elas vencem o duelo)
     const n = tributosNaHora(estado, iid); // a Geada da Peste baixa o Nível dos monstros de ÁGUA
     if (meusSlots.length < n) continue;
     const tributos = meusSlots.slice(0, n);
@@ -571,6 +572,7 @@ const VALOR_NA_MAO = {
 
 function valorNaMao(estado, j, iid) {
   const c = carta(estado, iid);
+  if (c.parteMixodas) return 20; // nunca descarta uma parte do Mixodas
   if (c.id === "careca-feijao") return 5;
   if (c.id === "grande-mestre") return estado.jogadores[j].mao.some((x) => carta(estado, x).efeito === "invocador") ? 7 : 3;
   return VALOR_NA_MAO[c.efeito] ?? 4;
@@ -580,6 +582,7 @@ function escolherAlvos(estado, j, pend) {
   if (pend.tipo === "descarte") {
     const valor = (iid) => {
       const c = carta(estado, iid);
+      if (c.parteMixodas) return 20;
       if (c.id === "careca-feijao") return 5;
       if (c.id === "grande-mestre") return estado.jogadores[j].mao.some((x) => carta(estado, x).efeito === "invocador") ? 7 : 3;
       return VALOR_NA_MAO[c.efeito] ?? 4;

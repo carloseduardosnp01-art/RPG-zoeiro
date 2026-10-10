@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610092015";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610092015";
-import { el, esperar, aviso } from "./util.js?v=202610092015";
-import { tocar, tocarAudios, pararAudios } from "./som.js?v=202610092015";
-import { abrirDetalhes } from "./catalogo.js?v=202610092015";
-import * as adm from "./admin.js?v=202610092015";
-import { PREMIOS } from "./premios.js?v=202610092015";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610092015";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610092015";
+} from "./motor.js?v=202610092308";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610092308";
+import { el, esperar, aviso } from "./util.js?v=202610092308";
+import { tocar, tocarAudios, pararAudios } from "./som.js?v=202610092308";
+import { abrirDetalhes } from "./catalogo.js?v=202610092308";
+import * as adm from "./admin.js?v=202610092308";
+import { PREMIOS } from "./premios.js?v=202610092308";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610092308";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610092308";
 
 const raiz = document.querySelector("#arena");
 
@@ -1593,14 +1593,16 @@ function entradaDivina(estado, ev) {
   return esperar(duracao).then(() => fundo.remove());
 }
 
-// Mixodas, "O Fumante": as 5 partes saem da mão uma a uma (com o nome de cada uma na tela), voam para o campo
-// em cruz, se fundem e o Fumante se forma, com o nome gigante em vermelho brilhando e tremendo na tela. Toca os
-// 2 áudios da invocação, um depois do outro (o segundo começa no meio da cena e segue na tela de vitória).
-// Clicar pula a cena.
+// Mixodas, "O Fumante": as 5 partes saem da mão e aparecem nas zonas de monstro de quem formou (a cabeça no
+// meio, depois os braços e as pernas), sobem do campo para o centro em cruz, se fundem e o Fumante se forma,
+// com o nome gigante em vermelho brilhando e tremendo. Enquanto monta, efeitos sonoros (pouso, carga, explosão);
+// o áudio da invocação toca quando ele se forma. Clicar pula a cena.
 const PARTES_DO_FUMANTE = ["cabeca", "braco-esq", "braco-dir", "perna-esq", "perna-dir"];
+// zona de monstro de cada parte, da esquerda para a direita da tela: perna direita, braço direito, cabeça, braço esquerdo, perna esquerda
+const ZONA_DA_PARTE = { cabeca: 2, "braco-dir": 1, "braco-esq": 3, "perna-dir": 0, "perna-esq": 4 };
+const ORDEM_NO_CAMPO = ["cabeca", "braco-dir", "braco-esq", "perna-dir", "perna-esq"];
 function entradaMixodas(estado, ev) {
-  const duracao = 17000;
-  tocarAudios(["audio/mixodas-1.mp3", "audio/mixodas-2.mp3"]);
+  const duracao = 20500;
   const fundo = el("div", "mixodas");
   fundo.setAttribute("role", "img");
   fundo.setAttribute("aria-label", `${nomeJogador(sessao.estado, ev.j)} juntou as 5 partes de Mixodas, O Fumante, e venceu o duelo`);
@@ -1613,11 +1615,11 @@ function entradaMixodas(estado, ev) {
     fumaca.append(f);
   }
   const palco = el("div", "mixodas__palco");
+  const partes = {};
   ev.pecas.forEach((iid, i) => {
     const c = carta(estado, iid);
     const parte = el("div", "mixodas__parte");
     parte.dataset.parte = PARTES_DO_FUMANTE[i];
-    parte.style.setProperty("--ordem", String(i === 0 ? 4 : i - 1)); // os membros primeiro, a cabeça por último
     const arte = el("img", "mixodas__arte");
     arte.src = c.imagem;
     arte.alt = "";
@@ -1625,6 +1627,7 @@ function entradaMixodas(estado, ev) {
     cartaEl.append(criarCarta(c, { lazy: false }));
     parte.append(arte, cartaEl);
     palco.append(parte);
+    partes[PARTES_DO_FUMANTE[i]] = { el: parte, nome: c.nome };
   });
   const legenda = el("div", "mixodas__legenda");
   const nome = el("div", "mixodas__nome", "MIXODAS");
@@ -1643,6 +1646,26 @@ function entradaMixodas(estado, ev) {
   );
   document.body.append(fundo);
 
+  // onde cada parte fica no campo (as zonas de monstro de quem formou) e de onde ela sai (a mão dele)
+  const centro = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+  const zonas = [...raiz.querySelectorAll(`.zona[data-zona="monstros"][data-j="${ev.j}"]`)]
+    .map((z) => z.getBoundingClientRect())
+    .filter((r) => r.width > 0)
+    .sort((a, b) => a.left - b.left);
+  const maoEl = ev.j === sessao.eu ? refs.mao : refs.maoOp;
+  const maoR = maoEl && maoEl.getBoundingClientRect();
+  const daMao = maoR && maoR.width ? centro(maoR) : { x: innerWidth / 2, y: innerHeight * 1.1 };
+  const posCampo = {};
+  for (const n of ORDEM_NO_CAMPO) {
+    const z = zonas.length === 5 ? zonas[ZONA_DA_PARTE[n]] : null; // sem as zonas na tela, as partes vão direto para o centro
+    if (!z) continue;
+    const r = partes[n].el.getBoundingClientRect();
+    const c = centro(r);
+    const alvo = centro(z);
+    posCampo[n] = { dx: alvo.x - c.x, dy: alvo.y - c.y, escala: Math.min(z.width / r.width, z.height / r.height) };
+  }
+  const tf = (p, escala = p.escala) => `translate(${p.dx}px, ${p.dy}px) scale(${escala})`;
+
   const relogios = [];
   const depois = (ms, fn) => relogios.push(setTimeout(fn, ms));
   const tremor = () => {
@@ -1650,33 +1673,89 @@ function entradaMixodas(estado, ev) {
     void fundo.offsetWidth;
     fundo.classList.add("mixodas--tremer");
   };
-  // cada parte pousa (1 por segundo, a cabeça por último) e o nome dela aparece embaixo
-  const ordem = [1, 2, 3, 4, 0];
-  ordem.forEach((i, n) => depois(2300 + n * 1100, () => {
-    tremor();
-    legenda.textContent = carta(estado, ev.pecas[i]).nome;
+  const mostrarLegenda = (texto) => {
+    legenda.textContent = texto;
     legenda.classList.remove("mixodas__legenda--viva");
     void legenda.offsetWidth;
     legenda.classList.add("mixodas__legenda--viva");
-  }));
-  depois(7700, () => {
-    legenda.textContent = "AS 5 PARTES SE JUNTARAM...";
-    fundo.classList.add("mixodas--fusao");
+  };
+  let audioTocou = false;
+  const tocarOAudio = () => {
+    if (audioTocou) return;
+    audioTocou = true;
+    tocarAudios(["audio/mixodas-1.mp3"]);
+  };
+
+  tocar("mixodasRonco");
+  // 1. as partes saem da mão e pousam nas zonas de monstro: a cabeça no meio, depois os braços e as pernas
+  ORDEM_NO_CAMPO.forEach((n, k) => {
+    const parte = partes[n].el;
+    const p = posCampo[n];
+    const inicio = 700 + k * 1000;
+    depois(inicio, () => {
+      tocar("mixodasZum");
+      const naMao = refs.mao.querySelector(`.mao__carta[data-iid="${ev.pecas[PARTES_DO_FUMANTE.indexOf(n)]}"]`);
+      if (naMao) naMao.style.visibility = "hidden"; // saiu da mão
+      const c = centro(parte.getBoundingClientRect());
+      const giro = k % 2 ? 25 : -25;
+      const saida = `translate(${daMao.x - c.x}px, ${daMao.y - c.y}px) rotate(${giro}deg) scale(.4)`;
+      parte.animate([
+        { transform: saida, opacity: 0 },
+        { transform: p ? tf(p, p.escala * 1.3) : "scale(1.15)", opacity: 1, offset: 0.75 },
+        { transform: p ? tf(p) : "none", opacity: 1 },
+      ], { duration: 750, easing: "cubic-bezier(.2, .9, .3, 1.1)", fill: "forwards" });
+    });
+    depois(inicio + 750, () => {
+      tocar("mixodasPouso");
+      tremor();
+      tremerTela();
+      mostrarLegenda(partes[n].nome);
+    });
   });
-  for (const ms of [8100, 8500, 8900]) depois(ms, tremor); // o selo carregando
-  depois(9600, () => {
+  // 2. as 5 no campo brilham e o selo carrega
+  depois(5900, () => {
+    fundo.classList.add("mixodas--carga");
+    mostrarLegenda("AS 5 PARTES ESTÃO NO CAMPO!");
+    tocar("mixodasCarga");
+  });
+  for (const ms of [6400, 6900, 7400]) depois(ms, tremor);
+  // 3. a tela escurece e as partes sobem do campo para o centro, em cruz
+  depois(7900, () => {
+    fundo.classList.add("mixodas--escuro");
+    tocar("mixodasZum");
+    ORDEM_NO_CAMPO.forEach((n, k) => {
+      const p = posCampo[n];
+      if (!p) return;
+      partes[n].el.animate([{ transform: tf(p), opacity: 1 }, { transform: "none", opacity: 1 }],
+        { duration: 1300, delay: k * 120, easing: "cubic-bezier(.5, 0, .2, 1.1)", fill: "forwards" });
+    });
+  });
+  // 4. as cartas se fundem num corpo só
+  depois(9700, () => {
+    fundo.classList.remove("mixodas--carga");
+    fundo.classList.add("mixodas--fusao");
+    mostrarLegenda("AS 5 PARTES SE JUNTARAM...");
+    tocar("mixodasCarga");
+  });
+  for (const ms of [10200, 10600, 11000]) depois(ms, tremor);
+  // 5. o Fumante se forma: clarão, explosão, o nome gigante e o áudio da invocação
+  depois(11600, () => {
     flashBranco();
     tremor();
+    tremerTela();
+    tocar("mixodasExplosao");
+    tocarOAudio();
     legenda.classList.remove("mixodas__legenda--viva");
     fundo.classList.add("mixodas--formado");
   });
-  for (const ms of [11200, 12800, 14400]) depois(ms, tremor); // o Fumante pulsando
-  depois(12400, () => fundo.classList.add("mixodas--grito"));
+  for (const ms of [13200, 14800, 16400, 18000]) depois(ms, tremor); // o Fumante pulsando
+  depois(14600, () => fundo.classList.add("mixodas--grito"));
   depois(duracao - 700, () => fundo.classList.add("mixodas--saindo"));
   return new Promise((resolver) => {
     const terminar = () => {
       relogios.forEach(clearTimeout);
       fundo.remove();
+      tocarOAudio(); // pulou antes de ele se formar: o áudio toca mesmo assim
       resolver();
     };
     depois(duracao, terminar);

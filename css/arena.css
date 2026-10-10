@@ -1391,10 +1391,24 @@ button.fase:not(:disabled):hover {
   place-items: center;
   overflow: hidden;
   cursor: pointer;
-  background:
-    radial-gradient(ellipse at 50% 45%, rgba(120, 8, 0, .9), rgba(22, 0, 0, .97) 60%, #000 100%);
+  isolation: isolate;
+  /* primeiro o campo aparece por baixo (as partes pousam nas zonas de monstro); depois escurece */
+  background: radial-gradient(ellipse at 50% 50%, rgba(90, 0, 0, .12), rgba(40, 0, 0, .55) 75%, rgba(0, 0, 0, .75));
   animation: mixodas-entra .9s ease both;
 }
+
+.mixodas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(ellipse at 50% 45%, rgba(120, 8, 0, .9), rgba(22, 0, 0, .97) 60%, #000 100%);
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.mixodas--escuro::before { opacity: 1; }
+.mixodas:not(.mixodas--escuro) .mixodas__fumaca { opacity: .35; }
 
 .mixodas--saindo { animation: mixodas-sai .7s ease forwards; }
 .mixodas--tremer .mixodas__palco { animation: mixodas-tremor .45s ease; }
@@ -1482,20 +1496,21 @@ button.fase:not(:disabled):hover {
   top: var(--y);
   width: 22%;
   translate: -50% -50%;
-  animation: mixodas-voo 1.1s cubic-bezier(.2, .9, .3, 1.15) calc(1.2s + var(--ordem) * 1.1s) both;
+  opacity: 0; /* aparece quando sai da mão (o voo é feito no js/arena.js) */
 }
 
-.mixodas__parte[data-parte="cabeca"] { --x: 50%; --y: 30%; --de: 0vh; --gira: 0deg; z-index: 3; }
-.mixodas__parte[data-parte="braco-dir"] { --x: 21%; --y: 39%; --de: -60vw; --gira: -40deg; z-index: 2; }
-.mixodas__parte[data-parte="braco-esq"] { --x: 79%; --y: 39%; --de: 60vw; --gira: 40deg; z-index: 2; }
-.mixodas__parte[data-parte="perna-dir"] { --x: 36%; --y: 75%; --de: -40vw; --gira: -25deg; z-index: 1; }
-.mixodas__parte[data-parte="perna-esq"] { --x: 64%; --y: 75%; --de: 40vw; --gira: 25deg; z-index: 1; }
+.mixodas__parte[data-parte="cabeca"] { --x: 50%; --y: 30%; z-index: 3; }
+.mixodas__parte[data-parte="braco-dir"] { --x: 21%; --y: 39%; z-index: 2; }
+.mixodas__parte[data-parte="braco-esq"] { --x: 79%; --y: 39%; z-index: 2; }
+.mixodas__parte[data-parte="perna-dir"] { --x: 36%; --y: 75%; z-index: 1; }
+.mixodas__parte[data-parte="perna-esq"] { --x: 64%; --y: 75%; z-index: 1; }
 
-/* cada parte sai da mão (de baixo da tela) girando e pousa no lugar dela */
-@keyframes mixodas-voo {
-  0% { opacity: 0; transform: translate(var(--de), 80vh) rotate(calc(var(--gira) * 3)) scale(.5); }
-  70% { opacity: 1; transform: translate(0, 0) rotate(calc(var(--gira) * -.08)) scale(1.12); }
-  100% { opacity: 1; transform: none; }
+/* as 5 no campo brilhando, o selo carregando */
+.mixodas--carga .mixodas__carta { animation: mixodas-carga .45s ease-in-out infinite alternate; }
+
+@keyframes mixodas-carga {
+  from { filter: drop-shadow(0 0 1.5vmin rgba(255, 50, 30, .9)) brightness(1); }
+  to { filter: drop-shadow(0 0 4vmin rgba(255, 140, 60, 1)) brightness(1.45); }
 }
 
 .mixodas__carta {
@@ -1684,6 +1699,7 @@ button.fase:not(:disabled):hover {
   .mixodas__selo,
   .mixodas__selo::before,
   .mixodas__fumaca span,
+  .mixodas--carga .mixodas__carta,
   .mixodas--tremer .mixodas__palco,
   .mao__carta[data-mixodas="true"] { animation: none !important; }
 }

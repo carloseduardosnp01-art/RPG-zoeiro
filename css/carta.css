@@ -485,6 +485,7 @@
   .carta__corpo { padding: 4cqw 4cqw 3cqw; border-width: 2cqw; }
   .carta__topo { height: 14cqw; padding: 0 1.4cqw; }
   .carta__nome { font-size: min(9cqw, calc(128cqw / var(--letras, 12))); }
+  .carta__nome--duas-linhas { font-size: min(6.2cqw, calc(118cqw / var(--letras, 12))); }
   .carta__atributo { width: 11cqw; height: 11cqw; font-size: 7cqw; }
   .carta__atributo::before { display: none; }
   .carta__atributo span { margin-top: 0; }

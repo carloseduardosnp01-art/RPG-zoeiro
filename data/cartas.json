@@ -2156,7 +2156,8 @@
     "nome": "Braço esquerdo de o Fumante com um monster",
     "texto": "O braço esquerdo selado do Fumante. Nunca larga a lata de energético: é ela que mantém o selo acordado.",
     "frase": "Uma lata na mão e o selo ligado no 220.",
-    "imagem": "img/cartas/braco-esquerdo-de-o-fumante.webp"
+    "imagem": "img/cartas/braco-esquerdo-de-o-fumante.webp",
+    "nomeEmDuasLinhas": true
   },
   {
     "categoria": "monstro",
@@ -2177,7 +2178,8 @@
     "nome": "Braço direito de o Fumante com um cigarrin",
     "texto": "O braço direito selado do Fumante, acorrentado e com um cigarrin sempre aceso entre os dedos. A fumaça dele chama as outras partes.",
     "frase": "Onde tem fumaça, tem Fumante chegando.",
-    "imagem": "img/cartas/braco-direito-de-o-fumante.webp"
+    "imagem": "img/cartas/braco-direito-de-o-fumante.webp",
+    "nomeEmDuasLinhas": true
   },
   {
     "categoria": "monstro",
@@ -2198,7 +2200,8 @@
     "nome": "Perna esquerda de o fumante",
     "texto": "A perna esquerda selada do Fumante, presa por correntes douradas. Sozinha não anda; com as outras, ninguém segura.",
     "frase": "Um passo de cada vez até o selo quebrar.",
-    "imagem": "img/cartas/perna-esquerda-de-o-fumante.webp"
+    "imagem": "img/cartas/perna-esquerda-de-o-fumante.webp",
+    "nomeEmDuasLinhas": true
   },
   {
     "categoria": "monstro",
@@ -2219,6 +2222,7 @@
     "nome": "Perna direita de o fumante",
     "texto": "A perna direita selada do Fumante, acorrentada nas cores vermelhas do selo. Espera o dia de ficar de pé de novo.",
     "frase": "Pé direito no campo, vitória na mão.",
-    "imagem": "img/cartas/perna-direita-de-o-fumante.webp"
+    "imagem": "img/cartas/perna-direita-de-o-fumante.webp",
+    "nomeEmDuasLinhas": true
   }
 ]

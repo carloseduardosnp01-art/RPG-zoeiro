@@ -4,7 +4,7 @@
    Usado pelo catálogo, pelo deck e pela arena.
    ========================================================================== */
 
-import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610092015";
+import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610092308";
 
 // Emblema do careca (logo, verso das cartas e ícone do site)
 export const SVG_CARECA = `
@@ -116,8 +116,9 @@ function tamanhoTexto(texto) {
 
 // Nome muito comprido: em vez de encolher demais numa linha só, quebra em duas
 // (no espaço que deixa as duas linhas mais parecidas)
-function linhasDoNome(nome) {
-  if (nome.length <= 26) return null;
+// forcar: a carta pede o nome em duas linhas mesmo curto ("nomeEmDuasLinhas", como as partes do Mixodas)
+function linhasDoNome(nome, forcar = false) {
+  if (nome.length <= 26 && !forcar) return null;
   let melhor = null;
   for (let i = nome.indexOf(" "); i > 0; i = nome.indexOf(" ", i + 1)) {
     const a = nome.slice(0, i).trim();
@@ -152,7 +153,7 @@ export function criarCarta(c, opcoes = {}) {
   // Nome e atributo
   const topo = el("div", "carta__topo");
   const nome = el("span", "carta__nome", c.nome);
-  const linhas = linhasDoNome(c.nome);
+  const linhas = linhasDoNome(c.nome, c.nomeEmDuasLinhas);
   if (linhas) {
     nome.textContent = `${linhas.a}
 ${linhas.b}`;

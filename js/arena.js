@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610092308";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610092308";
-import { el, esperar, aviso } from "./util.js?v=202610092308";
-import { tocar, tocarAudios, pararAudios } from "./som.js?v=202610092308";
-import { abrirDetalhes } from "./catalogo.js?v=202610092308";
-import * as adm from "./admin.js?v=202610092308";
-import { PREMIOS } from "./premios.js?v=202610092308";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610092308";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610092308";
+} from "./motor.js?v=202610112341";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610112341";
+import { el, esperar, aviso } from "./util.js?v=202610112341";
+import { tocar, tocarAudios, pararAudios } from "./som.js?v=202610112341";
+import { abrirDetalhes } from "./catalogo.js?v=202610112341";
+import * as adm from "./admin.js?v=202610112341";
+import { PREMIOS } from "./premios.js?v=202610112341";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610112341";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610112341";
 
 const raiz = document.querySelector("#arena");
 
@@ -49,6 +49,7 @@ const ENTRADAS_LENDARIAS = {
   "dragao-sulista-alternativo": "O SULISTA ALTERNATIVO ABRIU AS ASAS!",
   "dragao-adm-ditador-tirano": "O TIRANO CHEGOU PARA DITAR AS REGRAS!",
   "miro-dragao-de-olhos-profundos": "A GARGANTA PROFUNDA SE ABRIU!",
+  "w-agente-exe": "AGENTE.EXE EXECUTADO!",
 };
 
 // Frase da entrada dos deuses (atributo DIVINO), cada um na cor da sua moldura
@@ -89,6 +90,14 @@ const FRASES = {
   "catupiri-destruidora": "CATUPIRI PRA TODO LADO!",
   "miro-stone": "A PEDRA CHAMOU O DRAGÃO!",
   "olhos-profundos": "GARGANTA PROFUNDA!",
+  "vagabundo-renasce": "O VAGABUNDO RENASCEU!",
+  "pega-trouxa": "PEGA TROUXA!",
+  procriador: "AS TREVAS PROCRIARAM!",
+  ganancia: "GANÂNCIA CARECA: +2 CARTAS!",
+  "w-firewall": "FIREWALL: ACESSO NEGADO!",
+  "w-agente": "AGENTE.EXE EM AÇÃO!",
+  nevasca: "CONGELADO PELA NEVASCA!",
+  "miro-mascarado": "O MASCARADO CHAMOU REFORÇO!",
   "cigarrin-gostoso": "UM TRAGUINHO E DUAS CARTAS!",
   cigarrin: "VAI UM CIGARRIN?",
   recrutador: "REFORÇO CHEGANDO!",

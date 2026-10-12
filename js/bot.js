@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao, ehW, semAtaqueDireto,
-} from "./motor.js?v=202610092308";
+} from "./motor.js?v=202610112341";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 const zonaLivre = (p) => p.monstros.findIndex((m) => !m); // primeira zona de monstro livre (-1 se não tem)
@@ -142,6 +142,21 @@ function* jogadasPrincipais(estado, j) {
       const alvo = deles2.sort((a, b) => forca(estado, j, b) - forca(estado, j, a))[0];
       if (alvo && forca(estado, j, alvo) >= 1800) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [alvo] };
     }
+    // Procriador Sombrio: traz o TREVAS mais forte do Cemitério
+    if (ef === "procriador") {
+      const alvo = [...op.alvos.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0];
+      if ((carta(estado, alvo).atk || 0) >= 1200) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [alvo] };
+    }
+    // Diego da Nevasca: congela o monstro mais forte do oponente
+    if (ef === "nevasca") {
+      const alvo = [...op.alvos.candidatos].sort((a, b) => forca(estado, j, b) - forca(estado, j, a))[0];
+      if (alvo) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [alvo] };
+    }
+    // W — Agente.Exe: libera o ataque direto do "W" mais forte (só vale se o oponente tem monstro no campo)
+    if (ef === "w-agente" && primeira && estado.turno > 1 && deles.length) {
+      const alvo = [...op.alvos.candidatos].sort((a, b) => atkAtual(estado, b) - atkAtual(estado, a))[0];
+      yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [alvo] };
+    }
     // Os Irmãos: bane os 2 monstros mais fracos do Cemitério (+300 de ATK cada)
     if (ef === "os-irmaos") {
       const fracos = [...op.alvos.candidatos].sort((a, b) => (carta(estado, a).atk || 0) - (carta(estado, b).atk || 0)).slice(0, op.alvos.max);
@@ -274,6 +289,18 @@ function* jogadasPrincipais(estado, j) {
       // descarta a carta que menos faz falta
       yield { tipo: "ativar", iid, alvos: [[...op.alvos.candidatos].sort((a, b) => valorNaMao(estado, j, a) - valorNaMao(estado, j, b))[0]] };
     }
+  }
+
+  // 1f7b2. O Vagabundo que Renasce: o monstro mais forte dos dois Cemitérios; Careca da Ganância: compra 2
+  for (const { iid, c } of mao) {
+    if (c.efeito === "vagabundo-renasce") {
+      const op = opcoes(iid).find((x) => x.id === "ativar");
+      if (op) {
+        const melhor = maisForteAtk(op.alvos.candidatos);
+        if ((carta(estado, melhor).atk || 0) >= 1800) yield { tipo: "ativar", iid, alvos: [melhor] };
+      }
+    }
+    if (c.efeito === "ganancia" && p.deck.length > 6 && opcoes(iid).some((x) => x.id === "ativar")) yield { tipo: "ativar", iid };
   }
 
   // 1f7c. Mão de Catupiri Burral: manda a Miro Stone (que busca o Dragão Sulista) ou, com como trazer de volta, o monstro mais forte
@@ -552,6 +579,7 @@ function escolherAtaque(estado, j) {
       }
     });
     if (melhorAlvo !== null) return { tipo: "atacar", slot, alvo: melhorAlvo };
+    if (p.monstros[slot].diretoAgente === estado.turno && !semAtaqueDireto(estado, p.monstros[slot])) return { tipo: "atacar", slot, alvo: null };
   }
   return null;
 }
@@ -569,6 +597,7 @@ const VALOR_NA_MAO = {
   camisinha: 4, pierry: 5, "ex-dragao": 5, "veio-chapado": 6, compositor: 5, "silva-calvo": 5,
   carenix: 5, "emanuel-esfera": 6, "sulista-alt": 7, tirano: 6, "nova-zoom": 4,
   "catupiri-burral": 4, "catupiri-destruidora": 3, "miro-stone": 2, "olhos-profundos": 6,
+  "vagabundo-renasce": 7, "pega-trouxa": 6, procriador: 6, ganancia: 7, "miro-golem": 4, "w-firewall": 6, "w-agente": 7, nevasca: 5, "miro-mascarado": 4,
   sugadao: 7, "hoje-nao": 6, "bora-bill": 4, thangan: 5, hacker: 7, "w-laminas": 5,
   berinjela: 4, revolucao: 6, rafaza: 5, negao: 6, "flip-parasita": 5, litro: 3, daiki: 7,
   controle: 7, menino: 4, "mestre-caos": 6, upstart: 3, jinreca: 6, "mil-facas": 6, irmaollow: 5,
@@ -612,6 +641,12 @@ function escolherAlvos(estado, j, pend) {
     return atkAtual(estado, deles[0]) >= 1500 ? [meus[0], deles[0]] : [];
   }
   if (pend.efeito === "midas-invocar") return [];
+  // W — Agente.Exe: devolve o monstro mais forte do oponente (ou a primeira carta); pega o "W" mais forte do Cemitério
+  if (pend.efeito === "agente-volta") {
+    const monstros = pend.candidatos.filter((x) => localizar(estado, x).zona === "monstros");
+    return [monstros.sort((a, b) => forca(estado, j, b) - forca(estado, j, a))[0] || pend.candidatos[0]];
+  }
+  if (pend.efeito === "agente-busca") return [[...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0]];
   // Miro, O Dragão da Garganta profunda: entra sempre e copia o ATK do Dragão mais forte do Cemitério
   if (pend.efeito === "olhos-profundos") return [pend.origem];
   if (pend.efeito === "olhos-profundos-atk") return [[...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0]];

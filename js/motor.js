@@ -425,6 +425,7 @@ export function defAtual(estado, iid) {
   if (loc && loc.zona === "monstros" && tipoAtual(estado, iid) === "Besta Alada") def += 200 * zoologicosAtivos(estado);
   if (loc && loc.zona === "monstros" && loc.obj.face && tipoAtual(estado, iid) === "Internet") def -= 400 * camposAtivos(estado, "wifi"); // WI-FI Grátis
   if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "ÁGUA") def += 200 * camposAtivos(estado, "geada");
+  if (loc && loc.zona === "monstros" && loc.obj.menosDef) def -= loc.obj.menosDef; // Pega Trouxa!
   return Math.max(0, def);
 }
 
@@ -749,6 +750,14 @@ function executarAcao(estado, j, acao, ev) {
       if (ef === "miro-metalico") return invocarMiroMetalico(estado, j, acao, ev);
       if (ef === "w-hacker") return invocarHacker(estado, j, acao, ev);
       if (ef === "sulista-alt") return invocarSulistaAlt(estado, j, acao, ev);
+      if (ef === "procriador") {
+        if (!podeInvocarProcriador(estado, j, acao.iid)) return "Precisa de 5 ou mais monstros de TREVAS no seu Cemitério e nenhum monstro seu no campo.";
+        return invocarDaMaoLiberando(estado, j, acao.iid, ev);
+      }
+      if (ef === "w-agente") {
+        if (!podeInvocarAgente(estado, j, acao.iid)) return "Precisa de 3 ou mais monstros \"W\" no seu Cemitério e de uma zona de monstro livre.";
+        return invocarDaMaoLiberando(estado, j, acao.iid, ev);
+      }
       return invocarPenetra(estado, j, acao, ev);
     }
     case "efeitoMonstro": return efeitoMonstro(estado, j, acao, ev);
@@ -1013,6 +1022,7 @@ function aposEspecial(estado, j, iid, ev) {
   gatilhoDragaoCareca(estado, iid, ev);
   gatilhosW(estado, j, iid);
   gatilhoAtkOlhosProfundos(estado, j, iid);
+  if (carta(estado, iid).efeito === "w-agente" && !bloqueado(estado, j, iid)) (estado.gatilhos ||= []).push({ tipo: "agente-volta", j, iid, turno: estado.turno });
   if (carta(estado, iid).efeito === "thales") gatilhoThales(estado, j, iid);
   if (carta(estado, iid).efeito === "big-animal") marcarBigMP2(estado, j, iid);
   gatilhoZoologico(estado, j, iid);
@@ -1170,6 +1180,32 @@ export function podeInvocarMiroSulista(estado, j, iid) {
   return nomes.size >= 4;
 }
 
+// Procriador Sombrio: da mão, com 5+ monstros de TREVAS no seu Cemitério e nenhum monstro seu no campo
+export function podeInvocarProcriador(estado, j, iid) {
+  const p = estado.jogadores[j];
+  if (!ehFasePrincipal(estado) || !p.mao.includes(iid) || carta(estado, iid).efeito !== "procriador" || zonaLivre(p.monstros) < 0) return false;
+  if (monstrosEmCampo(estado, j).length) return false;
+  return p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && carta(estado, x).atributo === "TREVAS").length >= 5;
+}
+
+// W — Agente.Exe: da mão, com 3+ monstros "W" no seu Cemitério
+export function podeInvocarAgente(estado, j, iid) {
+  const p = estado.jogadores[j];
+  if (!ehFasePrincipal(estado) || !p.mao.includes(iid) || carta(estado, iid).efeito !== "w-agente" || zonaLivre(p.monstros) < 0) return false;
+  return p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && ehW(carta(estado, x))).length >= 3;
+}
+
+function invocarDaMaoLiberando(estado, j, iid, ev) {
+  const p = estado.jogadores[j];
+  p.mao.splice(p.mao.indexOf(iid), 1);
+  const slot = zonaLivre(p.monstros);
+  p.monstros[slot] = { iid, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+  (estado.liberadas ||= []).push(iid);
+  ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
+  aposEspecial(estado, j, iid, ev);
+  return null;
+}
+
 function invocarMiroSulista(estado, j, { iid }, ev) {
   if (!podeInvocarMiroSulista(estado, j, iid)) return "Precisa de 4 ou mais monstros de LUZ com nomes diferentes no seu Cemitério e de uma zona de monstro livre.";
   const p = estado.jogadores[j];
@@ -1252,6 +1288,7 @@ function invocarFlip(estado, j, { slot }, ev) {
   if (!m || m.face) return "Escolha um monstro seu virado para baixo.";
   if (m.turnoEntrou >= estado.turno) return "Monstro baixado neste turno só pode ser virado no próximo.";
   if (m.mudouPos === estado.turno) return "Esse monstro já mudou de posição neste turno.";
+  if (m.travado >= estado.turno) return "O Diego da Nevasca congelou esse monstro: ele não muda de posição até o fim do próximo turno.";
   m.face = true;
   m.pos = "atk";
   m.mudouPos = estado.turno;
@@ -1268,6 +1305,7 @@ function mudarPosicao(estado, j, { slot }, ev) {
   if (m.turnoEntrou >= estado.turno) return "Um monstro não muda de posição no turno em que entrou em campo.";
   if (m.mudouPos === estado.turno) return "Esse monstro já mudou de posição neste turno.";
   if (m.atacou) return "Esse monstro atacou neste turno.";
+  if (m.travado >= estado.turno) return "O Diego da Nevasca congelou esse monstro: ele não muda de posição até o fim do próximo turno.";
   m.pos = m.pos === "atk" ? "def" : "atk";
   m.mudouPos = estado.turno;
   ev.push({ t: "posicao", j, iid: m.iid, pos: m.pos });
@@ -1629,6 +1667,16 @@ export function requisitosMagia(estado, j, iid) {
         ? { alvos: { candidatos, min: 1, max: 1, titulo: "Cigarrin Gostoso: escolha 1 Monstro Normal (sem efeito) com a face para cima que você controla para mandar para o Cemitério" } }
         : null;
     }
+    case "vagabundo-renasce": {
+      // 1 monstro do Cemitério de qualquer duelista
+      if (zonaLivre(p.monstros) < 0) return null;
+      const candidatos = [...podemVoltarDoCemiterio(estado, j), ...revivaisDoOponente(estado, j)];
+      return candidatos.length
+        ? { alvos: { candidatos, min: 1, max: 1, titulo: "O Vagabundo que Renasce: escolha 1 monstro no Cemitério de qualquer duelista para Invocar" } }
+        : null;
+    }
+    case "ganancia":
+      return p.deck.length >= 2 ? { alvos: null } : null;
     case "catupiri-burral": {
       // 1 monstro do deck para o Cemitério
       const vistos = new Set();
@@ -1859,6 +1907,24 @@ function ativarMagia(estado, j, { iid, alvos = [] }, ev) {
       break;
     case "calvo-in":
       descartar(estado, j, alvos[0], ev);
+      comprar(estado, j, 2, ev);
+      mandarProCemiterio(estado, iid, ev);
+      break;
+    case "vagabundo-renasce": {
+      const alvo = alvos[0];
+      oferecerTributoDoTirano(estado, j, alvo, ev); // Dragão Adm Ditador Tirano
+      const cem = estado.jogadores[donoDe(alvo)].cemiterio;
+      const slot = zonaLivre(p.monstros);
+      mandarProCemiterio(estado, iid, ev);
+      if (slot < 0 || !cem.includes(alvo)) break;
+      cem.splice(cem.indexOf(alvo), 1);
+      // do Cemitério do oponente: fica com você de vez (roubado)
+      p.monstros[slot] = { iid: alvo, pos: "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false, ...(donoDe(alvo) !== j ? { roubado: true } : {}) };
+      ev.push({ t: "invocacao", j, iid: alvo, modo: "especial", slot });
+      aposEspecial(estado, j, alvo, ev);
+      break;
+    }
+    case "ganancia":
       comprar(estado, j, 2, ev);
       mandarProCemiterio(estado, iid, ev);
       break;
@@ -2149,6 +2215,11 @@ const animaisDaRevolucao = (estado, j) =>
 
 // Monstros do Cemitério de j que podem voltar por Invocação-Especial (Lamento Prematuro, Chamado dos Vagabundos)
 // (o Dragão Adm Ditador Tirano só se você tiver um Dragão para oferecer como Tributo)
+// Monstros do Cemitério do oponente que j pode Invocar para o seu lado (O Vagabundo que Renasce)
+const revivaisDoOponente = (estado, j) =>
+  estado.jogadores[oponente(j)].cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && !carta(estado, x).naoEspecial &&
+    (!carta(estado, x).somenteEspecial || liberado(estado, x)) && podeControlarMais(estado, j, x) && tributoDoTirano(estado, j, x) !== false);
+
 const podemVoltarDoCemiterio = (estado, j) =>
   estado.jogadores[j].cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && !carta(estado, x).naoEspecial && (!carta(estado, x).somenteEspecial || liberado(estado, x)) &&
     podeControlarMais(estado, j, x) && tributoDoTirano(estado, j, x) !== false);
@@ -2306,6 +2377,29 @@ function armadilhasDoDefensor(estado, gatilho, dados, ev) {
       return true;
     }
 
+    if (gatilho === "ataque" && c.efeito === "pega-trouxa") {
+      // o atacante vai para Defesa e perde 500 de ATK/DEF (o ataque para); depois equipa no seu monstro mais forte (+500 ATK)
+      const a = localizar(estado, dados.iid);
+      if (!a || a.zona !== "monstros" || intocavel(estado, dados.iid) || imuneArmadilha(estado, dados.iid) || imuneAEfeitos(estado, dados.iid)) continue;
+      if (!ativou(m)) return true;
+      if (tiranoNegou(estado, dados.iid, m.iid, defensor, ev)) return true;
+      a.obj.pos = "def";
+      a.obj.mudouPos = estado.turno;
+      a.obj.menosAtk = (a.obj.menosAtk || 0) + 500;
+      a.obj.menosDef = (a.obj.menosDef || 0) + 500;
+      a.obj.ataqueParado = estado.turno;
+      ev.push({ t: "posicao", j: dados.j, iid: dados.iid, pos: "def" });
+      const meus = p.monstros.filter((x) => x && x.face && !intocavel(estado, x.iid)).map((x) => x.iid);
+      const forte = maisForte(estado, meus);
+      if (forte) {
+        m.equipadoEm = forte;
+        ev.push({ t: "equipada", j: defensor, iid: m.iid, alvo: forte });
+      } else {
+        mandarProCemiterio(estado, m.iid, ev);
+      }
+      return true;
+    }
+
     if (gatilho === "ataque" && c.efeito === "hoje-nao") {
       if (!ataqueMachuca(estado, dados.iid, dados.alvo)) continue;
       if (!ativou(m)) return true;
@@ -2339,8 +2433,38 @@ function ataqueMachuca(estado, atacante, defensor) {
 
 // "W — Hackeando Sistema": quando alguém ativa uma Magia/Armadilha, o oponente dele (com a armadilha baixada
 // desde antes deste turno e carta na mão) descarta 1 carta sorteada, nega o efeito e destrói a carta ativada
+// W — Firewall de Emergência (do oponente de quem ativou, com um "W" dele com a face para cima, 1 por turno):
+// nega a ativação e destrói a carta. Depois pode mandar 1 "W" dele para o Cemitério (faz isso sozinho quando
+// isso libera o W — Agente.Exe da mão dele).
+function negadaPorFirewall(estado, quemAtivou, iid, ev) {
+  if (jinrecaEmCampo(estado)) return false;
+  const o = oponente(quemAtivou);
+  const p = estado.jogadores[o];
+  if (usou(estado, o, "firewall") || armadilhasTravadas(estado, o)) return false;
+  const meusW = () => p.monstros.filter((x) => x && x.face && ehW(carta(estado, x.iid))).map((x) => x.iid);
+  if (!meusW().length) return false;
+  const m = p.magias.find((x) => x && !x.face && x.turnoBaixada < estado.turno && carta(estado, x.iid).efeito === "w-firewall");
+  if (!m) return false;
+  marcarUso(estado, o, "firewall");
+  m.face = true;
+  ev.push({ t: "armadilha", j: o, iid: m.iid, alvo: iid });
+  armadilhaAtivada(estado, ev);
+  ev.push({ t: "negada", j: quemAtivou, iid });
+  comFonte(o, () => {
+    if (protegidaPorMiro(estado, iid, o)) mandarProCemiterio(estado, iid, ev); // negada, mas não destruída
+    else destruir(estado, iid, ev, "efeito");
+  });
+  const wNoCemiterio = p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && ehW(carta(estado, x))).length;
+  const agenteNaMao = p.mao.some((x) => carta(estado, x).efeito === "w-agente");
+  const fraco = meusW().sort((a, b) => atkAtual(estado, a) - atkAtual(estado, b))[0];
+  if (agenteNaMao && wNoCemiterio === 2 && fraco) enviarProCemiterio(estado, fraco, ev);
+  mandarProCemiterio(estado, m.iid, ev);
+  return true;
+}
+
 function negadaPorHacker(estado, quemAtivou, iid, ev) {
   if (jinrecaEmCampo(estado)) return false;
+  if (negadaPorFirewall(estado, quemAtivou, iid, ev)) return true;
   const o = oponente(quemAtivou);
   const p = estado.jogadores[o];
   if (!p.mao.length || armadilhasTravadas(estado, o)) return false;
@@ -2390,6 +2514,40 @@ function processarGatilhos(estado, ev) {
     const dono = g.j;
     const meuTurno = estado.vez === dono;
     fonteDoEfeito = dono;
+    if (g.tipo === "agente-volta") {
+      // Invocado por Invocação-Especial: pode devolver 1 card com a face para cima do oponente para a mão
+      const opcoes = voltaveisDoAgente(estado, dono);
+      if (!opcoes.length) continue;
+      if (!meuTurno) {
+        const monstros = opcoes.filter((x) => localizar(estado, x).zona === "monstros");
+        const alvo = maisForte(estado, monstros) || opcoes[0];
+        ev.push({ t: "efeito", j: dono, iid: g.iid, alvos: [alvo] });
+        devolverCartaParaMao(estado, alvo, ev);
+        continue;
+      }
+      estado.pendente = {
+        tipo: "alvo", efeito: "agente-volta", jogador: dono, origem: g.iid, candidatos: opcoes, min: 0, max: 1,
+        titulo: `${c.nome}: você pode devolver 1 card com a face para cima do oponente para a mão`,
+      };
+      continue;
+    }
+    if (g.tipo === "agente-busca") {
+      const vistos = new Set();
+      const opcoes = estado.jogadores[dono].cemiterio.filter((x) => x !== g.iid && carta(estado, x).categoria === "monstro" && ehW(carta(estado, x)) &&
+        !vistos.has(estado.cartas[x]) && vistos.add(estado.cartas[x]));
+      if (!opcoes.length) continue;
+      if (!meuTurno) {
+        const alvo = [...opcoes].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0];
+        ev.push({ t: "efeito", j: dono, iid: g.iid, alvos: [alvo] });
+        recuperarDoCemiterio(estado, dono, alvo, ev);
+        continue;
+      }
+      estado.pendente = {
+        tipo: "alvo", efeito: "agente-busca", jogador: dono, origem: g.iid, candidatos: opcoes, min: 0, max: 1,
+        titulo: `${c.nome} foi destruído: você pode adicionar 1 monstro "W" do seu Cemitério à mão`,
+      };
+      continue;
+    }
     if (g.tipo === "miro-stone") {
       miroStone(estado, dono, g.iid, ev);
       continue;
@@ -2446,7 +2604,8 @@ function processarGatilhos(estado, ev) {
     }
     if (g.tipo === "nova-zoom") {
       if (localizar(estado, g.iid)?.zona !== "cemiterio" || zonaLivre(estado.jogadores[dono].monstros) < 0) continue;
-      const opcoes = fadasDoNovaZoom(estado, dono);
+      const mascarado = c.efeito === "miro-mascarado";
+      const opcoes = mascarado ? dragoesDoMascarado(estado, dono) : fadasDoNovaZoom(estado, dono);
       if (!opcoes.length) continue;
       if (!meuTurno) {
         ev.push({ t: "efeito", j: dono, iid: g.iid });
@@ -2455,7 +2614,7 @@ function processarGatilhos(estado, ev) {
       }
       estado.pendente = {
         tipo: "alvo", efeito: "nova-zoom", jogador: dono, origem: g.iid, candidatos: opcoes, min: 0, max: 1,
-        titulo: "Nova Zoom: você pode Invocar 1 monstro Fada de LUZ com 1500 ou menos de ATK do seu deck",
+        titulo: mascarado ? `${c.nome}: você pode Invocar 1 Dragão com 1500 ou menos de ATK do seu deck` : "Nova Zoom: você pode Invocar 1 monstro Fada de LUZ com 1500 ou menos de ATK do seu deck",
       };
       continue;
     }
@@ -2506,6 +2665,22 @@ function processarGatilhos(estado, ev) {
     }
   }
   fonteDoEfeito = fonteAntes;
+}
+
+// W — Agente.Exe: cards com a face para cima que o oponente de j controla e que ele pode devolver
+function voltaveisDoAgente(estado, j) {
+  const o = oponente(j);
+  const monstros = estado.jogadores[o].monstros.filter((x) => x && x.face && alvoDeEfeitoDeMonstro(estado, j, x.iid) && !imuneAEfeitos(estado, x.iid)).map((x) => x.iid);
+  const magias = magiasAlvejaveis(estado, j).filter((x) => localizar(estado, x).j === o && localizar(estado, x).obj.face);
+  return [...monstros, ...magias];
+}
+
+// Card do campo (monstro, Magia ou Armadilha) volta para a mão do dono
+function devolverCartaParaMao(estado, iid, ev) {
+  const loc = localizar(estado, iid);
+  if (!loc) return;
+  if (loc.zona === "monstros") return devolverParaMao(estado, iid, ev);
+  if (removerDoCampo(estado, iid, ev, "mao") === "mao") ev.push({ t: "paraMao", j: donoDe(iid), iid });
 }
 
 // Miro Stone of calvo no Cemitério: 1 "Dragão Sulista Safado Olhos Nada Azuis" do deck para a mão (obrigatório)
@@ -2827,6 +3002,37 @@ export function efeitoAtivavel(estado, j, iid) {
         posicoes: true,
       };
     }
+    case "procriador": {
+      // bane 1 TREVAS do Cemitério (o mais fraco, sozinho) e traz outro TREVAS do Cemitério
+      if (!ehFasePrincipal(estado) || usou(estado, j, "procriador") || zonaLivre(p.monstros) < 0) return null;
+      const trevas = p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && carta(estado, x).atributo === "TREVAS");
+      if (trevas.length < 2) return null;
+      const candidatos = podemVoltarDoCemiterio(estado, j).filter((x) => carta(estado, x).atributo === "TREVAS");
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: banir 1 TREVAS do Cemitério e Invocar outro TREVAS do Cemitério",
+        alvos: { candidatos, min: 1, max: 1, titulo: `${c.nome}: escolha o monstro de TREVAS do Cemitério que volta (o TREVAS mais fraco que sobrar é banido)` },
+      };
+    }
+    case "w-agente": {
+      // outro "W" seu pode atacar direto neste turno (com metade do dano de batalha)
+      if (!ehFasePrincipal(estado) || usou(estado, j, "agente")) return null;
+      const candidatos = p.monstros.filter((x) => x && x.face && x.iid !== iid && ehW(carta(estado, x.iid)) && x.diretoAgente !== estado.turno).map((x) => x.iid);
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: 1 outro \"W\" seu pode atacar diretamente neste turno (metade do dano)",
+        alvos: { candidatos, min: 1, max: 1, titulo: `${c.nome}: escolha o outro monstro "W" que vai poder atacar diretamente` },
+      };
+    }
+    case "nevasca": {
+      if (!ehFasePrincipal(estado) || usou(estado, j, "nevasca")) return null;
+      const candidatos = estado.jogadores[oponente(j)].monstros.filter((x) => x && alvoDeEfeitoDeMonstro(estado, j, x.iid)).map((x) => x.iid);
+      if (!candidatos.length) return null;
+      return {
+        rotulo: "Efeito: congelar 1 monstro do oponente (não ataca nem muda de posição)",
+        alvos: { candidatos, min: 1, max: 1, titulo: `${c.nome}: escolha o monstro do oponente que fica congelado até o fim do próximo turno dele` },
+      };
+    }
     case "miro-metalico": {
       if (!ehFasePrincipal(estado) || usou(estado, j, "metalico") || zonaLivre(p.monstros) < 0) return null;
       const candidatos = dragoesParaMetalico(estado, j);
@@ -2875,7 +3081,30 @@ function efeitoMonstro(estado, j, { iid, alvos = [], pos = "atk" }, ev) {
   const m = localizar(estado, iid).obj;
   const c = carta(estado, iid);
   ev.push({ t: "efeito", j, iid, alvos });
+  if (negadaPorFirewall(estado, j, iid, ev)) return null; // W — Firewall de Emergência do oponente
   switch (c.efeito) {
+    case "procriador": {
+      marcarUso(estado, j, "procriador");
+      const p = estado.jogadores[j];
+      const custo = p.cemiterio
+        .filter((x) => x !== alvos[0] && carta(estado, x).categoria === "monstro" && carta(estado, x).atributo === "TREVAS")
+        .sort((a, b) => (carta(estado, a).atk || 0) - (carta(estado, b).atk || 0))[0];
+      if (custo) banirDoCemiterio(estado, custo, ev);
+      invocarDoCemiterio(estado, j, alvos[0], ev);
+      break;
+    }
+    case "w-agente": {
+      marcarUso(estado, j, "agente");
+      const alvo = localizar(estado, alvos[0]);
+      if (alvo && alvo.zona === "monstros") alvo.obj.diretoAgente = estado.turno;
+      break;
+    }
+    case "nevasca": {
+      marcarUso(estado, j, "nevasca");
+      const alvo = localizar(estado, alvos[0]);
+      if (alvo && alvo.zona === "monstros") alvo.obj.travado = estado.turno + 1; // até o fim do próximo turno do oponente
+      break;
+    }
     case "wellington":
       m.marcadores = 0;
       destruir(estado, alvos[0], ev, "efeito");
@@ -3145,10 +3374,13 @@ export function alvosDeAtaque(estado, j) {
   const irmaos = irmaosQueSeguram(estado, oponente(j));
   if (irmaos.length) return irmaos;
   const georgeEmCampo = estado.jogadores.some((p) => p.monstros.some((m) => m && m.face && carta(estado, m.iid).efeito === "george"));
+  // Miro Golem: os outros Dragões com a face para cima de quem controla ele não podem ser atacados
+  const golem = estado.jogadores[oponente(j)].monstros.some((m) => m && m.face && carta(estado, m.iid).efeito === "miro-golem" && !bloqueado(estado, oponente(j), m.iid));
   return estado.jogadores[oponente(j)].monstros
     .map((m, s) => {
       if (!m) return null;
       const c = carta(estado, m.iid);
+      if (golem && m.face && c.efeito !== "miro-golem" && tipoAtual(estado, m.iid) === "Dragão") return null;
       if (georgeEmCampo && m.face && ehAnimal(c) && nivelAtual(estado, m.iid) <= 6) return null;
       if (m.face && c.efeito === "emanuel-esfera") return null; // Modo Carecal: não pode ser alvo de ataques
       const outroVento = estado.jogadores[oponente(j)].monstros.some((x) => x && x !== m && x.face && carta(estado, x.iid).atributo === "VENTO");
@@ -3173,7 +3405,7 @@ export function podeAtacar(estado, j, slot) {
     estado.fase === "batalha" &&
     estado.turno > 1 &&
     !luzAtiva(estado, oponente(j)) &&
-    Boolean(m && posicaoQueAtaca(estado, m) && podeAtacarDeNovo(estado, m))
+    Boolean(m && posicaoQueAtaca(estado, m) && podeAtacarDeNovo(estado, m) && !(m.travado >= estado.turno))
   );
 }
 
@@ -3193,18 +3425,19 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
   if (carta(estado, m.iid).naoAtaca) return `"${carta(estado, m.iid).nome}" não pode atacar.`;
   if (!posicaoQueAtaca(estado, m)) return "Só monstros em Posição de Ataque podem atacar.";
   if (m.semAtaque === estado.turno) return "Esse monstro usou o efeito e não pode atacar neste turno.";
+  if (m.travado >= estado.turno) return "O Diego da Nevasca congelou esse monstro: ele não ataca até o fim do próximo turno.";
   if (!podeAtacarDeNovo(estado, m)) return "Esse monstro já atacou neste turno.";
   if (luzAtiva(estado, oponente(j))) return "As Carecas da Luz Reveladora estão te cegando: não dá para atacar!";
 
   const alvosValidos = alvosDeAtaque(estado, j);
   if (alvo === null || alvo === undefined) {
     if (semAtaqueDireto(estado, m)) return "Esse monstro não pode atacar os Pontos de Vida do oponente diretamente.";
-    if (alvosValidos.length) return "Só dá para atacar direto se o oponente não tiver monstros que possam ser atacados.";
+    if (alvosValidos.length && m.diretoAgente !== estado.turno) return "Só dá para atacar direto se o oponente não tiver monstros que possam ser atacados.";
   } else if (!o.monstros[alvo]) {
     return "Não há monstro nessa zona do oponente.";
   } else if (!alvosValidos.includes(alvo)) {
     if (irmaosQueSeguram(estado, oponente(j)).length) return "Os Irmãos estão em campo: o ataque tem que ser neles.";
-    return "O George Animal protege esse monstro: ele não pode ser alvo de ataques.";
+    return "O George Animal (ou o Miro Golem) protege esse monstro: ele não pode ser alvo de ataques.";
   }
 
   const primeiroAtaque = !m.atacou;
@@ -3231,14 +3464,17 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
 
   verificarArmadilhas(estado, "ataque", { j, iid: atacante, alvo: defensor }, ev);
   if (estado.vencedor !== null || !noCampo(estado, atacante)) return null;
+  if (localizar(estado, atacante).obj.ataqueParado === estado.turno) return null; // Pega Trouxa!: foi para Defesa, o ataque para
   if (defensor && !noCampo(estado, defensor)) return null; // o alvo sumiu: o ataque para
 
   const atk = atkAtual(estado, atacante);
   // Ex careca dragon atacando: nenhum jogador sofre dano de batalha desse ataque
   const exAtacando = carta(estado, atacante).efeito === "ex-dragao" && !bloqueado(estado, j, atacante);
+  // W — Agente.Exe: o "W" que ele liberou para atacar direto causa só metade do dano de batalha ao oponente
+  const metade = m.diretoAgente === estado.turno;
   const danoDoAtaque = (q, valor, eventos) => {
     if (exAtacando && valor > 0) eventos.push({ t: "protegido", j: q, valor, por: "Ex careca dragon" });
-    else danoBatalha(estado, q, valor, eventos);
+    else danoBatalha(estado, q, metade && q !== j ? Math.floor(valor / 2) : valor, eventos);
   };
   if (!defensor) {
     danoDoAtaque(oponente(j), atk, ev);
@@ -3361,6 +3597,16 @@ const fadasDoNovaZoom = (estado, j) => {
   return estado.jogadores[j].deck.filter((x) => {
     const c = carta(estado, x);
     return c.categoria === "monstro" && c.atributo === "LUZ" && c.tipo === "Fada" && c.atk <= 1500 && !c.somenteEspecial && !c.naoEspecial &&
+      podeControlarMais(estado, j, x) && !vistos.has(c.id) && vistos.add(c.id);
+  });
+};
+
+// Miro Mascarado: monstros do Tipo Dragão com 1500 ou menos de ATK do deck (uma opção por nome)
+const dragoesDoMascarado = (estado, j) => {
+  const vistos = new Set();
+  return estado.jogadores[j].deck.filter((x) => {
+    const c = carta(estado, x);
+    return c.categoria === "monstro" && c.tipo === "Dragão" && c.atk <= 1500 && !c.somenteEspecial && !c.naoEspecial &&
       podeControlarMais(estado, j, x) && !vistos.has(c.id) && vistos.add(c.id);
   });
 };
@@ -3490,8 +3736,12 @@ function destruir(estado, iid, ev, causa) {
     }
   }
   // Nova Zoom destruído em batalha: pode chamar 1 Fada de LUZ com até 1500 de ATK do deck (resolve depois da batalha)
-  if (loc.zona === "monstros" && causa === "batalha" && carta(estado, iid).efeito === "nova-zoom" && !bloqueado(estado, loc.j, iid)) {
+  if (loc.zona === "monstros" && causa === "batalha" && ["nova-zoom", "miro-mascarado"].includes(carta(estado, iid).efeito) && !bloqueado(estado, loc.j, iid)) {
     (estado.gatilhos ||= []).push({ tipo: "nova-zoom", j: loc.j, iid, turno: estado.turno });
+  }
+  // W — Agente.Exe destruído por um card do oponente (batalha ou efeito): pode pegar 1 "W" do Cemitério
+  if (loc.zona === "monstros" && carta(estado, iid).efeito === "w-agente" && (causa === "batalha" || (causa === "efeito" && fonteDoEfeito !== loc.j)) && !bloqueado(estado, loc.j, iid)) {
+    (estado.gatilhos ||= []).push({ tipo: "agente-busca", j: donoDe(iid), iid, turno: estado.turno });
   }
   // Mystic Daikizinho / Shining Zoom destruído em batalha: chama 1 monstro do deck (resolve depois da batalha)
   if (loc.zona === "monstros" && causa === "batalha" && carta(estado, iid).efeito === "recrutador" && !bloqueado(estado, loc.j, iid)) {
@@ -3980,6 +4230,14 @@ function resolverEscolha(estado, j, alvos, ev) {
     invocarOlhosProfundos(estado, j, alvos[0], ev);
     return null;
   }
+  if (pend.efeito === "agente-volta") {
+    devolverCartaParaMao(estado, alvos[0], ev);
+    return null;
+  }
+  if (pend.efeito === "agente-busca") {
+    recuperarDoCemiterio(estado, j, alvos[0], ev);
+    return null;
+  }
   if (pend.efeito === "olhos-profundos-atk") {
     copiarAtkDoDragao(estado, pend.origem, alvos[0]);
     return null;
@@ -4021,7 +4279,7 @@ export function escolhaAutomatica(estado, pend) {
   if (pend.efeito === "davi-cemiterio" || pend.efeito === "thales" || pend.efeito === "big" || pend.efeito === "john-invocar") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "zoologico") return pend.candidatos.filter((x) => localizar(estado, x).j !== pend.jogador).slice(0, 1);
   if (pend.efeito === "midas-invocar" || pend.efeito === "emanuel-pagar") return [];
-  if (["w-hacker-descarte", "w-miqueas-invocar", "w-midas", "w-rede", "soul-reviver", "nova-zoom", "olhos-profundos"].includes(pend.efeito)) return pend.candidatos.slice(0, 1);
+  if (["w-hacker-descarte", "w-miqueas-invocar", "w-midas", "w-rede", "soul-reviver", "nova-zoom", "olhos-profundos", "agente-volta", "agente-busca"].includes(pend.efeito)) return pend.candidatos.slice(0, 1);
   if (pend.efeito === "olhos-profundos-atk") return [[...pend.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0]];
   if (pend.efeito === "revolucao" || pend.efeito === "compositor") return pend.candidatos.slice(0, pend.max);
   if (pend.efeito === "destino") return pend.candidatos.slice(0, 1);
@@ -4101,6 +4359,12 @@ export function opcoesDaCarta(estado, j, iid) {
       if (daiki) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial (banir 1 LUZ e 1 TREVAS do Cemitério)", acao: { tipo: "invocarEspecial", iid }, alvos: daiki });
       }
+      if (podeInvocarProcriador(estado, j, iid)) {
+        opcoes.push({ id: "especial", rotulo: "Invocação-Especial (5+ monstros de TREVAS no Cemitério e nenhum monstro seu no campo)", acao: { tipo: "invocarEspecial", iid } });
+      }
+      if (podeInvocarAgente(estado, j, iid)) {
+        opcoes.push({ id: "especial", rotulo: "Invocação-Especial (3+ monstros \"W\" no Cemitério)", acao: { tipo: "invocarEspecial", iid } });
+      }
       if (podeInvocarMiroSulista(estado, j, iid)) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial (4+ monstros de LUZ de nomes diferentes no Cemitério)", acao: { tipo: "invocarEspecial", iid } });
       }
@@ -4134,6 +4398,9 @@ export function opcoesDaCarta(estado, j, iid) {
       if (alvos.length || !semAtaqueDireto(estado, m)) {
         opcoes.push({ id: "atacar", rotulo: "Atacar", acao: { tipo: "atacar", slot: loc.slot }, ataque: { alvos, direto: alvos.length === 0 } });
       }
+      if (alvos.length && m.diretoAgente === estado.turno && !semAtaqueDireto(estado, m)) {
+        opcoes.push({ id: "atacar", rotulo: "Atacar diretamente (W — Agente.Exe: metade do dano)", acao: { tipo: "atacar", slot: loc.slot }, ataque: { alvos: [], direto: true } });
+      }
     }
     const efeito = efeitoAtivavel(estado, j, iid);
     if (efeito?.posicoes) {
@@ -4142,10 +4409,10 @@ export function opcoesDaCarta(estado, j, iid) {
         opcoes.push({ id: "efeito", rotulo: `${efeito.rotulo} (${nome})`, acao: { tipo: "efeitoMonstro", iid, pos }, alvos: efeito.alvos });
       }
     } else if (efeito) opcoes.push({ id: "efeito", rotulo: efeito.rotulo, acao: { tipo: "efeitoMonstro", iid }, alvos: efeito.alvos, confirmar: efeito.confirmar });
-    if (principal && !m.face && m.turnoEntrou < estado.turno && m.mudouPos !== estado.turno) {
+    if (principal && !m.face && m.turnoEntrou < estado.turno && m.mudouPos !== estado.turno && !(m.travado >= estado.turno)) {
       opcoes.push({ id: "virar", rotulo: "Virar (Invocação-Flip)", acao: { tipo: "virar", slot: loc.slot } });
     }
-    if (principal && m.face && m.turnoEntrou < estado.turno && m.mudouPos !== estado.turno && !m.atacou) {
+    if (principal && m.face && m.turnoEntrou < estado.turno && m.mudouPos !== estado.turno && !m.atacou && !(m.travado >= estado.turno)) {
       const rotulo = m.pos === "atk" ? "Mudar para Defesa" : "Mudar para Ataque";
       opcoes.push({ id: "posicao", rotulo, acao: { tipo: "mudarPosicao", slot: loc.slot } });
     }

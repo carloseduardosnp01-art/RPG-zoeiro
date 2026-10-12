@@ -343,10 +343,20 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT119 | Braço direito de o Fumante com um cigarrin **(limitada a 1)** | Monstro Normal · TREVAS · Mago · Nv 1 · 200/300 | – | Parte do Mixodas |
 | ZOE-PT120 | Perna esquerda de o fumante **(limitada a 1)** | Monstro Normal · TREVAS · Mago · Nv 1 · 200/300 | – | Parte do Mixodas |
 | ZOE-PT121 | Perna direita de o fumante **(limitada a 1)** | Monstro Normal · TREVAS · Mago · Nv 1 · 200/300 | – | Parte do Mixodas |
+| ZOE-PT122 | O Vagabundo que Renasce **(limitada a 1)** | Magia | – | Invoca 1 monstro do Cemitério de qualquer duelista para o seu campo |
+| ZOE-PT123 | Pega Trouxa! | Armadilha | – | Automática no ataque do oponente: o atacante vai para Defesa e perde 500 de ATK/DEF (o ataque para); depois equipa no seu monstro mais forte (+500 ATK) |
+| ZOE-PT124 | Procriador Sombrio | Efeito · TREVAS · Trovão · Nv 8 · 2300/3000 | – | Só entra pela mão com 5+ TREVAS no Cemitério e nenhum monstro seu no campo; botão Efeito (1 por turno): bane o TREVAS mais fraco do Cemitério e Invoca outro TREVAS do Cemitério |
+| ZOE-PT125 | Careca da Ganância | Magia | – | Compra 2 cartas |
+| ZOE-PT126 | Rato Gordo | Efeito · TERRA · Besta · Nv 4 · 1400/1450 | – | Destruído em batalha: chama 1 TERRA sorteado com até 1500 de ATK do deck, em Ataque |
+| ZOE-PT127 | Miro Golem | Efeito · TERRA · Dragão · Nv 4 · 200/2000 | – | O oponente não ataca os seus outros Dragões com a face para cima |
+| ZOE-PT128 | W — Firewall de Emergência **(limitada a 1)** | Armadilha | – | Automática, com um "W" seu: nega a primeira Magia, Armadilha ou efeito de monstro do oponente e destrói a carta (1 por turno) |
+| ZOE-PT129 | W — Agente.Exe **(Loja: 100 🪙, limitada a 1)** | Efeito · TERRA · Internet · Nv 8 · 2800/2200 | – | Só entra pela mão com 3+ "W" no Cemitério; ao entrar devolve 1 card com a face para cima do oponente; botão Efeito: outro "W" ataca direto (metade do dano); destruído pelo oponente: pega 1 "W" do Cemitério |
+| ZOE-PT130 | Diego da Nevasca | Efeito · ÁGUA · Dragão · Nv 4 · 1800/1000 | – | Botão Efeito (1 por turno): 1 monstro do oponente não ataca nem muda de posição até o fim do próximo turno dele |
+| ZOE-PT131 | Miro Mascarado | Efeito · FOGO · Dragão · Nv 3 · 1400/1100 | – | Destruído em batalha: pode chamar 1 Dragão com até 1500 de ATK do deck |
 
 **Atributos:** TERRA, TREVAS, LUZ, ÁGUA (水), VENTO, FOGO (炎) e DIVINO. Desde 04/10/2026 não existem mais GELO (os Manoel do Gelo viraram ÁGUA; o "gelo" do Pote do Gelo é ÁGUA ou "Gelo" no nome) nem INTERNET como atributo: os monstros "W" são TERRA e do **Tipo Internet** (o antigo Ciberso), e é esse Tipo que ganha o bônus do WI-FI Grátis. O Nível "na hora" (`nivelAtual` em `js/motor.js`, por causa da Geada da Peste) é o que vale para os tributos e para os efeitos que olham o Nível na mão e no campo.
 
-**Cartas da Loja:** as cartas "Lendária da Zoeira" (ZOE-PT071 a 074, 108, 109 e 114) não estão no deck padrão: são compradas com Careca Coins na 🛒 Loja (veja em [Funcionalidades](#funcionalidades)). **Lendária da Zoeira é só para essas exclusivas**, que ninguém tem no começo; as outras cartas fortes vão até Ultra Rara, e os três deuses (Obelisco, Slif o Dragão Careca do Céu e O Emanuel Careca de ICE) e o Mixodas, "O Fumante" são **Secreta**, liberados para todo mundo no editor. Detalhes que valem no jogo:
+**Cartas da Loja:** as cartas "Lendária da Zoeira" (ZOE-PT071 a 074, 108, 109, 114 e 129) não estão no deck padrão: são compradas com Careca Coins na 🛒 Loja (veja em [Funcionalidades](#funcionalidades)). **Lendária da Zoeira é só para essas exclusivas**, que ninguém tem no começo; as outras cartas fortes vão até Ultra Rara, e os três deuses (Obelisco, Slif o Dragão Careca do Céu e O Emanuel Careca de ICE) e o Mixodas, "O Fumante" são **Secreta**, liberados para todo mundo no editor. Detalhes que valem no jogo:
 - **Mixodas, "O Fumante":** com o Mixodas e as 4 partes (os dois braços e as duas pernas) na mão, a cabeça pulsa em vermelho e ganha o botão "Formar o Mixodas" (no seu turno, em qualquer fase): apertou, venceu (ação `mixodas` em `js/motor.js`; não é automático). A arena mostra a entrada épica dele (`entradaMixodas` em `js/arena.js`): as 5 cartas saem da mão e aparecem nas zonas de monstro de quem formou (a cabeça no meio, depois os braços e as pernas, com o nome de cada parte na tela), brilham, a tela escurece, elas sobem do campo para o centro em cruz, se fundem num corpo só com selo e raios vermelhos e fumaça de cigarrin, e o nome "MIXODAS" aparece gigante em vermelho, brilhando e tremendo. Enquanto ele monta tocam efeitos sonoros sintetizados (`mixodasRonco`, `mixodasZum`, `mixodasPouso`, `mixodasCarga`, `mixodasExplosao` em `js/som.js`); quando ele se forma, toca o áudio da invocação (`audio/mixodas-1.mp3`). A cena dura uns 20 segundos e clicar pula (o áudio toca mesmo assim). O Bot nunca joga nem descarta as partes, e aperta o botão assim que junta as 5.
 - **Entrada lendária:** quando uma delas entra em campo, a arena faz uma entrada especial: a carta desce do céu com raios arco-íris, faíscas, clarão, tremor e fanfarra, com o selo "★ LENDÁRIA DA ZOEIRA ★" e uma frase só dela (`ENTRADAS_LENDARIAS` em `js/arena.js`). Em campo, ela fica com uma aura arco-íris pulsando.
 - O **Chaos Kelvor** e o **Miro, o Sulista Calvo** pedem confirmação antes de ativar o efeito (os dois limpam a mesa, inclusive as suas cartas).
@@ -423,7 +433,7 @@ A coluna "Cópias" é do **deck padrão**. As cartas com "–" (Gigante de Pedra
 │   ├── som.js            # Efeitos sonoros (Web Audio) e os áudios gravados
 │   └── util.js           # Funções pequenas
 ├── supabase/banco.sql    # Banco de dados: tabelas, funções e permissões (cole no SQL Editor do Supabase)
-├── data/cartas.json      # As 121 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
+├── data/cartas.json      # As 131 cartas (texto, stats, cópias no deck padrão, efeito, preço na Loja)
 ├── data/noticias.json    # As notícias (a mais nova aparece primeiro)
 ├── img/noticias/         # Cartazes das notícias
 ├── img/cartas/           # Artes recortadas (WebP 640×640)

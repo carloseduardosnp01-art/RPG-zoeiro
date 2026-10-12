@@ -346,7 +346,7 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT122 | O Vagabundo que Renasce **(limitada a 1)** | Magia | – | Invoca 1 monstro do Cemitério de qualquer duelista para o seu campo |
 | ZOE-PT123 | Pega Trouxa! | Armadilha | – | Automática no ataque do oponente: o atacante vai para Defesa e perde 500 de ATK/DEF (o ataque para); depois equipa no seu monstro mais forte (+500 ATK) |
 | ZOE-PT124 | Procriador Sombrio | Efeito · TREVAS · Trovão · Nv 8 · 2300/3000 | – | Só entra pela mão com 5+ TREVAS no Cemitério e nenhum monstro seu no campo; botão Efeito (1 por turno): bane o TREVAS mais fraco do Cemitério e Invoca outro TREVAS do Cemitério |
-| ZOE-PT125 | Careca da Ganância | Magia | – | Compra 2 cartas |
+| ZOE-PT125 | Careca da Ganância **(limitada a 1)** | Magia | – | Compra 2 cartas |
 | ZOE-PT126 | Rato Gordo | Efeito · TERRA · Besta · Nv 4 · 1400/1450 | – | Destruído em batalha: chama 1 TERRA sorteado com até 1500 de ATK do deck, em Ataque |
 | ZOE-PT127 | Miro Golem | Efeito · TERRA · Dragão · Nv 4 · 200/2000 | – | O oponente não ataca os seus outros Dragões com a face para cima |
 | ZOE-PT128 | W — Firewall de Emergência **(limitada a 1)** | Armadilha | – | Automática, com um "W" seu: nega a primeira Magia, Armadilha ou efeito de monstro do oponente e destrói a carta (1 por turno) |

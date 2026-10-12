@@ -2283,11 +2283,12 @@
     "subtipo": "normal",
     "efeito": "ganancia",
     "texto": "Compre 2 cards.",
-    "comoFunciona": "Precisa ter pelo menos 2 cartas no deck. Ativou, comprou 2. Simples assim.",
+    "comoFunciona": "Limitada a 1. Precisa ter pelo menos 2 cartas no deck. Ativou, comprou 2. Simples assim.",
     "frase": "Sorriso verde de quem já comprou duas.",
     "raridade": "Super Rara",
     "copias": 0,
-    "imagem": "img/cartas/careca-da-ganancia.webp"
+    "imagem": "img/cartas/careca-da-ganancia.webp",
+    "limite": 1
   },
   {
     "id": "rato-gordo",

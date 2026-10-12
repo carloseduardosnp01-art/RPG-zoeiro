@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610112341";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610112341";
-import { el, esperar, aviso } from "./util.js?v=202610112341";
-import { tocar, tocarAudios, pararAudios } from "./som.js?v=202610112341";
-import { abrirDetalhes } from "./catalogo.js?v=202610112341";
-import * as adm from "./admin.js?v=202610112341";
-import { PREMIOS } from "./premios.js?v=202610112341";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610112341";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610112341";
+} from "./motor.js?v=202610112345";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610112345";
+import { el, esperar, aviso } from "./util.js?v=202610112345";
+import { tocar, tocarAudios, pararAudios } from "./som.js?v=202610112345";
+import { abrirDetalhes } from "./catalogo.js?v=202610112345";
+import * as adm from "./admin.js?v=202610112345";
+import { PREMIOS } from "./premios.js?v=202610112345";
+import { usuarioAtual, premioValido } from "./conta.js?v=202610112345";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610112345";
 
 const raiz = document.querySelector("#arena");
 

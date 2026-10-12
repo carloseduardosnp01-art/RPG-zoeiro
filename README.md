@@ -323,7 +323,7 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT099 | Tem gosto de camisinha de sabor | Magia Normal | – | Busca 1 Monstro Normal de Nível 5 ou mais do deck |
 | ZOE-PT100 | Bi-Careca Dragon | Monstro Normal · TREVAS · Dragão · Nv 8 · 2850/2350 | – | Dragão grande sem efeito |
 | ZOE-PT101 | Pierry careca dragon | Efeito · LUZ · Dragão · Nv 4 · 1600/600 | – | O oponente não ativa Armadilhas na Fase de Batalha |
-| ZOE-PT102 | Ex careca dragon | Efeito · TERRA · Dragão · Nv 3 · 1000/0 | – | Destruído em batalha: leva junto quem o destruiu; nos ataques dele ninguém sofre dano de batalha |
+| ZOE-PT102 | Ex careca dragon | Efeito · TERRA · Dragão · Nv 3 · 1000/0 | – | Destruído em batalha: leva junto quem o destruiu; nas batalhas dele (atacando ou sendo atacado) ninguém sofre dano de batalha |
 | ZOE-PT103 | Dark Véio Chapado | Magia Normal | – | Paga 1000 PV e Invoca 1 Mago de TREVAS da mão ou do Cemitério |
 | ZOE-PT104 | Alquimista Compositor | Magia Normal | – | Descarta 1 e busca até 2 Dragões com 3000+ de ATK e 2500- de DEF |
 | ZOE-PT105 | Silva Calvo | Magia Normal | – | Invoca 1 Monstro Normal Dragão do Cemitério (1 por turno) |
@@ -345,7 +345,7 @@ As artes vieram das cartas que você mandou, recortadas só na ilustração (`im
 | ZOE-PT121 | Perna direita de o fumante **(limitada a 1)** | Monstro Normal · TREVAS · Mago · Nv 1 · 200/300 | – | Parte do Mixodas |
 | ZOE-PT122 | O Vagabundo que Renasce **(limitada a 1)** | Magia | – | Invoca 1 monstro do Cemitério de qualquer duelista para o seu campo |
 | ZOE-PT123 | Pega Trouxa! | Armadilha | – | Automática no ataque do oponente: o atacante vai para Defesa e perde 500 de ATK/DEF (o ataque para); depois equipa no seu monstro mais forte (+500 ATK) |
-| ZOE-PT124 | Procriador Sombrio | Efeito · TREVAS · Trovão · Nv 8 · 2300/3000 | – | Só entra pela mão com 5+ TREVAS no Cemitério e nenhum monstro seu no campo; botão Efeito (1 por turno): bane o TREVAS mais fraco do Cemitério e Invoca outro TREVAS do Cemitério |
+| ZOE-PT124 | Procriador Sombrio | Efeito · TREVAS · Trovão · Nv 8 · 2300/3000 | – | Só entra pela mão com 5+ TREVAS no Cemitério e nenhum monstro seu no campo; botão Efeito (1 por turno, cada um): escolhe 1 TREVAS do Cemitério para banir e depois outro TREVAS do Cemitério para Invocar |
 | ZOE-PT125 | Careca da Ganância **(limitada a 1)** | Magia | – | Compra 2 cartas |
 | ZOE-PT126 | Rato Gordo | Efeito · TERRA · Besta · Nv 4 · 1400/1450 | – | Destruído em batalha: chama 1 TERRA sorteado com até 1500 de ATK do deck, em Ataque |
 | ZOE-PT127 | Miro Golem | Efeito · TERRA · Dragão · Nv 4 · 200/2000 | – | O oponente não ataca os seus outros Dragões com a face para cima |

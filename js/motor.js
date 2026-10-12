@@ -3003,15 +3003,15 @@ export function efeitoAtivavel(estado, j, iid) {
       };
     }
     case "procriador": {
-      // bane 1 TREVAS do Cemitério (o mais fraco, sozinho) e traz outro TREVAS do Cemitério
-      if (!ehFasePrincipal(estado) || usou(estado, j, "procriador") || zonaLivre(p.monstros) < 0) return null;
-      const trevas = p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && carta(estado, x).atributo === "TREVAS");
-      if (trevas.length < 2) return null;
-      const candidatos = podemVoltarDoCemiterio(estado, j).filter((x) => carta(estado, x).atributo === "TREVAS");
+      // 1 vez por turno (cada Procriador no campo): bane 1 TREVAS do Cemitério e depois escolhe outro TREVAS para voltar
+      if (!ehFasePrincipal(estado) || m.usoProcriador === estado.turno || zonaLivre(p.monstros) < 0) return null;
+      const voltam = podemVoltarDoCemiterio(estado, j).filter((x) => carta(estado, x).atributo === "TREVAS");
+      // dá para banir qualquer TREVAS, desde que sobre outro TREVAS para voltar
+      const candidatos = p.cemiterio.filter((x) => carta(estado, x).categoria === "monstro" && carta(estado, x).atributo === "TREVAS" && voltam.some((y) => y !== x));
       if (!candidatos.length) return null;
       return {
         rotulo: "Efeito: banir 1 TREVAS do Cemitério e Invocar outro TREVAS do Cemitério",
-        alvos: { candidatos, min: 1, max: 1, titulo: `${c.nome}: escolha o monstro de TREVAS do Cemitério que volta (o TREVAS mais fraco que sobrar é banido)` },
+        alvos: { candidatos, min: 1, max: 1, titulo: `${c.nome}: primeiro escolha o monstro de TREVAS do Cemitério que vai ser BANIDO` },
       };
     }
     case "w-agente": {
@@ -3084,13 +3084,15 @@ function efeitoMonstro(estado, j, { iid, alvos = [], pos = "atk" }, ev) {
   if (negadaPorFirewall(estado, j, iid, ev)) return null; // W — Firewall de Emergência do oponente
   switch (c.efeito) {
     case "procriador": {
-      marcarUso(estado, j, "procriador");
-      const p = estado.jogadores[j];
-      const custo = p.cemiterio
-        .filter((x) => x !== alvos[0] && carta(estado, x).categoria === "monstro" && carta(estado, x).atributo === "TREVAS")
-        .sort((a, b) => (carta(estado, a).atk || 0) - (carta(estado, b).atk || 0))[0];
-      if (custo) banirDoCemiterio(estado, custo, ev);
-      invocarDoCemiterio(estado, j, alvos[0], ev);
+      m.usoProcriador = estado.turno;
+      banirDoCemiterio(estado, alvos[0], ev); // o custo
+      const candidatos = podemVoltarDoCemiterio(estado, j).filter((x) => carta(estado, x).atributo === "TREVAS");
+      if (candidatos.length && zonaLivre(estado.jogadores[j].monstros) >= 0) {
+        estado.pendente = {
+          tipo: "alvo", efeito: "procriador-invocar", jogador: j, origem: iid, candidatos, min: 1, max: 1,
+          titulo: `${c.nome}: agora escolha o monstro de TREVAS do Cemitério que volta para o campo`,
+        };
+      }
       break;
     }
     case "w-agente": {
@@ -3468,8 +3470,9 @@ function atacar(estado, j, { slot, alvo = null }, ev) {
   if (defensor && !noCampo(estado, defensor)) return null; // o alvo sumiu: o ataque para
 
   const atk = atkAtual(estado, atacante);
-  // Ex careca dragon atacando: nenhum jogador sofre dano de batalha desse ataque
-  const exAtacando = carta(estado, atacante).efeito === "ex-dragao" && !bloqueado(estado, j, atacante);
+  // Ex careca dragon atacando ou sendo atacado: nenhum jogador sofre dano de batalha dessa batalha
+  const exAtacando = (carta(estado, atacante).efeito === "ex-dragao" && !bloqueado(estado, j, atacante)) ||
+    Boolean(defensor && carta(estado, defensor).efeito === "ex-dragao" && !bloqueado(estado, oponente(j), defensor));
   // W — Agente.Exe: o "W" que ele liberou para atacar direto causa só metade do dano de batalha ao oponente
   const metade = m.diretoAgente === estado.turno;
   const danoDoAtaque = (q, valor, eventos) => {
@@ -4230,6 +4233,10 @@ function resolverEscolha(estado, j, alvos, ev) {
     invocarOlhosProfundos(estado, j, alvos[0], ev);
     return null;
   }
+  if (pend.efeito === "procriador-invocar") {
+    invocarDoCemiterio(estado, j, alvos[0], ev);
+    return null;
+  }
   if (pend.efeito === "agente-volta") {
     devolverCartaParaMao(estado, alvos[0], ev);
     return null;
@@ -4280,7 +4287,7 @@ export function escolhaAutomatica(estado, pend) {
   if (pend.efeito === "zoologico") return pend.candidatos.filter((x) => localizar(estado, x).j !== pend.jogador).slice(0, 1);
   if (pend.efeito === "midas-invocar" || pend.efeito === "emanuel-pagar") return [];
   if (["w-hacker-descarte", "w-miqueas-invocar", "w-midas", "w-rede", "soul-reviver", "nova-zoom", "olhos-profundos", "agente-volta", "agente-busca"].includes(pend.efeito)) return pend.candidatos.slice(0, 1);
-  if (pend.efeito === "olhos-profundos-atk") return [[...pend.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0]];
+  if (pend.efeito === "olhos-profundos-atk" || pend.efeito === "procriador-invocar") return [[...pend.candidatos].sort((a, b) => carta(estado, b).atk - carta(estado, a).atk)[0]];
   if (pend.efeito === "revolucao" || pend.efeito === "compositor") return pend.candidatos.slice(0, pend.max);
   if (pend.efeito === "destino") return pend.candidatos.slice(0, 1);
   if (pend.efeito === "fusao") return paresDeFusao(estado, j, pend.fusao)[0] || [];

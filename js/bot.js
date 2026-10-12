@@ -8,7 +8,7 @@
 import {
   carta, localizar, atkAtual, defAtual, opcoesDaCarta, oponente, monstrosEmCampo, ehAnimal,
   luzAtiva, podeAtacar, ehFasePrincipal, quemAge, tributosNaHora, validar, alvosDeAtaque, paresDeFusao, ehW, semAtaqueDireto,
-} from "./motor.js?v=202610112345";
+} from "./motor.js?v=202610120305";
 
 const VALOR_VIRADO = 1200; // palpite para um monstro do oponente virado para baixo
 const zonaLivre = (p) => p.monstros.findIndex((m) => !m); // primeira zona de monstro livre (-1 se não tem)
@@ -142,10 +142,12 @@ function* jogadasPrincipais(estado, j) {
       const alvo = deles2.sort((a, b) => forca(estado, j, b) - forca(estado, j, a))[0];
       if (alvo && forca(estado, j, alvo) >= 1800) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [alvo] };
     }
-    // Procriador Sombrio: traz o TREVAS mais forte do Cemitério
+    // Procriador Sombrio: bane o TREVAS mais fraco (depois traz o mais forte)
     if (ef === "procriador") {
-      const alvo = [...op.alvos.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0];
-      if ((carta(estado, alvo).atk || 0) >= 1200) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [alvo] };
+      const fraco = [...op.alvos.candidatos].sort((a, b) => (carta(estado, a).atk || 0) - (carta(estado, b).atk || 0))[0];
+      const melhor = p.cemiterio.filter((x) => x !== fraco && carta(estado, x).categoria === "monstro" && carta(estado, x).atributo === "TREVAS")
+        .reduce((mx, x) => Math.max(mx, carta(estado, x).atk || 0), 0);
+      if (melhor >= 1200) yield { tipo: "efeitoMonstro", iid: m.iid, alvos: [fraco] };
     }
     // Diego da Nevasca: congela o monstro mais forte do oponente
     if (ef === "nevasca") {
@@ -646,6 +648,7 @@ function escolherAlvos(estado, j, pend) {
     const monstros = pend.candidatos.filter((x) => localizar(estado, x).zona === "monstros");
     return [monstros.sort((a, b) => forca(estado, j, b) - forca(estado, j, a))[0] || pend.candidatos[0]];
   }
+  if (pend.efeito === "procriador-invocar") return [[...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0]];
   if (pend.efeito === "agente-busca") return [[...pend.candidatos].sort((a, b) => (carta(estado, b).atk || 0) - (carta(estado, a).atk || 0))[0]];
   // Miro, O Dragão da Garganta profunda: entra sempre e copia o ATK do Dragão mais forte do Cemitério
   if (pend.efeito === "olhos-profundos") return [pend.origem];

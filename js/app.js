@@ -6,7 +6,7 @@
 
 import { registrarCartas, versaoDasCartas } from "./motor.js?v=202610120305";
 import { iniciarCatalogo } from "./catalogo.js?v=202610120305";
-import { iniciarEditorDeck } from "./editor-deck.js?v=202610120305";
+import { iniciarEditorDeck } from "./editor-deck.js?v=2026101901";
 import { deckAtual } from "./deck.js?v=202610120305";
 import { iniciarSalao, ativarSalao } from "./salao.js?v=202610120305";
 import { abrirArena, arenaAtiva, sessaoAtual } from "./arena.js?v=202610120305";
@@ -18,7 +18,7 @@ import { iniciarNoticias } from "./noticias.js?v=202610120305";
 import { iniciarLoja } from "./loja.js?v=202610120305";
 import { iniciarAviso } from "./aviso.js?v=202610120305";
 import { iniciarRoleta } from "./roleta.js?v=202610120305";
-import { iniciarRanked, retomarBotRanked } from "./ranked.js?v=202610120305";
+import { iniciarRanked, retomarBotRanked } from "./ranked.js?v=2026101901";
 
 // Número da versão (atualizado por ferramentas/nova-versao.py a cada envio)
 const VERSAO = "202610120305";

@@ -14,6 +14,8 @@ import { criarSessaoBot } from "./sessao.js?v=202610120305";
 import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610120305";
 import { deckAtual } from "./deck.js?v=202610120305";
 import { cartaPorId, problemaDoDeck } from "./motor.js?v=202610120305";
+import { criarCarta } from "./cartas-ui.js?v=202610120305";
+import { abrirDetalhes } from "./catalogo.js?v=202610120305";
 import { el, aviso } from "./util.js?v=202610120305";
 import { tocar } from "./som.js?v=202610120305";
 
@@ -268,7 +270,20 @@ function desenhar() {
     ban.append(el("h4", "", `🚫 Ban list (${t.banidas.length})`));
     if (t.banidas.length) {
       const lista = el("div", "reino__banidas");
-      t.banidas.forEach((id) => lista.append(el("span", "reino__banida", nomeDaCarta(id))));
+      t.banidas.forEach((id) => {
+        const carta = cartaPorId(id);
+        if (!carta) {
+          lista.append(el("span", "reino__banida", nomeDaCarta(id)));
+          return;
+        }
+        const item = el("button", "reino__ban-carta");
+        item.type = "button";
+        item.title = `Ver ${carta.nome}`;
+        item.setAttribute("aria-label", `Carta banida: ${carta.nome}. Ver detalhes`);
+        item.append(criarCarta(carta, { lazy: false }), el("span", "reino__ban-carta-nome", carta.nome));
+        item.addEventListener("click", () => abrirDetalhes(id));
+        lista.append(item);
+      });
       ban.append(lista, el("p", "reino__dica", "Essas cartas não podem estar no deck para entrar na fila."));
     } else {
       ban.append(el("p", "reino__dica", "Nenhuma carta banida nesta temporada."));

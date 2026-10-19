@@ -22,6 +22,12 @@
   padding: 0 .8rem;
 }
 
+/* Acabamento da arena; mantém intactos o chat, os sons e a barra da carta. */
+.arena .arena__corpo { gap: clamp(.6rem, 1.2vw, 1.2rem); }
+.arena .placar { border-color: #9b7b46; background: linear-gradient(90deg, #17232a, #26343a 50%, #17232a); box-shadow: 0 10px 28px rgba(0,0,0,.5), inset 0 1px rgba(255,235,177,.2); }
+.arena .campo { border-color: rgba(224,180,74,.55); background: radial-gradient(ellipse at 50% 50%, rgba(48,102,105,.18), transparent 70%), repeating-linear-gradient(135deg, rgba(255,255,255,.018) 0 6px, transparent 6px 14px), #0a1419; box-shadow: inset 0 0 42px rgba(0,0,0,.65), 0 12px 30px rgba(0,0,0,.3); }
+.arena .zona--vazia { border-color: rgba(231,199,127,.42); }
+
 /* Durante o duelo o menu e o rodapé do site somem (no celular também: o botão "Ir ao site" volta) */
 body.em-duelo {
   --altura-nav: 0px;

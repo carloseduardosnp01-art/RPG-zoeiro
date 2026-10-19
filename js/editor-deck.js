@@ -62,6 +62,8 @@ export function iniciarEditorDeck(lista) {
     desenhar();
     aviso("Deck padrão carregado. Clique em Salvar para usar ele nos duelos.");
   });
+  $("#deck-busca").addEventListener("input", desenharColecao);
+  $("#deck-filtro-tipo").addEventListener("change", desenharColecao);
 
   // Entrou ou saiu da conta: recarrega o deck (se não houver nada por salvar)
   conta.aoMudarUsuario(() => {
@@ -205,22 +207,35 @@ function desenhar() {
   $("#deck-padrao").disabled = ehDeckPadrao(paraLista(rascunho));
 
   const noDeck = $("#editor-deck");
+  const extra = $("#editor-extra");
   noDeck.replaceChildren();
+  extra.replaceChildren();
+  $("#deck-principal-contagem").textContent = `${n} / ${DECK_MAX}`;
+  $("#deck-extra-contagem").textContent = `${totalExtra()} / ${EXTRA_MAX}`;
   const podeTirar = !motivoParaNaoTirar();
   for (const c of cartas) {
     if (!copias(c.id)) continue;
-    noDeck.append(itemEditor(c, {
-      qtd: `${copias(c.id)}x`,
-      ativo: podeTirar,
-      rotulo: `Tirar uma cópia de ${c.nome} (${copias(c.id)} no deck)`,
-      dica: "− tirar",
-      aoClicar: () => tirar(c.id),
-    }));
+    for (let i = 0; i < copias(c.id); i++) {
+      (ehFusao(c) ? extra : noDeck).append(itemEditor(c, {
+        qtd: "",
+        ativo: podeTirar,
+        rotulo: `Tirar uma cópia de ${c.nome} (${copias(c.id)} no deck)`,
+        dica: "− tirar",
+        aoClicar: () => tirar(c.id),
+      }));
+    }
   }
+  desenharColecao();
+}
 
+function desenharColecao() {
   const colecao = $("#editor-colecao");
   colecao.replaceChildren();
+  const busca = $("#deck-busca").value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const tipo = $("#deck-filtro-tipo").value;
   for (const c of cartas) {
+    if (tipo && (tipo === "fusao" ? !ehFusao(c) : ehFusao(c) || c.categoria !== tipo)) continue;
+    if (busca && !`${c.nome} ${c.codigo}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(busca)) continue;
     if (trancada(c.id)) {
       colecao.append(itemEditor(c, {
         qtd: `🔒 ${precoNaLoja(c.id)}`,
@@ -239,6 +254,7 @@ function desenhar() {
       aoClicar: () => colocar(c.id),
     }));
   }
+  if (!colecao.childElementCount) colecao.append(el("p", "deck-maleta__vazio", "Nenhuma carta encontrada."));
 }
 
 function itemEditor(c, { qtd, ativo, rotulo, dica, aoClicar }) {
@@ -258,6 +274,8 @@ function itemEditor(c, { qtd, ativo, rotulo, dica, aoClicar }) {
   lupa.setAttribute("aria-label", `Ver detalhes de ${c.nome}`);
   lupa.addEventListener("click", () => abrirDetalhes(c.id));
 
-  item.append(botao, el("span", "item-editor__qtd", qtd), lupa);
+  item.append(botao);
+  if (qtd) item.append(el("span", "item-editor__qtd", qtd));
+  item.append(lupa);
   return item;
 }

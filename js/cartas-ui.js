@@ -4,7 +4,7 @@
    Usado pelo catálogo, pelo deck e pela arena.
    ========================================================================== */
 
-import { COSMETICOS, skinDe } from "./cosmeticos.js?v=202610120305";
+import { COSMETICOS, skinDe } from "./cosmeticos.js?v=2026101902";
 
 // Emblema do careca (logo, verso das cartas e ícone do site)
 export const SVG_CARECA = `
@@ -210,7 +210,7 @@ ${linhas.b}`;
   const seloStats = el("div", "carta__selo-stats");
   if (c.categoria === "monstro") {
     // ATK/DEF "?" (os deuses que crescem no campo): fora do campo aparece "?"
-    const atk = opcoes.atk ?? (c.statsVariaveis ? "?" : c.atk);
+    const atk = opcoes.atk ?? (c.statsVariaveis || c.ataqueVariavel ? "?" : c.atk);
     const def = opcoes.def ?? (c.statsVariaveis ? "?" : c.def);
     const stats = el("p", "carta__stats");
     const sAtk = el("span", "", `ATK/${atk}`);
@@ -266,6 +266,6 @@ export function criarVerso(classe = "", versoId = null) {
 
 // Texto curto de ATK/DEF ou categoria (para listas e leitores de tela)
 export function resumoCarta(c) {
-  if (c.categoria === "monstro") return `${nomeCategoria(c)} · Nível ${c.nivel} · ATK ${c.statsVariaveis ? "?" : c.atk} / DEF ${c.statsVariaveis ? "?" : c.def}`;
+  if (c.categoria === "monstro") return `${nomeCategoria(c)} · Nível ${c.nivel} · ATK ${c.statsVariaveis || c.ataqueVariavel ? "?" : c.atk} / DEF ${c.statsVariaveis ? "?" : c.def}`;
   return `${nomeCategoria(c)} ${nomeSubtipo(c)}`;
 }

@@ -15,15 +15,15 @@
 import {
   carta, quemAge, opcoesDaCarta, atkAtual, defAtual, localizar, oponente, ZONAS, PL_INICIAL, ErroJogada, ehTag, membroAtivo, temAtaqueDuplo,
   podeUsarReliquia,
-} from "./motor.js?v=202610120305";
-import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=202610120305";
-import { el, esperar, aviso } from "./util.js?v=202610120305";
-import { tocar, tocarAudios, pararAudios } from "./som.js?v=202610120305";
-import { abrirDetalhes } from "./catalogo.js?v=202610120305";
-import * as adm from "./admin.js?v=202610120305";
-import { PREMIOS } from "./premios.js?v=202610120305";
-import { usuarioAtual, premioValido } from "./conta.js?v=202610120305";
-import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=202610120305";
+} from "./motor.js?v=2026101902";
+import { criarCarta as criarCartaBase, criarVerso, linhaTipo, nomeCategoria, chaveRaridade } from "./cartas-ui.js?v=2026101902";
+import { el, esperar, aviso } from "./util.js?v=2026101902";
+import { tocar, tocarAudios, pararAudios } from "./som.js?v=2026101902";
+import { abrirDetalhes } from "./catalogo.js?v=2026101902";
+import * as adm from "./admin.js?v=2026101902";
+import { PREMIOS } from "./premios.js?v=2026101902";
+import { usuarioAtual, premioValido } from "./conta.js?v=2026101902";
+import { comMoldura, skinDe, visualDe } from "./cosmeticos.js?v=2026101902";
 
 const raiz = document.querySelector("#arena");
 
@@ -871,7 +871,7 @@ function mostrarPrevia(iid) {
   const texto = el("div", "previa__texto");
   texto.append(el("h4", "", c.nome));
   texto.append(el("div", "", c.categoria === "monstro" ? `${linhaTipo(c)} · Nível ${c.nivel}` : nomeCategoria(c)));
-  if (c.categoria === "monstro") texto.append(el("div", "previa__stats", `ATK ${atk ?? (c.statsVariaveis ? "?" : c.atk)} / DEF ${def ?? (c.statsVariaveis ? "?" : c.def)}`));
+  if (c.categoria === "monstro") texto.append(el("div", "previa__stats", `ATK ${atk ?? (c.statsVariaveis || c.ataqueVariavel ? "?" : c.atk)} / DEF ${def ?? (c.statsVariaveis ? "?" : c.def)}`));
   texto.append(el("p", "mb-0 mt-1", c.texto));
   refs.previa.replaceChildren(cartaEl, texto);
 }
@@ -1308,7 +1308,7 @@ function verPilhas(estado, titulo, abas, aba) {
   const mostrarDetalhe = (iid) => {
     const c = carta(estado, iid);
     detalhe.replaceChildren(el("h4", "", c.nome));
-    detalhe.append(el("div", "pilhas__tipo", c.categoria === "monstro" ? `${linhaTipo(c)} · Nível ${c.nivel} · ATK ${c.statsVariaveis ? "?" : c.atk} / DEF ${c.statsVariaveis ? "?" : c.def}` : nomeCategoria(c)));
+    detalhe.append(el("div", "pilhas__tipo", c.categoria === "monstro" ? `${linhaTipo(c)} · Nível ${c.nivel} · ATK ${c.statsVariaveis || c.ataqueVariavel ? "?" : c.atk} / DEF ${c.statsVariaveis ? "?" : c.def}` : nomeCategoria(c)));
     detalhe.append(el("p", "mb-0 mt-1", c.texto));
     detalhe.hidden = false;
     grade.querySelectorAll(".escolha__opcao").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.iid === iid)));

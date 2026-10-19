@@ -291,7 +291,14 @@ function proximoMembro(estado, j, ev) {
 /* ---------- 3. Consultas ---------- */
 
 export function carta(estado, iid) {
-  return CARTAS[estado.cartas[iid]];
+  const c = CARTAS[estado.cartas[iid]];
+  if (!c || c.categoria !== "monstro" || c.subtipo !== "efeito" || c.efeito === "obra-prima-fumante") return c;
+  // A Armadilha contínua anula o efeito de qualquer Monstro de Efeito exposto,
+  // inclusive efeitos passivos consultados em outros pontos do motor.
+  const banho = estado.jogadores.some((p) => p.magias.some((m) => m && m.face && CARTAS[estado.cartas[m.iid]]?.efeito === "vai-chorar-no-banho"));
+  if (!banho) return c;
+  const loc = localizar(estado, iid);
+  return loc?.zona === "monstros" && loc.obj.face ? { ...c, efeito: null } : c;
 }
 
 export const oponente = (j) => 1 - j;
@@ -350,10 +357,16 @@ function noCampo(estado, iid) {
 export function atkAtual(estado, iid) {
   const c = carta(estado, iid);
   if (!c || c.categoria !== "monstro") return 0;
+  if (c.efeito === "obra-prima-fumante") {
+    const loc = localizar(estado, iid);
+    return loc?.zona === "monstros" && loc.obj.face && !bloqueado(estado, loc.j, iid)
+      ? 1000 * estado.jogadores[donoDe(iid)].cemiterio.filter((x) => ehOProibido(carta(estado, x))).length : 0;
+  }
   if (imuneAEfeitos(estado, iid)) return c.atk; // Carenix: nada mexe no ATK dele
   const fixo = localizar(estado, iid)?.obj?.atkFixo; // Miro, O Dragão da Garganta profunda: o ATK virou o de um Dragão
   let atk = (fixo ?? c.atk) + bonusDosDeuses(estado, iid);
-  if (c.efeito === "feiticeira") {
+  const efeitoAnulado = anuladoPeloBanho(estado, iid);
+  if (c.efeito === "feiticeira" && !efeitoAnulado) {
     const mestres = estado.jogadores
       .flatMap((p) => p.cemiterio)
       .filter((x) => estado.cartas[x] === "grande-mestre").length;
@@ -366,18 +379,18 @@ export function atkAtual(estado, iid) {
     }
   }
   const loc = localizar(estado, iid);
-  if (loc && loc.zona === "monstros" && loc.obj.marcadores) atk += 300 * loc.obj.marcadores;
+  if (loc && loc.zona === "monstros" && loc.obj.marcadores && !efeitoAnulado) atk += 300 * loc.obj.marcadores;
   if (loc && loc.zona === "monstros" && tipoAtual(estado, iid) === "Besta Alada") atk += 200 * zoologicosAtivos(estado);
   if (loc && loc.zona === "monstros" && loc.obj.face && tipoAtual(estado, iid) === "Internet") atk += 500 * camposAtivos(estado, "wifi"); // WI-FI Grátis
   if (loc && loc.zona === "monstros" && loc.obj.face && c.atributo === "ÁGUA") atk += 200 * camposAtivos(estado, "geada");
   if (loc && loc.zona === "monstros" && loc.obj.face && ehW(c)) atk += 200 * camposAtivos(estado, "w-rede");
-  if (loc && loc.zona === "monstros" && loc.obj.maisAtk) atk += loc.obj.maisAtk; // Os Irmãos
-  if (c.efeito === "wellington-animal" && loc && loc.zona === "monstros") {
+  if (loc && loc.zona === "monstros" && loc.obj.maisAtk && !efeitoAnulado) atk += loc.obj.maisAtk; // Os Irmãos
+  if (c.efeito === "wellington-animal" && loc && loc.zona === "monstros" && !efeitoAnulado) {
     const ventos = estado.jogadores[loc.j].monstros.filter((m) => m && m.face && carta(estado, m.iid).atributo === "VENTO").length;
     atk += 500 * ventos;
   }
   if (c.atributo === "VENTO" && loc && loc.zona === "monstros") {
-    const davids = estado.jogadores.flatMap((p) => p.monstros).filter((m) => m && m.face && carta(estado, m.iid).efeito === "david").length;
+    const davids = estado.jogadores.flatMap((p) => p.monstros).filter((m) => m && m.face && carta(estado, m.iid).efeito === "david" && !anuladoPeloBanho(estado, m.iid)).length;
     atk += 300 * davids;
   }
   for (const p of estado.jogadores) {
@@ -396,7 +409,7 @@ function bonusDosDeuses(estado, iid) {
   const loc = localizar(estado, iid);
   if (!loc || loc.zona !== "monstros" || !loc.obj.face) return 0;
   if (c.efeito === "careca-dragao" && !bloqueado(estado, loc.j, iid)) return 1000 * estado.jogadores[loc.j].mao.length;
-  if (c.efeito === "emanuel-ice") return loc.obj.bonusPago || 0;
+  if (c.efeito === "emanuel-ice" && !anuladoPeloBanho(estado, iid)) return loc.obj.bonusPago || 0;
   return 0;
 }
 
@@ -476,6 +489,7 @@ export const donoDe = (iid) => ("ac".includes(iid[0]) ? 0 : 1);
 
 // Nome usado pelos efeitos que comparam nomes: todo monstro "Animal" se chama "Animal" (campo e Cemitério)
 const nomeEfetivo = (c) => (ehAnimal(c) ? "Animal" : c.nomeTratado || c.nome);
+const ehOProibido = (c) => Boolean(c && PARTES_MIXODAS.includes(c.id));
 
 // Berinjela do Imenso: cartas nos dois Cemitérios com o mesmo nome do monstro
 const mesmoNomeNosCemiterios = (estado, c) =>
@@ -490,20 +504,24 @@ export function tipoAtual(estado, iid) {
 }
 
 // Ataca duas vezes neste turno: Rafaza sempre; Mestre das Lâminas e Manoel Careca pelo efeito
-export const temAtaqueDuplo = (estado, m) => m.ataqueDuplo === estado.turno || carta(estado, m.iid).efeito === "rafaza";
+export const temAtaqueDuplo = (estado, m) => !anuladoPeloBanho(estado, m.iid) && (m.ataqueDuplo === estado.turno || carta(estado, m.iid).efeito === "rafaza");
 
 // Nomes no campo: o "Miro, o Adestrador de Dragões" se chama "Grande Mestre" enquanto estiver no
 // campo; o "Mago Dragão Sonho do BIG" se chama "Grande Mestre" e "Dragão Sulista..." ao mesmo tempo
 const nomesNoCampo = (c) => [].concat(c.nomeNoCampo || nomeEfetivo(c));
 
 // Obelisco no campo: nenhum efeito pode escolher ele como alvo
-export const intocavel = (estado, iid) => ["obelisco", "carenix", "emanuel-esfera"].includes(carta(estado, iid)?.efeito) && localizar(estado, iid)?.zona === "monstros";
+export const intocavel = (estado, iid) => {
+  const loc = localizar(estado, iid);
+  return Boolean(loc?.zona === "monstros" && ["obelisco", "carenix", "emanuel-esfera", "obra-prima-fumante"].includes(carta(estado, iid)?.efeito) && !bloqueado(estado, loc.j, iid));
+};
 
 // O Emanuel Careca de ICE - Carenix com a face para cima: não é afetado por outros efeitos de card
 function imuneAEfeitos(estado, iid) {
-  if (carta(estado, iid)?.efeito !== "carenix") return false;
+  if (!["carenix", "obra-prima-fumante"].includes(carta(estado, iid)?.efeito)) return false;
   const loc = localizar(estado, iid);
-  return Boolean(loc && loc.zona === "monstros" && loc.obj.face);
+  return Boolean(loc && loc.zona === "monstros" && loc.obj.face &&
+    (carta(estado, iid).efeito === "obra-prima-fumante" || !bloqueado(estado, loc.j, iid)));
 }
 
 // Invocação-Especial "ignorando as condições de Invocação" (Carenix, Modo Carecal, Nova Zoom): tira a carta
@@ -561,7 +579,7 @@ function protegidaPorMiro(estado, iid, quem) {
 const magiasAlvejaveis = (estado, quem) => magiasEmCampo(estado).filter((x) => !protegidaPorMiro(estado, x, quem));
 
 // Mago Dragão Sonho do BIG (com a face para cima) no campo do jogador k
-const magoDragaoDe = (estado, k) => estado.jogadores[k].monstros.find((m) => m && m.face && carta(estado, m.iid).efeito === "mago-dragao") || null;
+const magoDragaoDe = (estado, k) => estado.jogadores[k].monstros.find((m) => m && m.face && carta(estado, m.iid).efeito === "mago-dragao" && !anuladoPeloBanho(estado, m.iid)) || null;
 
 // Mago Dragão: o oponente de quem controla ele não escolhe os monstros dele com efeitos de monstro
 function protegidoDoMonstro(estado, alvo, quem) {
@@ -575,7 +593,7 @@ const alvoDeEfeitoDeMonstro = (estado, quem, x) => !intocavel(estado, x) && !pro
 // Mago Dragão: não é afetado pelas Armadilhas do oponente
 function imuneArmadilha(estado, iid) {
   const loc = localizar(estado, iid);
-  return Boolean(loc && loc.zona === "monstros" && loc.obj.face && carta(estado, iid).efeito === "mago-dragao");
+  return Boolean(loc && loc.zona === "monstros" && loc.obj.face && carta(estado, iid).efeito === "mago-dragao" && !anuladoPeloBanho(estado, iid));
 }
 
 // Mago Dragão: usa um dos efeitos (nº de usos por turno = monstros do Tipo Dragão usados como material).
@@ -635,9 +653,18 @@ function chamadoQueTrouxe(estado, iid) {
 const perfurante = (c) => c.efeito === "w-laminas" || c.efeito === "careca-lamentador";
 
 // Thangan: depois da busca, o jogador não ativa cartas nem efeitos com o nome da carta buscada pelo resto do turno
+const anuladoPeloBanho = (estado, iid) => {
+  const loc = localizar(estado, iid);
+  const c = CARTAS[estado.cartas[iid]];
+  if (c?.efeito === "obra-prima-fumante") return false;
+  const banho = estado.jogadores.some((p) => p.magias.some((m) => m && m.face && CARTAS[estado.cartas[m.iid]]?.efeito === "vai-chorar-no-banho"));
+  return Boolean(banho && loc?.zona === "monstros" && loc.obj.face && c?.subtipo === "efeito");
+};
 const bloqueado = (estado, j, iid) => {
+  const loc = localizar(estado, iid);
+  if (carta(estado, iid)?.efeito === "obra-prima-fumante" && loc?.zona === "monstros" && loc.obj.face) return false;
   const b = estado.jogadores[j].bloqueio;
-  return Boolean(b && b.turno === estado.turno && b.id === estado.cartas[iid]) || bloqueadoPorMago(estado, j, iid);
+  return Boolean(b && b.turno === estado.turno && b.id === estado.cartas[iid]) || bloqueadoPorMago(estado, j, iid) || anuladoPeloBanho(estado, iid);
 };
 
 // "W — Guerreiro das Lâminas Gêmeas": cada jogador só pode controlar 1
@@ -646,7 +673,7 @@ export const podeControlarMais = (estado, j, iid) =>
 
 // Jinreca com a face para cima no campo (de qualquer lado): nenhuma Armadilha pode ser ativada
 export const jinrecaEmCampo = (estado) =>
-  estado.jogadores.some((p) => p.monstros.some((m) => m && m.face && carta(estado, m.iid).efeito === "jinreca"));
+  estado.jogadores.some((p) => p.monstros.some((m) => m && m.face && carta(estado, m.iid).efeito === "jinreca" && !anuladoPeloBanho(estado, m.iid)));
 
 
 /* ---------- 4. Aplicar uma ação ---------- */
@@ -758,6 +785,7 @@ function executarAcao(estado, j, acao, ev) {
         if (!podeInvocarAgente(estado, j, acao.iid)) return "Precisa de 3 ou mais monstros \"W\" no seu Cemitério e de uma zona de monstro livre.";
         return invocarDaMaoLiberando(estado, j, acao.iid, ev);
       }
+      if (ef === "obra-prima-fumante") return invocarObraPrima(estado, j, acao, ev);
       return invocarPenetra(estado, j, acao, ev);
     }
     case "efeitoMonstro": return efeitoMonstro(estado, j, acao, ev);
@@ -883,6 +911,28 @@ export function podeInvocarPenetra(estado, j, iid) {
     monstrosEmCampo(estado, j).length === 0 &&
     monstrosEmCampo(estado, oponente(j)).length > 0
   );
+}
+
+// As cinco partes do Fumante são os monstros "O Proibido" desta carta.
+function tributosObraPrima(estado, j, iid) {
+  if (carta(estado, iid)?.efeito !== "obra-prima-fumante" || !ehFasePrincipal(estado) || !estado.jogadores[j].mao.includes(iid)) return [];
+  return estado.jogadores[j].monstros.filter((m) => m && m.face && ehOProibido(carta(estado, m.iid))).map((m) => m.iid);
+}
+
+function invocarObraPrima(estado, j, { iid, alvos = [], pos = "atk" }, ev) {
+  const candidatos = tributosObraPrima(estado, j, iid);
+  if (alvos.length !== 1 || !candidatos.includes(alvos[0])) return "Escolha 1 parte do Fumante com a face para cima para oferecer como Tributo.";
+  const p = estado.jogadores[j];
+  ev.push({ t: "tributo", j, iid: alvos[0] });
+  removerDoCampo(estado, alvos[0], ev, "tributo");
+  const slot = zonaLivre(p.monstros);
+  if (slot < 0) return "Não há zona de monstro livre.";
+  p.mao.splice(p.mao.indexOf(iid), 1);
+  p.monstros[slot] = { iid, pos: pos === "def" ? "def" : "atk", face: true, turnoEntrou: estado.turno, mudouPos: estado.turno, atacou: false };
+  (estado.liberadas ||= []).push(iid);
+  ev.push({ t: "invocacao", j, iid, modo: "especial", slot });
+  aposEspecial(estado, j, iid, ev);
+  return null;
 }
 
 function invocarPenetra(estado, j, { iid, pos = "atk" }, ev) {
@@ -2228,8 +2278,9 @@ export function requisitosArmadilha(estado, j, iid) {
   const loc = localizar(estado, iid);
   if (!loc || loc.j !== j || loc.zona !== "magias" || loc.obj.face || loc.obj.turnoBaixada >= estado.turno) return null;
   const ef = carta(estado, iid).efeito;
-  if ((ef !== "revolucao" && ef !== "vagabundos") || jinrecaEmCampo(estado)) return null;
+  if (!["revolucao", "vagabundos", "vai-chorar-no-banho"].includes(ef) || jinrecaEmCampo(estado)) return null;
   const p = estado.jogadores[j];
+  if (ef === "vai-chorar-no-banho") return p.pl > 1000 ? { alvos: null } : null;
   if (ef === "vagabundos") {
     if (zonaLivre(p.monstros) < 0) return null;
     const candidatos = podemVoltarDoCemiterio(estado, j);
@@ -2253,7 +2304,19 @@ function ativarArmadilha(estado, j, { iid, alvos = [] }, ev) {
   if (!req) {
     if (ef === "revolucao") return "A Revolução Animal só ativa a partir do turno seguinte ao que foi baixada, com \"Animal\" para Invocar e sem o Jinreca no campo.";
     if (ef === "vagabundos") return "O Chamado dos Vagabundos só ativa a partir do turno seguinte ao que foi baixado, com monstro no seu Cemitério, zona livre e sem o Jinreca no campo.";
+    if (ef === "vai-chorar-no-banho") return "Essa Armadilha só pode ser ativada a partir do turno seguinte, com mais de 1000 PV e sem Jinreca no campo.";
     return "Armadilhas ativam sozinhas: é só baixar no campo.";
+  }
+  if (ef === "vai-chorar-no-banho") {
+    const armadilha = localizar(estado, iid).obj;
+    estado.jogadores[j].pl -= 1000;
+    ev.push({ t: "custo", j, valor: 1000, pl: estado.jogadores[j].pl });
+    armadilha.face = true;
+    ev.push({ t: "ativacao", j, iid });
+    marcarAtivacao(estado, j);
+    armadilhaAtivada(estado, ev);
+    negadaPorHacker(estado, j, iid, ev);
+    return null;
   }
   if (alvos.length !== 1 || !req.alvos.candidatos.includes(alvos[0])) {
     return ef === "vagabundos" ? "Escolha 1 monstro do seu Cemitério." : "Escolha a carta para descartar.";
@@ -3716,6 +3779,7 @@ function recrutar(estado, g, ev) {
 function destruir(estado, iid, ev, causa) {
   const loc = localizar(estado, iid);
   if (!loc || (loc.zona !== "monstros" && loc.zona !== "magias" && loc.zona !== "campo")) return;
+  const obraAtiva = loc.zona === "monstros" && carta(estado, iid).efeito === "obra-prima-fumante" && loc.obj.face && !bloqueado(estado, loc.j, iid);
   if (causa !== "batalha" && loc.zona === "monstros" && imuneAEfeitos(estado, iid)) {
     ev.push({ t: "indestrutivel", j: loc.j, iid });
     return;
@@ -3754,6 +3818,12 @@ function destruir(estado, iid, ev, causa) {
   if (loc.zona === "monstros" && causa === "batalha" && carta(estado, iid).efeito === "w-midas" && !bloqueado(estado, loc.j, iid) && estado.vencedor === null) {
     ev.push({ t: "efeito", j: loc.j, iid });
     comprar(estado, loc.j, 1, ev);
+  }
+  if (obraAtiva && causa === "batalha" && localizar(estado, iid)?.zona === "cemiterio" && estado.vencedor === null) {
+    const dono = donoDe(iid);
+    const candidatos = estado.jogadores[dono].mao.filter((x) => ehOProibido(carta(estado, x)));
+    if (candidatos.length) estado.pendente = { tipo: "alvo", efeito: "obra-prima-revelar", jogador: dono, origem: iid,
+      candidatos, min: 0, max: candidatos.length, titulo: "Revele quantas partes do Fumante quiser para comprar a mesma quantidade" };
   }
   // Karecoh Alado: destruído no campo -> o dono não sofre dano de batalha pelo resto do turno
   if (loc.zona === "monstros" && carta(estado, iid).efeito === "karecoh" && !bloqueado(estado, loc.j, iid)) {
@@ -4012,6 +4082,14 @@ function encerrarTurno(estado, ev) {
   const p = estado.jogadores[j];
   estado.fase = "final";
   ev.push({ t: "fase", j, fase: "final" });
+  const obra = p.monstros.find((m) => m && m.face && carta(estado, m.iid).efeito === "obra-prima-fumante" && !bloqueado(estado, j, m.iid));
+  const partes = p.cemiterio.filter((x) => ehOProibido(carta(estado, x)));
+  if (obra && partes.length && !usou(estado, j, "obra-prima-final")) {
+    marcarUso(estado, j, "obra-prima-final");
+    estado.pendente = { tipo: "alvo", efeito: "obra-prima-final", jogador: j, origem: obra.iid, candidatos: partes,
+      min: 0, max: 1, titulo: "Obra prima do fumante: escolha 1 parte do Fumante do Cemitério para recuperar" };
+    return;
+  }
   if (p.mao.length > LIMITE_MAO) {
     const quantidade = p.mao.length - LIMITE_MAO;
     estado.pendente = {
@@ -4155,6 +4233,22 @@ function resolverEscolha(estado, j, alvos, ev) {
     return "As duas cartas precisam ter nomes diferentes.";
   }
   estado.pendente = null;
+
+  if (pend.efeito === "obra-prima-final") {
+    if (alvos.length) {
+      ev.push({ t: "efeito", j, iid: pend.origem, alvos });
+      recuperarDoCemiterio(estado, j, alvos[0], ev);
+    }
+    encerrarTurno(estado, ev);
+    return null;
+  }
+  if (pend.efeito === "obra-prima-revelar") {
+    if (alvos.length) {
+      ev.push({ t: "efeito", j, iid: pend.origem, alvos });
+      comprar(estado, j, alvos.length, ev);
+    }
+    return null;
+  }
 
   if (pend.tipo === "descarte") {
     const p = estado.jogadores[j];
@@ -4372,6 +4466,9 @@ export function opcoesDaCarta(estado, j, iid) {
       if (podeInvocarAgente(estado, j, iid)) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial (3+ monstros \"W\" no Cemitério)", acao: { tipo: "invocarEspecial", iid } });
       }
+      const partes = tributosObraPrima(estado, j, iid);
+      if (partes.length) opcoes.push({ id: "especial", rotulo: "Invocação-Especial (oferecer 1 parte do Fumante)", acao: { tipo: "invocarEspecial", iid },
+        alvos: { candidatos: partes, min: 1, max: 1, titulo: "Escolha a parte do Fumante para oferecer como Tributo" } });
       if (podeInvocarMiroSulista(estado, j, iid)) {
         opcoes.push({ id: "especial", rotulo: "Invocação-Especial (4+ monstros de LUZ de nomes diferentes no Cemitério)", acao: { tipo: "invocarEspecial", iid } });
       }
@@ -4390,7 +4487,7 @@ export function opcoesDaCarta(estado, j, iid) {
         if (req) opcoes.push({ id: "ativar", rotulo: "Ativar", acao: { tipo: "ativar", iid }, alvos: req.alvos });
       }
       if (livre) {
-        const manual = c.efeito === "revolucao" || c.efeito === "vagabundos"; // armadilhas que o jogador ativa
+        const manual = ["revolucao", "vagabundos", "vai-chorar-no-banho"].includes(c.efeito); // armadilhas que o jogador ativa
         const rotulo = manual ? "Baixar (ative a partir do próximo turno)" : c.categoria === "armadilha" ? "Baixar (ativa sozinha)" : "Baixar virada";
         opcoes.push({ id: "baixar", rotulo, acao: { tipo: "baixarMagia", iid } });
       }

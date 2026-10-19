@@ -4,8 +4,8 @@
    leque de cartas do início e a mesa do deck.
    ========================================================================== */
 
-import { criarCarta, nomeCategoria, nomeSubtipo, atributoDaCarta, chaveRaridade, moldura } from "./cartas-ui.js?v=202610120305";
-import { el, normalizar } from "./util.js?v=202610120305";
+import { criarCarta, nomeCategoria, nomeSubtipo, atributoDaCarta, chaveRaridade, moldura } from "./cartas-ui.js?v=2026101902";
+import { el, normalizar } from "./util.js?v=2026101902";
 
 const CARTAS_POR_PAGINA = 12;
 const ORDEM_RARIDADE = ["Comum", "Rara", "Super Rara", "Ultra Rara", "Secreta", "Lendária da Zoeira"];
@@ -203,7 +203,7 @@ function preencherDetalhes() {
   linha("Atributo", atributoDaCarta(c).nome);
   if (c.categoria === "monstro") {
     linha("Nível", `${"★".repeat(c.nivel)} (${c.nivel})`);
-    linha("ATK / DEF", `${c.atk} / ${c.def}`);
+    linha("ATK / DEF", `${c.statsVariaveis || c.ataqueVariavel ? "?" : c.atk} / ${c.statsVariaveis ? "?" : c.def}`);
     const t = c.nivel >= 7 ? 2 : c.nivel >= 5 ? 1 : 0;
     linha("Tributos", t ? `${t} monstro${t > 1 ? "s" : ""}` : "Nenhum");
   }

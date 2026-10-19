@@ -7,17 +7,17 @@
    (supabase/banco.sql, funções ranked_*): o navegador só pede.
    ========================================================================== */
 
-import * as conta from "./conta.js?v=202610120305";
-import * as adm from "./admin.js?v=202610120305";
-import { entrarNaFila, sairDaFila, estadoDaFila, contarRanked, avisarChat } from "./salao.js?v=202610120305";
-import { criarSessaoBot } from "./sessao.js?v=202610120305";
-import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=202610120305";
-import { deckAtual } from "./deck.js?v=202610120305";
-import { cartaPorId, problemaDoDeck } from "./motor.js?v=202610120305";
-import { criarCarta } from "./cartas-ui.js?v=202610120305";
-import { abrirDetalhes } from "./catalogo.js?v=202610120305";
-import { el, aviso } from "./util.js?v=202610120305";
-import { tocar } from "./som.js?v=202610120305";
+import * as conta from "./conta.js?v=2026101902";
+import * as adm from "./admin.js?v=2026101902";
+import { entrarNaFila, sairDaFila, estadoDaFila, contarRanked, avisarChat } from "./salao.js?v=2026101902";
+import { criarSessaoBot } from "./sessao.js?v=2026101902";
+import { abrirArena, arenaAtiva, fecharArena } from "./arena.js?v=2026101902";
+import { deckAtual } from "./deck.js?v=2026101902";
+import { cartaPorId, problemaDoDeck } from "./motor.js?v=2026101902";
+import { criarCarta } from "./cartas-ui.js?v=2026101902";
+import { abrirDetalhes } from "./catalogo.js?v=2026101902";
+import { el, aviso } from "./util.js?v=2026101902";
+import { tocar } from "./som.js?v=2026101902";
 
 export const ESPERA_BOT = 60; // segundos na fila antes do duelo contra o Bot Careca
 
